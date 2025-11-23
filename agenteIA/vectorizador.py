@@ -48,7 +48,11 @@ class VectorizadorConsultas:
             self.modelo = VectorizadorConsultas._modelo_cache
             return
         
-        if self.modelo is None and ST_AVAILABLE:
+        # Verificar si está activado el modo ligero (sin modelo pesado)
+        from decouple import config
+        lite_mode = config('SOFIA_LITE_MODE', default=False, cast=bool)
+        
+        if self.modelo is None and ST_AVAILABLE and not lite_mode:
             try:
                 # Intentar cargar desde caché local primero si existe
                 import os
