@@ -5,7 +5,7 @@ echo "===== WayGPS - Deploy Automático ====="
 APP_DIR="/opt/miapp"
 VENV_DIR="$APP_DIR/venv"
 DJANGO_SETTINGS="wayproject.settings"
-SERVER_IP="200.58.98.187"
+SERVER_NAME="gastoncelentano.com.ar www.gastoncelentano.com.ar 200.58.98.187"
 
 echo ">> Verificando directorio del proyecto..."
 if [ ! -d "$APP_DIR" ]; then
@@ -51,7 +51,18 @@ echo ">> Creando configuración Nginx..."
 cat << EOF | sudo tee /etc/nginx/sites-available/waygps
 server {
     listen 80;
-    server_name $SERVER_IP;
+    server_name $SERVER_NAME;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name $SERVER_NAME;
+
+    ssl_certificate /etc/letsencrypt/live/gastoncelentano.com.ar/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gastoncelentano.com.ar/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location /static/ {
         alias $APP_DIR/staticfiles/;
@@ -61,6 +72,8 @@ server {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 EOF
