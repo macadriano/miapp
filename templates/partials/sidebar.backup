@@ -1,0 +1,66 @@
+{% load static %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-header-icon">
+            <i class="bi bi-geo-alt-fill"></i>
+        </div>
+        <div class="sidebar-header-text">
+            <strong>WayGPS</strong>
+            <small>Panel de Control</small>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/moviles/dashboard/" data-page="dashboard">
+            <i class="bi bi-speedometer2"></i>
+            <span class="nav-label">Dashboard</span>
+        </a>
+        <a href="/moviles/" data-page="moviles">
+            <i class="bi bi-truck"></i>
+            <span class="nav-label">Móviles</span>
+        </a>
+        <a href="/equipos/" data-page="equipos">
+            <i class="bi bi-cpu"></i>
+            <span class="nav-label">Equipos GPS</span>
+        </a>
+        <a href="/recorridos/" data-page="recorridos">
+            <i class="bi bi-signpost"></i>
+            <span class="nav-label">Recorridos</span>
+        </a>
+        <a href="/zonas/" data-page="zonas">
+            <i class="bi bi-bounding-box-circles"></i>
+            <span class="nav-label">Zonas</span>
+        </a>
+        <a href="/comunicaciones/" data-page="comunicaciones">
+            <i class="bi bi-broadcast"></i>
+            <span class="nav-label">Comunicaciones</span>
+        </a>
+        <a href="/agenteIA/" data-page="agenteia">
+            <i class="bi bi-robot"></i>
+            <span class="nav-label">Sofia IA</span>
+        </a>
+        <a href="/mapa/" data-page="mapa">
+            <i class="bi bi-map"></i>
+            <span class="nav-label">Mapa</span>
+        </a>
+        <a href="/reportes/" data-page="reportes">
+            <i class="bi bi-graph-up"></i>
+            <span class="nav-label">Reportes</span>
+        </a>
+        <a href="/controles-neo/" data-page="controles-neo">
+            <i class="bi bi-bell-slash"></i>
+            <span class="nav-label">Controles NEO</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div>
+            <div>Usuario:</div>
+            <strong id="userName">Cargando...</strong><br>
+            <small id="userEmail"></small>
+        </div>
+        <button id="logoutBtn" class="logout-btn" type="button">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="nav-label">Cerrar Sesión</span>
+        </button>
+    </div>
+</aside>
+

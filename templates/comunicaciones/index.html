@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicaciones - WayGPS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/global.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .page-title {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-running {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-stopped {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .comms-submenu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .comms-submenu .submenu-card {
+            flex: 1 1 260px;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 1.1rem 1.3rem;
+            color: #2d2a45;
+            text-decoration: none;
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(102, 126, 234, 0.18);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .comms-submenu .submenu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 22px rgba(102, 126, 234, 0.22);
+        }
+        .comms-submenu .submenu-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            color: #5a4fd4;
+        }
+        .comms-submenu .submenu-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        .comms-submenu .submenu-description {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .receptor-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .receptor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .metric-box {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        .activity-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+                 .activity-time {
+             color: #999;
+             font-size: 0.8rem;
+         }
+         .custom-alert {
+             position: fixed;
+             top: 80px;
+             right: 20px;
+             min-width: 300px;
+             max-width: 400px;
+             z-index: 9999;
+             animation: slideIn 0.3s ease-out;
+             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+         }
+         @keyframes slideIn {
+             from {
+                 transform: translateX(400px);
+                 opacity: 0;
+             }
+             to {
+                 transform: translateX(0);
+                 opacity: 1;
+             }
+         }
+         .custom-alert .alert-icon {
+             font-size: 1.5rem;
+             margin-right: 10px;
+         }
+     </style>
+ </head>
+<body data-page="comunicaciones">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-broadcast me-2"></i> Comunicaciones
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-light btn-sm" href="/moviles/dashboard/">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </div>
+            </div>
+            <div class="app-content">
+                <div id="alert-container"></div>
+                <div class="container mt-4">
+                    <ul class="nav nav-pills mb-4">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/comunicaciones/">
+                                <i class="bi bi-speedometer2 me-1"></i> Panel
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/comunicaciones/configuraciones/">
+                                <i class="bi bi-sliders me-1"></i> Configuraciones
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/comunicaciones/logs/">
+                                <i class="bi bi-journal-text me-1"></i> Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/comunicaciones/estadisticas/">
+                                <i class="bi bi-graph-up-arrow me-1"></i> Estadísticas
+                            </a>
+                        </li>
+                    </ul>
+
+        <!-- Estadísticas Generales -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="total-messages">0</div>
+                    <div class="metric-label">Mensajes Totales</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="successful-parses">0</div>
+                    <div class="metric-label">Parseos Exitosos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="failed-parses">0</div>
+                    <div class="metric-label">Parseos Fallidos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="database-errors">0</div>
+                    <div class="metric-label">Errores de BD</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Receptores -->
+        <div class="row" id="receptores-container">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center text-muted">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Cargando receptores...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actividad Reciente -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-history"></i> Actividad Reciente</h5>
+                        <button class="btn btn-sm btn-light" onclick="limpiarActividad()" title="Limpiar actividad">
+                            <i class="fas fa-trash-alt"></i> Limpiar
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-activity" style="max-height: 400px; overflow-y: auto;">
+                            <p class="text-muted text-center">No hay actividad reciente</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- container -->
+            </div> <!-- app-content -->
+        </div> <!-- main-area -->
+    </div> <!-- app-wrapper -->
+
+    <script>
+        // Utilidad para obtener el CSRF token desde la cookie (igual que en otros módulos)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page=\"${currentPage}\"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script>
+        let activityLog = [];
+        let receptores = [];
+        
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarReceptores();
+            actualizarEstadisticasGenerales();
+            
+            // Actualizar cada 3 segundos
+            setInterval(function() {
+                cargarReceptores();
+                actualizarEstadisticasGenerales();
+            }, 3000);
+        });
+        
+        // Cargar lista de receptores
+        async function cargarReceptores() {
+            try {
+                const response = await fetch('/api/configuraciones-receptores/');
+                const configuraciones = await response.json();
+                
+                receptores = configuraciones;
+                
+                if (configuraciones.length === 0) {
+                    document.getElementById('receptores-container').innerHTML = `
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body text-center text-muted">
+                                    <i class="fas fa-info-circle fa-2x"></i>
+                                    <p class="mt-2">No hay receptores configurados</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                renderizarReceptores(configuraciones);
+            } catch (error) {
+                console.error('Error cargando receptores:', error);
+            }
+        }
+        
+        // Renderizar lista de receptores
+        async function renderizarReceptores(configuraciones) {
+            const container = document.getElementById('receptores-container');
+            
+            // Verificar estado de todos los receptores
+            let activePorts = [];
+            try {
+                const statusResponse = await fetch('/api/receiver/status/');
+                const status = await statusResponse.json();
+                // Obtener lista de puertos activos
+                if (status.ports && status.ports.length > 0) {
+                    activePorts = status.ports;
+                } else if (status.port) {
+                    // Para compatibilidad con formato antiguo
+                    activePorts = [status.port];
+                }
+            } catch (error) {
+                console.error('Error obteniendo estado:', error);
+            }
+            
+            const html = configuraciones.map(config => {
+                // Determinar si este receptor está activo
+                const estaActivo = activePorts.includes(config.puerto);
+                
+                return `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card receptor-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="fas fa-server"></i> ${config.nombre}
+                            </h6>
+                            <span class="status-badge ${estaActivo ? 'status-running' : 'status-stopped'}">
+                                ${estaActivo ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <small class="text-muted">Puerto:</small>
+                                <strong>${config.puerto}</strong>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Transporte:</small>
+                                <span class="badge bg-info">${config.transporte || 'TCP'}</span>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Protocolo:</small>
+                                <span class="badge bg-secondary">${config.protocolo}</span>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Región:</small>
+                                <strong>${config.region || 'N/A'}</strong>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm ${estaActivo ? 'btn-danger' : 'btn-success'}" onclick="toggleReceptor(${config.id}, ${config.puerto}, ${estaActivo})">
+                                    <i class="fas fa-${estaActivo ? 'stop' : 'play'}"></i> ${estaActivo ? 'Detener' : 'Iniciar'}
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="verEstadisticasReceptor(${config.id})">
+                                    <i class="fas fa-chart-line"></i> Ver Estadísticas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        // Variable para controlar si se muestra el "Receptor activo"
+        let receptorRunningPreviously = false;
+        let previousActivePort = null;
+        
+        // Actualizar estadísticas generales
+        async function actualizarEstadisticasGenerales() {
+            try {
+                const response = await fetch('/api/receiver/status/');
+                const status = await response.json();
+                
+                if (status.running) {
+                    document.getElementById('total-messages').textContent = status.total_messages || 0;
+                    document.getElementById('successful-parses').textContent = status.successful_parses || 0;
+                    document.getElementById('failed-parses').textContent = status.failed_parses || 0;
+                    document.getElementById('database-errors').textContent = status.database_errors || 0;
+                    
+                    // Actualizar el puerto activo sin agregar actividad (ya se hace en toggleReceptor)
+                    receptorRunningPreviously = true;
+                    previousActivePort = status.port;
+                } else {
+                    document.getElementById('total-messages').textContent = '0';
+                    document.getElementById('successful-parses').textContent = '0';
+                    document.getElementById('failed-parses').textContent = '0';
+                    document.getElementById('database-errors').textContent = '0';
+                    
+                    // Actualizar estado sin agregar actividad (ya se hace en toggleReceptor)
+                    receptorRunningPreviously = false;
+                    previousActivePort = null;
+                }
+            } catch (error) {
+                console.error('Error actualizando estadísticas:', error);
+            }
+        }
+        
+        // Agregar actividad al log
+        function addActivity(tipo, mensaje) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-AR');
+            
+            activityLog.unshift({
+                tipo,
+                mensaje,
+                tiempo: timeStr
+            });
+            
+            // Mantener solo las últimas 20 actividades
+            if (activityLog.length > 20) {
+                activityLog = activityLog.slice(0, 20);
+            }
+            
+            // Renderizar actividad
+            renderizarActividad();
+        }
+        
+        // Renderizar actividad en el contenedor
+        function renderizarActividad() {
+            const container = document.getElementById('recent-activity');
+            if (activityLog.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">No hay actividad reciente</p>';
+            } else {
+                container.innerHTML = activityLog.map(act => `
+                    <div class="activity-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <i class="fas fa-circle fa-xs" style="color: #667eea;"></i>
+                                <strong>${act.tipo}:</strong> ${act.mensaje}
+                            </div>
+                            <span class="activity-time">${act.tiempo}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Limpiar actividad
+        function limpiarActividad() {
+            // Crear modal de confirmación personalizado
+            const modalHtml = `
+                <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="confirmModalLabel">
+                                    <i class="fas fa-exclamation-triangle text-warning"></i> Confirmar Acción
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>¿Estás seguro de que deseas limpiar el historial de actividad?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-danger" onclick="confirmarLimpiarActividad()">
+                                    <i class="fas fa-trash-alt"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remover modal anterior si existe
+            const existingModal = document.getElementById('confirmModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Agregar modal al cuerpo
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+            modal.show();
+            
+            // Limpiar modal del DOM después de cerrar
+            document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+        
+        // Confirmar limpiar actividad
+        function confirmarLimpiarActividad() {
+            activityLog = [];
+            renderizarActividad();
+            showAlert('Actividad limpiada correctamente', 'info');
+            
+            // Cerrar modal
+            const modalElement = document.getElementById('confirmModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        }
+        
+         // Mostrar modal de confirmación para detener receptor
+         function mostrarConfirmacionDetener(nombreReceptor, puerto, receptorId) {
+             const modalHtml = `
+                 <div class="modal fade" id="confirmStopModal" tabindex="-1" aria-labelledby="confirmStopModalLabel" aria-hidden="true">
+                     <div class="modal-dialog">
+                         <div class="modal-content">
+                             <div class="modal-header">
+                                 <h5 class="modal-title" id="confirmStopModalLabel">
+                                     <i class="fas fa-exclamation-triangle text-warning"></i> Confirmar Detención
+                                 </h5>
+                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                             </div>
+                             <div class="modal-body">
+                                 <div class="alert alert-warning" role="alert">
+                                     <i class="fas fa-exclamation-triangle"></i>
+                                     <strong>Advertencia:</strong> Esta acción interrumpirá la recepción de datos GPS.
+                                 </div>
+                                 <p>¿Estás seguro de que deseas detener el receptor?</p>
+                                 <div class="card">
+                                     <div class="card-body">
+                                         <h6 class="card-title">${nombreReceptor}</h6>
+                                         <p class="card-text mb-0">Puerto: <strong>${puerto}</strong></p>
+                                     </div>
+                                 </div>
+                             </div>
+                             <div class="modal-footer">
+                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                 <button type="button" class="btn btn-danger" onclick="detenerReceptorConfirmado(${receptorId}, ${puerto}, \`${nombreReceptor}\`)">
+                                     <i class="fas fa-stop"></i> Detener Receptor
+                                 </button>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             `;
+             
+             // Remover modal anterior si existe
+             const existingModal = document.getElementById('confirmStopModal');
+             if (existingModal) {
+                 existingModal.remove();
+             }
+             
+             // Agregar modal al cuerpo
+             document.body.insertAdjacentHTML('beforeend', modalHtml);
+             
+             // Mostrar modal
+             const modal = new bootstrap.Modal(document.getElementById('confirmStopModal'));
+             modal.show();
+             
+             // Limpiar modal del DOM después de cerrar
+             document.getElementById('confirmStopModal').addEventListener('hidden.bs.modal', function() {
+                 this.remove();
+             });
+         }
+         
+        // Detener receptor después de confirmación
+        async function detenerReceptorConfirmado(receptorId, puerto, nombreReceptor) {
+            try {
+                const csrftoken = getCookie('csrftoken');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (csrftoken) {
+                    headers['X-CSRFToken'] = csrftoken;
+                }
+
+                const response = await fetch('/api/receiver/stop/', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({port: puerto}),
+                    credentials: 'same-origin'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addActivity('Receptor detenido', `${nombreReceptor} - Puerto: ${puerto}`);
+                    showAlert('Receptor detenido correctamente', 'success');
+                } else {
+                    const msg = result.message || result.error || 'No se pudo detener el receptor.';
+                    addActivity('Error', msg);
+                    showAlert(msg, 'error');
+                }
+                
+                const modalElement = document.getElementById('confirmStopModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+                
+                cargarReceptores();
+            } catch (error) {
+                console.error('Error deteniendo receptor:', error);
+                const msg = error && error.message ? error.message : 'Error al detener el receptor.';
+                showAlert(msg, 'error');
+            }
+        }
+         
+        // Alternar estado del receptor (iniciar / mostrar confirmación de detener)
+        async function toggleReceptor(receptorId, puerto, activoActual) {
+            try {
+                const receptor = receptores.find(r => r.id === receptorId);
+                const nombreReceptor = receptor ? receptor.nombre : 'Desconocido';
+                const transporte = receptor ? (receptor.transporte || 'TCP') : 'TCP';
+                
+                if (activoActual) {
+                    mostrarConfirmacionDetener(nombreReceptor, puerto, receptorId);
+                } else {
+                    console.log('Iniciando receptor:', { host: '0.0.0.0', port: puerto });
+
+                    const csrftoken = getCookie('csrftoken');
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (csrftoken) {
+                        headers['X-CSRFToken'] = csrftoken;
+                    }
+                    
+                    const response = await fetch('/api/receiver/start/', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            host: '0.0.0.0',
+                            port: puerto
+                        }),
+                        credentials: 'same-origin'
+                    });
+                    
+                    console.log('Respuesta del servidor:', response.status, response.statusText);
+                    const result = await response.json();
+                    console.log('Resultado:', result);
+                    
+                    if (result.success) {
+                        addActivity('Receptor iniciado', `${nombreReceptor} - Puerto: ${puerto} (${transporte})`);
+                        showAlert('Receptor iniciado correctamente', 'success');
+                    } else {
+                        const msg = result.message || result.error || 'No se pudo iniciar el receptor.';
+                        addActivity('Error', msg);
+                        showAlert(msg, 'error');
+                    }
+                }
+                
+                cargarReceptores();
+            } catch (error) {
+                console.error('Error alternando receptor:', error);
+                console.error('Error details:', error && error.message, error && error.stack);
+                const msg = error && error.message ? error.message : 'Error al cambiar estado del receptor.';
+                showAlert(msg, 'error');
+            }
+        }
+        
+                 // Ver estadísticas de receptor
+         function verEstadisticasReceptor(receptorId) {
+             window.location.href = `/comunicaciones/estadisticas/?receptor=${receptorId}`;
+         }
+         
+         // Función genérica para mostrar alertas personalizadas
+         function showAlert(message, type = 'success') {
+             const alertContainer = document.getElementById('alert-container');
+             
+             // Definir iconos y colores según el tipo
+             const alertConfig = {
+                 'success': {
+                     icon: 'fa-check-circle',
+                     bgColor: 'bg-success',
+                     textColor: 'text-white'
+                 },
+                 'error': {
+                     icon: 'fa-exclamation-circle',
+                     bgColor: 'bg-danger',
+                     textColor: 'text-white'
+                 },
+                 'warning': {
+                     icon: 'fa-exclamation-triangle',
+                     bgColor: 'bg-warning',
+                     textColor: 'text-dark'
+                 },
+                 'info': {
+                     icon: 'fa-info-circle',
+                     bgColor: 'bg-info',
+                     textColor: 'text-white'
+                 }
+             };
+             
+             const config = alertConfig[type] || alertConfig['info'];
+             
+             // Crear alerta
+             const alertHtml = `
+                 <div class="alert ${config.bgColor} ${config.textColor} alert-dismissible fade show custom-alert" role="alert">
+                     <i class="fas ${config.icon} alert-icon"></i>
+                     <strong>${message}</strong>
+                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                 </div>
+             `;
+             
+             alertContainer.innerHTML = alertHtml;
+             
+             // Auto-cerrar después de 4 segundos
+             setTimeout(() => {
+                 const alertElement = alertContainer.querySelector('.alert');
+                 if (alertElement) {
+                     const bsAlert = new bootstrap.Alert(alertElement);
+                     bsAlert.close();
+                 }
+             }, 4000);
+         }
+         
+        // Probar conectividad de la API
+        async function probarAPI() {
+            try {
+                console.log('Probando API...');
+                const response = await fetch('/api/test/');
+                const result = await response.json();
+                console.log('Respuesta de prueba:', result);
+                showAlert('API funcionando correctamente', 'success');
+            } catch (error) {
+                console.error('Error probando API:', error);
+                showAlert('Error conectando con la API', 'error');
+            }
+        }
+        
+        // Agregar función a window para uso global
+        window.probarAPI = probarAPI;
+     </script>
+ </body>
+ </html>

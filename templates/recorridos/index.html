@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recorridos GPS - Sistema de Seguimiento</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="/static/css/global.css">
+    <link rel="stylesheet" href="/static/css/recorridos.css">
+    
+    <style>
+        .filtros-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .filtros-header .btn {
+            border-color: rgba(255,255,255,0.3);
+            color: white;
+        }
+        .filtros-header .btn:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .filtros-header .btn-primary {
+            background-color: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+        .filtros-header .btn-primary:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+        #filtros-toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        /* Panel lateral deslizable */
+        #filtros-panel {
+            transition: all 0.3s ease-in-out;
+            position: relative;
+            z-index: 1000;
+        }
+
+        #filtros-panel.colapsado {
+            transform: translateX(-100%);
+            width: 0;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        #contenido-principal {
+            transition: all 0.3s ease-in-out;
+        }
+
+        #contenido-principal.expandido {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        /* Botón flotante para mostrar filtros cuando están ocultos */
+        .btn-filtros-flotante {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            z-index: 1001;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        #filtros-panel.colapsado ~ .btn-filtros-flotante {
+            display: block;
+        }
+    </style>
+</head>
+<body data-page="recorridos">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-signpost me-2"></i> Recorridos
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-light btn-sm" href="/moviles/dashboard/">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </div>
+            </div>
+            <div class="app-content">
+                <div class="container-fluid px-0">
+        <!-- Controles de vista -->
+        <div class="view-controls mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="view-toggle">
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="view-mode" id="view-list" value="list" checked>
+                        <label class="btn btn-outline-primary" for="view-list">
+                            <i class="bi bi-list-ul"></i> Listado
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="view-mode" id="view-map" value="map">
+                        <label class="btn btn-outline-primary" for="view-map">
+                            <i class="bi bi-map"></i> Mapa
+                        </label>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary" id="posiciones-count">0 posiciones</span>
+                    <button class="btn btn-success btn-sm" onclick="exportarExcel()" id="btn-export-excel" disabled>
+                        <i class="bi bi-file-excel"></i> Exportar Excel
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="geocodificarPosiciones()" id="btn-geocodificar" disabled>
+                        <i class="bi bi-geo-alt"></i> Geocodificar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Panel de filtros lateral -->
+            <div class="col-md-4" id="filtros-panel">
+                <div class="card">
+                    <div class="card-header filtros-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-funnel me-2"></i>
+                            Filtros de Recorrido
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button type="submit" form="filtros-form" class="btn btn-primary btn-sm">
+                                <i class="bi bi-search me-1"></i>
+                                Buscar
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" type="button" id="toggle-filtros">
+                                <i class="bi bi-chevron-left" id="filtros-toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body" id="filtros-content">
+                        <form id="filtros-form">
+                            <!-- Selección de móvil -->
+                            <div class="mb-3">
+                                <label for="movil-select" class="form-label">Móvil</label>
+                                <select class="form-select" id="movil-select" name="movil-select" required>
+                                    <option value="">Seleccionar móvil...</option>
+                                </select>
+                            </div>
+
+                            <!-- Rango de fechas -->
+                            <div class="mb-3">
+                                <label for="fecha-desde" class="form-label">Fecha Desde</label>
+                                <input type="datetime-local" class="form-control" id="fecha-desde" name="fecha-desde" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="fecha-hasta" class="form-label">Fecha Hasta</label>
+                                <input type="datetime-local" class="form-control" id="fecha-hasta" name="fecha-hasta" required>
+                            </div>
+
+                            <!-- Filtros de velocidad -->
+                            <div class="mb-3">
+                                <label class="form-label">Velocidad (km/h)</label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" id="velocidad-min" placeholder="Mín" min="0">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" id="velocidad-max" placeholder="Máx" min="0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filtros de estado -->
+                            <div class="mb-3">
+                                <label class="form-label">Estado del Vehículo</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="solo-detenciones">
+                                    <label class="form-check-label" for="solo-detenciones">
+                                        Solo Detenciones (≤ 5 km/h)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="solo-movimiento">
+                                    <label class="form-check-label" for="solo-movimiento">
+                                        Solo Movimiento (> 5 km/h)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ignicion-encendida">
+                                    <label class="form-check-label" for="ignicion-encendida">
+                                        Solo con Encendido
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Botón de limpiar -->
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltros()">
+                                    <i class="bi bi-arrow-clockwise me-2"></i>
+                                    Limpiar Filtros
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Panel de estadísticas -->
+                <div class="card mt-3" id="estadisticas-panel" style="display: none;">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Estadísticas del Recorrido
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="estadisticas-content">
+                            <!-- Las estadísticas se cargarán dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón flotante para mostrar filtros -->
+            <button class="btn btn-primary btn-filtros-flotante" id="btn-mostrar-filtros" title="Mostrar filtros">
+                <i class="bi bi-funnel"></i>
+            </button>
+
+            <!-- Panel principal -->
+            <div class="col-md-8" id="contenido-principal">
+                <!-- Vista de Listado -->
+                <div id="recorridos-list-view" class="recorridos-list-view">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>
+                                    Listado de Posiciones GPS
+                                </h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted">Total: <span id="total-posiciones">0</span> posiciones</small>
+                                    <button class="btn btn-outline-primary btn-sm btn-zona-recorrido" title="Crear zona del recorrido (polilínea)">
+                                        <i class="bi bi-bullseye me-1"></i>
+                                        Zona del recorrido
+                                    </button>
+                                    <button class="btn btn-success btn-sm" id="btn-compartir-whatsapp" title="Compartir en WhatsApp">
+                                        <i class="bi bi-whatsapp me-1"></i>
+                                        Compartir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="timeline-scroll border-bottom">
+                                <input type="range" class="form-range timeline-range" id="timeline-range" min="1" max="1" value="1" step="1" disabled>
+                                <div class="d-flex justify-content-between text-muted small timeline-markers">
+                                    <span id="timeline-start-label">Inicio</span>
+                                    <span id="timeline-middle-label">Mitad</span>
+                                    <span id="timeline-end-label">Fin</span>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Fecha/Hora</th>
+                                            <th>Coordenadas</th>
+                                            <th>Dirección</th>
+                                            <th>Velocidad</th>
+                                            <th>Rumbo</th>
+                                            <th>Estado</th>
+                                            <th>Satélites</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="posiciones-table-body">
+                                        <tr>
+                                            <td colspan="9" class="text-center text-muted py-4">
+                                                <i class="bi bi-search me-2"></i>
+                                                Seleccione un móvil y rango de fechas para ver las posiciones
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista de Mapa -->
+                <div id="recorridos-map-view" class="recorridos-map-view" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-map me-2"></i>
+                                    Visualización del Recorrido
+                                </h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary" id="posiciones-count-mapa">0 posiciones</span>
+                                    <button class="btn btn-outline-primary btn-sm btn-zona-recorrido" title="Crear zona del recorrido (polilínea)">
+                                        <i class="bi bi-bullseye me-1"></i>
+                                        Zona del recorrido
+                                    </button>
+                                    <button class="btn btn-success btn-sm" id="btn-compartir-whatsapp-mapa" title="Compartir en WhatsApp">
+                                        <i class="bi bi-whatsapp me-1"></i>
+                                        Compartir
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="btn-group mt-2" role="group">
+                                <input type="radio" class="btn-check" name="mapa-tipo" id="mapa-openstreet" value="openstreet" checked>
+                                <label class="btn btn-outline-primary btn-sm" for="mapa-openstreet">
+                                    <i class="bi bi-geo-alt"></i> Calles
+                                </label>
+                                    
+                                    <input type="radio" class="btn-check" name="mapa-tipo" id="mapa-satelite" value="satelite">
+                                    <label class="btn btn-outline-primary btn-sm" for="mapa-satelite">
+                                        <i class="bi bi-satellite"></i> Satélite
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="mapa-tipo" id="mapa-hibrido" value="hibrido">
+                                    <label class="btn btn-outline-primary btn-sm" for="mapa-hibrido">
+                                        <i class="bi bi-layers"></i> Híbrido
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Controles de reproducción -->
+                            <div class="playback-controls p-3 border-bottom">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center">
+                                            <button class="btn btn-success btn-sm me-2" id="btn-play" onclick="togglePlayback()">
+                                                <i class="bi bi-play-fill"></i>
+                                            </button>
+                                            <button class="btn btn-warning btn-sm me-2" id="btn-pause" onclick="togglePlayback()" style="display: none;">
+                                                <i class="bi bi-pause-fill"></i>
+                                            </button>
+                                            <button class="btn btn-secondary btn-sm me-2" onclick="stopPlayback()">
+                                                <i class="bi bi-stop-fill"></i>
+                                            </button>
+                                            <span class="me-3" id="tiempo-actual">00:00</span>
+                                            <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                                <div class="progress-bar" id="progress-bar" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                            <span id="tiempo-total">00:00</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <label class="form-label me-2 mb-0">Velocidad:</label>
+                                            <select class="form-select form-select-sm" id="velocidad-reproduccion" onchange="cambiarVelocidadReproduccion()">
+                                                <option value="0.25">0.25x</option>
+                                                <option value="0.5">0.5x</option>
+                                                <option value="1" selected>1x</option>
+                                                <option value="2">2x</option>
+                                                <option value="4">4x</option>
+                                                <option value="8">8x</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mapa -->
+                            <div id="map" style="height: 500px;"></div>
+
+                            <!-- Leyenda de velocidades -->
+                            <div class="speed-legend p-3 border-top">
+                                <h6 class="mb-2">
+                                    <i class="bi bi-speedometer2 me-2"></i>
+                                    Leyenda de Velocidades
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="speed-indicator detenido me-2"></div>
+                                            <small>0 km/h - Detenido</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="speed-indicator muy-lento me-2"></div>
+                                            <small>1-9 km/h - Muy lento</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="speed-indicator lento me-2"></div>
+                                            <small>10-29 km/h - Lento</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="speed-indicator moderado me-2"></div>
+                                            <small>30-49 km/h - Moderado</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="speed-indicator rapido me-2"></div>
+                                            <small>50-79 km/h - Rápido</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <div class="speed-indicator muy-rapido me-2"></div>
+                                            <small>80+ km/h - Muy rápido</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+        <!-- Modal para crear zona desde posición de recorrido -->
+        <div class="modal fade" id="modalZonaDesdePosicion" tabindex="-1" aria-labelledby="modalZonaDesdePosicionLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalZonaDesdePosicionLabel">Crear zona desde posición</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form id="formZonaDesdePosicion">
+                        <div class="modal-body">
+                            <input type="hidden" id="zonaPosicionLat">
+                            <input type="hidden" id="zonaPosicionLon">
+                            <div class="mb-3">
+                                <label for="zonaPosicionNombre" class="form-label">Nombre de la zona</label>
+                                <input type="text" class="form-control" id="zonaPosicionNombre" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="zonaPosicionDescripcion" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="zonaPosicionDescripcion" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label d-block">Tipo de zona</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="zonaPosicionTipo" id="zonaPosicionTipoPunto" value="punto" checked>
+                                    <label class="form-check-label" for="zonaPosicionTipoPunto">Punto</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="zonaPosicionTipo" id="zonaPosicionTipoCirculo" value="circulo">
+                                    <label class="form-check-label" for="zonaPosicionTipoCirculo">Círculo</label>
+                                </div>
+                            </div>
+                            <div class="mb-3" id="zonaPosicionRadioGroup" style="display: none;">
+                                <label for="zonaPosicionRadio" class="form-label">Radio (metros)</label>
+                                <input type="number" class="form-control" id="zonaPosicionRadio" value="100" min="10" step="10">
+                                <small class="text-muted">Se usará como radio si el tipo es Círculo.</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Guardar zona
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para crear zona del recorrido (polilínea) -->
+        <div class="modal fade" id="modalZonaRecorrido" tabindex="-1" aria-labelledby="modalZonaRecorridoLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalZonaRecorridoLabel">Crear zona del recorrido</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form id="formZonaRecorrido">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="zonaRecorridoNombre" class="form-label">Nombre de la zona</label>
+                                <input type="text" class="form-control" id="zonaRecorridoNombre" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="zonaRecorridoDescripcion" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="zonaRecorridoDescripcion" rows="2"></textarea>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark">Tipo: polilínea</span>
+                            </div>
+                            <small class="text-muted">
+                                Se generará una zona de tipo polilínea usando todas las posiciones del recorrido cargado.
+                            </small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-1"></i> Guardar zona
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+                    </div>
+                </div>
+                
+                <!-- Controles de paginación -->
+                <div id="pagination-container" class="mt-4">
+                    <!-- La paginación se generará dinámicamente aquí -->
+                </div>
+                </div> <!-- container-fluid -->
+            </div> <!-- app-content -->
+        </div> <!-- main-area -->
+    </div> <!-- app-wrapper -->
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando recorrido...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page=\"${currentPage}\"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        });
+    </script>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/recorridos.js"></script>
+</body>
+</html>

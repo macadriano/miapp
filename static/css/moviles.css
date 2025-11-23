@@ -1,0 +1,137 @@
+/* Estilos específicos para el módulo de Móviles */
+
+/* Layout SOLO para escritorio.
+   En móviles, el layout base (app-wrapper, sidebar, main-area, etc.)
+   lo maneja global.css para que todas las interfaces se comporten igual. */
+@media (min-width: 992px) {
+    .app-wrapper {
+        display: flex;
+        min-height: 100vh;
+        background: #f5f6fa;
+    }
+
+    .sidebar {
+        min-height: 100vh;
+        width: 240px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar .position-sticky {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        flex: 1;
+        background-color: #f5f9ff;
+        padding: 1.75rem 2.5rem 2.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.status-online {
+    color: #28a745;
+}
+
+.status-offline {
+    color: #dc3545;
+}
+
+.status-ignition-on {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-ignition-off {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.map-container {
+    height: 400px;
+    border-radius: 0.375rem;
+}
+
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.loading {
+    display: none;
+}
+
+.vehicle-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.filter-section {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Estilos para marcadores con etiquetas */
+.custom-marker-with-label {
+    background: none !important;
+    border: none !important;
+}
+
+.custom-marker-with-label div {
+    pointer-events: none;
+}
+
+/* Evitar que las etiquetas se seleccionen */
+.custom-marker-with-label * {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Estilos para campos obligatorios */
+.form-label .text-danger {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-left: 3px;
+}
+
+/* Estilos para menú móvil (ajustes específicos de filtros/botones).
+   El layout y comportamiento base del sidebar en móviles ahora lo maneja
+   global.css para unificar todas las interfaces, por eso NO lo sobreescribimos
+   aquí para evitar que tape el contenido en pantallas chicas. */
+@media (max-width: 767.98px) {
+    /* Ajustar filtros en móviles */
+    .filter-section .col-md-3,
+    .filter-section .col-md-2 {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Ajustar botones en móviles */
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+}
+

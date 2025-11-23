@@ -1,0 +1,4 @@
+"""
+Migrations for zonas app.
+"""
+

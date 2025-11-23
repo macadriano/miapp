@@ -1,0 +1,2643 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofia - Asistente IA WayGPS</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Font Awesome para los iconos de WhatsApp -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --whatsapp-green: #25d366;
+            --whatsapp-dark-green: #128c7e;
+            --whatsapp-light-green: #dcf8c6;
+            --whatsapp-header: #075e54;
+            --whatsapp-chat-bg: #e5ddd5;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .chat-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        /* Header tipo WhatsApp */
+        .chat-header {
+            background: var(--whatsapp-header);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .chat-header-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: nowrap;
+        }
+
+        .chat-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: nowrap;
+            position: relative;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .chat-header-actions::-webkit-scrollbar {
+            display: none;
+        }
+
+        .voice-mode-toggle,
+        .settings-button,
+        .audio-toggle,
+        .home-button,
+        .selection-mode-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: background 0.2s ease, border 0.2s ease;
+        }
+        
+        .selection-mode-toggle.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .voice-mode-toggle i,
+        .settings-button i,
+        .audio-toggle i,
+        .home-button i {
+            font-size: 1.15rem;
+        }
+
+        .voice-select-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 220px;
+        }
+
+        .voice-select-wrapper label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .voice-select-wrapper select {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 8px;
+            padding: 6px 30px 6px 10px;
+            font-size: 0.9rem;
+        }
+
+        .voice-select-wrapper select option {
+            color: #111;
+        }
+
+        .settings-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .audio-toggle span {
+            margin-left: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .home-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: background 0.2s ease, border 0.2s ease;
+        }
+
+        .voice-mode-toggle:hover,
+        .settings-button:hover,
+        .audio-toggle:hover,
+        .home-button:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .settings-panel {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            background: rgba(12, 12, 20, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(6px);
+            min-width: 260px;
+            display: none;
+            z-index: 20;
+        }
+
+        .settings-panel.visible {
+            display: block;
+        }
+
+        .settings-panel h6 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 10px;
+        }
+
+        
+        .avatar-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+        
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            border: 3px solid white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: visible;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.18s ease;
+            border-radius: 50%;
+        }
+
+        .avatar-static {
+            opacity: 1;
+            z-index: 1;
+        }
+
+        .avatar-speaking {
+            opacity: 0;
+            z-index: 2;
+        }
+
+        .avatar.speaking .avatar-static {
+            opacity: 0;
+        }
+
+        .avatar.speaking .avatar-speaking {
+            opacity: 1;
+        }
+
+        .avatar::before,
+        .avatar::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .avatar::before {
+            inset: -8px;
+            border: 2px solid transparent;
+            transition: border-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .avatar::after {
+            width: 10px;
+            height: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .avatar.processing::before,
+        .avatar.processing::after,
+        .avatar.speaking::before,
+        .avatar.speaking::after {
+            opacity: 1;
+        }
+
+        .avatar.processing::before {
+            border-color: rgba(255, 204, 51, 0.55);
+        }
+
+        .avatar.speaking::before {
+            border-color: rgba(61, 220, 132, 0.55);
+        }
+
+        .avatar.processing::after {
+            background: #ffcc33;
+            animation: orbit 1.2s linear infinite;
+        }
+
+        .avatar.speaking::after {
+            background: #3ddc84;
+            animation: orbit 0.9s linear infinite;
+        }
+
+        @keyframes orbit {
+            from { transform: translate(-50%, -50%) rotate(0deg) translateY(-34px); }
+            to   { transform: translate(-50%, -50%) rotate(360deg) translateY(-34px); }
+        }
+        
+        .status-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            background: var(--whatsapp-green);
+            border: 3px solid white;
+            border-radius: 50%;
+        }
+        
+        /* Modo de voz activo */
+        .voice-mode-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(103, 126, 234, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(103, 126, 234, 0);
+            }
+        }
+        
+        /* Indicador de modo de voz (globo flotante) */
+        .voice-mode-indicator {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            cursor: pointer;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .voice-mode-indicator.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .voice-mode-indicator i {
+            font-size: 40px;
+            color: white;
+            animation: mic-pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        @keyframes mic-pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        /* Overlay cuando está escuchando */
+        .voice-listening-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(103, 126, 234, 0.1);
+            z-index: 999;
+            pointer-events: none;
+        }
+        
+        .voice-listening-overlay.active {
+            display: block;
+        }
+        
+        .btn-link:hover {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        .btn-link.voice-mode-on {
+            color: #ffd700 !important;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #ffd700;
+            }
+            to {
+                text-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700;
+            }
+        }
+        
+        /* Botones de acción del mensaje */
+        .message-action-buttons {
+            position: absolute;
+            right: 35px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .message-maps-btn,
+        .message-whatsapp-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 0;
+        }
+        
+        .message-maps-btn:hover,
+        .message-whatsapp-btn:hover {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transform: scale(1.1);
+        }
+        
+        .message-maps-btn i {
+            color: #4285f4;
+            font-size: 14px;
+        }
+        
+        .message-whatsapp-btn i {
+            color: #25d366;
+            font-size: 14px;
+        }
+        
+        .chat-info {
+            flex: 1;
+            margin-left: 15px;
+        }
+        
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .chat-subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+            margin: 5px 0 0 0;
+        }
+        
+        /* Área de mensajes */
+        .messages-container {
+            height: calc(100vh - 250px);
+            min-height: 400px;
+            background: var(--whatsapp-chat-bg);
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,.03) 10px, rgba(0,0,0,.03) 20px);
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px; /* Espacio para la barra de acciones */
+            transition: padding-bottom 0.3s ease;
+        }
+        
+        .messages-container.selection-mode {
+            padding-bottom: 140px; /* Más espacio cuando está activa la barra */
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+            position: relative;
+            cursor: default;
+        }
+        
+        .message.selection-mode {
+            cursor: pointer;
+        }
+        
+        .message.selected {
+            background: rgba(37, 211, 102, 0.1);
+            border-radius: 8px;
+            padding: 4px;
+            margin: -4px;
+        }
+        
+        .message-checkbox {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #25d366;
+            border-radius: 50%;
+            background: white;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+        
+        .selection-mode .message-checkbox {
+            display: flex;
+        }
+        
+        .message.selected .message-checkbox {
+            background: #25d366;
+        }
+        
+        .message-checkbox i {
+            color: white;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .message.selected .message-checkbox i {
+            display: block;
+        }
+        
+        .selection-mode .message-bubble {
+            margin-left: 32px;
+        }
+        
+        .selection-mode .message.sent .message-bubble {
+            margin-left: 0;
+            margin-right: 32px;
+        }
+        
+        .selection-mode .message-audio-btn,
+        .selection-mode .message-action-buttons {
+            display: none;
+        }
+        
+        /* Barra de acciones de selección */
+        .selection-actions-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            gap: 12px;
+        }
+        
+        .selection-actions-bar.active {
+            display: flex;
+        }
+        
+        .selection-count {
+            flex: 1;
+            font-weight: 600;
+            color: #303030;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .selection-action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .selection-action-btn.primary {
+            background: #25d366;
+            color: white;
+        }
+        
+        .selection-action-btn.primary:hover {
+            background: #20ba5a;
+        }
+        
+        .selection-action-btn.secondary {
+            background: #f0f0f0;
+            color: #303030;
+        }
+        
+        .selection-action-btn.secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .selection-action-btn.danger {
+            background: #f0f0f0;
+            color: #303030;
+        }
+        
+        .selection-action-btn.danger:hover {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .selection-action-btn i {
+            font-size: 16px;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.sent {
+            justify-content: flex-end;
+        }
+        
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .message.received .message-bubble {
+            background: white;
+            color: #303030;
+        }
+        
+        .message.sent .message-bubble {
+            background: var(--whatsapp-light-green);
+            color: #303030;
+        }
+        
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+        
+        .message-audio-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+            z-index: 1;
+        }
+        
+        .message-bubble:hover .message-audio-btn {
+            opacity: 1;
+        }
+        
+        .message-audio-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: scale(1.1);
+        }
+        
+        .message-audio-btn.playing {
+            opacity: 1;
+            animation: pulse-audio 1s infinite;
+        }
+        
+        .message-audio-btn.playing i {
+            font-size: 12px !important;
+        }
+        
+        @keyframes pulse-audio {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+        }
+        
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            margin: 0 8px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* Input area */
+        .input-container {
+            padding: 15px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .message-input {
+            width: 100%;
+            padding: 12px 50px 12px 15px;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            resize: none;
+            max-height: 120px;
+        }
+        
+        .voice-button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--whatsapp-green);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .voice-button:hover {
+            background: var(--whatsapp-dark-green);
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .voice-button.recording {
+            background: #dc3545;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: translateY(-50%) scale(1);
+            }
+            50% {
+                transform: translateY(-50%) scale(1.1);
+            }
+        }
+        
+        .send-button {
+            background: var(--whatsapp-green);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+        
+        .send-button:hover {
+            background: var(--whatsapp-dark-green);
+            transform: scale(1.1);
+        }
+        
+        .send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* Indicador de escritura */
+        .typing-indicator {
+            display: none;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .typing-indicator.active {
+            display: block;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            margin-right: 5px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        /* Mensaje de bienvenida */
+        .welcome-message {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        
+        .welcome-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .recording-animation {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #dc3545;
+        }
+        
+        .recording-animation.active {
+            display: block;
+        }
+        
+        .recording-wave {
+            display: inline-block;
+            width: 8px;
+            height: 30px;
+            background: #dc3545;
+            margin: 0 2px;
+            border-radius: 4px;
+            animation: wave 1s infinite;
+        }
+        
+        .recording-wave:nth-child(2) { animation-delay: 0.1s; }
+        .recording-wave:nth-child(3) { animation-delay: 0.2s; }
+        .recording-wave:nth-child(4) { animation-delay: 0.3s; }
+        .recording-wave:nth-child(5) { animation-delay: 0.4s; }
+        
+        @keyframes wave {
+            0%, 100% {
+                transform: scaleY(0.5);
+            }
+            50% {
+                transform: scaleY(1);
+            }
+        }
+
+        .voice-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.4rem 0.8rem;
+            border-radius: 999px;
+        }
+
+        .voice-select-wrapper label {
+            font-size: 0.9rem;
+            color: #f0e9ff;
+            font-weight: 500;
+        }
+
+        #voiceSelect {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 500;
+            outline: none;
+            appearance: none;
+        }
+
+        #voiceSelect option {
+            color: #333333;
+        }
+
+        .recording-status {
+            position: absolute;
+            right: 55px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 8px 12px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .recording-status.active {
+            display: flex;
+        }
+
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #ff4d4f;
+        }
+
+        .recording-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4d4f;
+            animation: blink 1.2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .recording-bars {
+            display: flex;
+            gap: 2px;
+        }
+
+        .recording-bars span {
+            width: 2px;
+            height: 10px;
+            background: #ff4d4f;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .recording-bars span:nth-child(2) { animation-delay: 0.2s; }
+        .recording-bars span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 6px; opacity: 0.4; }
+            50% { height: 14px; opacity: 1; }
+        }
+
+        .recording-status-text {
+            font-size: 0.85rem;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .cancel-voice-button {
+            background: none;
+            border: none;
+            color: #ff4d4f;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .input-wrapper.recording .message-input {
+            padding-right: 150px;
+        }
+
+        @media (max-width: 992px) {
+            .chat-header {
+                flex-wrap: wrap;
+            }
+            .chat-header-actions {
+                justify-content: flex-end;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .chat-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+                padding: 16px 18px;
+            }
+            .chat-header-section {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .chat-header-actions {
+                width: 100%;
+                justify-content: flex-start;
+                gap: 12px;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 6px;
+            }
+            .voice-mode-toggle,
+            .audio-toggle,
+            .settings-button,
+            .home-button {
+                flex: 0 0 auto;
+                padding: 10px 12px;
+            }
+            .voice-mode-toggle i,
+            .audio-toggle i,
+            .settings-button i,
+            .home-button i {
+                font-size: 1.25rem;
+            }
+            .settings-wrapper {
+                width: auto;
+            }
+            .audio-toggle span {
+                display: none;
+            }
+            .settings-panel {
+                width: min(320px, calc(100vw - 24px));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-header-actions {
+                gap: 10px;
+            }
+            .voice-mode-toggle,
+            .audio-toggle,
+            .settings-button,
+            .home-button {
+                flex: 0 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="chat-header-section">
+                <div class="avatar-container">
+                    <div class="avatar">
+                        <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia Avatar" class="avatar-static">
+                        <img src="{% static 'avatarSOFIA-speaking.gif' %}" alt="Sofia Avatar animado" class="avatar-speaking">
+                    </div>
+                    <div class="status-indicator"></div>
+                </div>
+                <div class="chat-info">
+                    <h5 class="chat-title">Sofia - Asistente IA</h5>
+                    <p class="chat-subtitle">Tu asistente de GPS siempre disponible</p>
+                </div>
+            </div>
+            <div class="chat-header-actions">
+                <button class="btn btn-link text-white selection-mode-toggle" id="selectionModeButton" title="Seleccionar mensajes" type="button" aria-label="Activar modo selección">
+                    <i class="bi bi-check-square"></i>
+                </button>
+                <button class="btn btn-link text-white voice-mode-toggle" id="voiceModeButton" title="Modo de voz" type="button" aria-label="Alternar modo de voz">
+                    <i class="bi bi-headphones"></i>
+                </button>
+                <button class="btn btn-link text-white audio-toggle" id="audioToggleButton" title="Desactivar audio de respuestas" type="button" aria-label="Mutear respuestas de voz">
+                    <i class="bi bi-volume-up"></i>
+                    <span class="d-none d-md-inline">Voz</span>
+                </button>
+                <div class="settings-wrapper">
+                    <button class="btn btn-link text-white settings-button" id="settingsButton" title="Configuración" type="button" aria-label="Abrir configuraciones">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                    <div class="settings-panel" id="settingsPanel">
+                        <h6>Configuración</h6>
+                        <div class="voice-select-wrapper">
+                            <label for="voiceSelect">Voz de Sofia</label>
+                            <select id="voiceSelect" title="Seleccioná la voz de Sofia">
+                                <option value="">Automática</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-link text-white home-button" type="button" title="Ir al inicio" aria-label="Ir al inicio" onclick="window.location.href='/'">
+                    <i class="bi bi-house-door"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Overlay de modo de voz -->
+        <div class="voice-listening-overlay" id="voiceListeningOverlay"></div>
+        
+        <!-- Globo flotante de modo de voz -->
+        <div class="voice-mode-indicator" id="voiceModeIndicator" title="Modo de voz activo - Clic para desactivar">
+            <i class="bi bi-headphones"></i>
+        </div>
+        
+        <!-- Barra de acciones de selección -->
+        <div class="selection-actions-bar" id="selectionActionsBar">
+            <div class="selection-count" id="selectionCount">0 mensajes seleccionados</div>
+            <div class="selection-actions">
+                <button class="selection-action-btn secondary" id="selectAllButton" title="Seleccionar todos">
+                    <i class="bi bi-check-all"></i>
+                    <span class="d-none d-sm-inline">Todos</span>
+                </button>
+                <button class="selection-action-btn secondary" id="copySelectedButton" title="Copiar mensajes">
+                    <i class="bi bi-copy"></i>
+                    <span class="d-none d-sm-inline">Copiar</span>
+                </button>
+                <button class="selection-action-btn primary" id="forwardSelectedButton" title="Reenviar por WhatsApp">
+                    <i class="bi bi-whatsapp"></i>
+                    <span class="d-none d-sm-inline">Reenviar</span>
+                </button>
+                <button class="selection-action-btn danger" id="cancelSelectionButton" title="Cancelar selección">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Área de mensajes -->
+        <div class="messages-container" id="messagesContainer">
+            <div class="welcome-message">
+                <div class="welcome-icon">🤖</div>
+                <h4>¡Hola! Soy Sofia</h4>
+                <p>Tu asistente inteligente de GPS. Puedo ayudarte a:</p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>Conocer la ubicación actual de tus vehículos</li>
+                    <li>Ver historiales de recorridos</li>
+                    <li>Estimar tiempos de llegada</li>
+                    <li>Y mucho más...</li>
+                </ul>
+                <p><strong>Háblame o escríbeme para comenzar</strong></p>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </div>
+        </div>
+        
+        <!-- Animación de grabación -->
+        
+        <!-- Input -->
+        <div class="input-container">
+            <div class="input-wrapper" id="inputWrapper">
+                <textarea 
+                    id="messageInput" 
+                    class="message-input" 
+                    placeholder="Escribe un mensaje o presiona el micrófono..."
+                    rows="1"
+                ></textarea>
+                <div class="recording-status" id="recordingStatus">
+                    <div class="recording-indicator">
+                        <div class="recording-dot"></div>
+                        <div class="recording-bars">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <span class="recording-status-text" id="recordingStatusText">Escuchando...</span>
+                    <button id="cancelVoiceButton" class="cancel-voice-button" title="Cancelar grabación">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <button id="voiceButton" class="voice-button" title="Grabar audio">
+                    <i class="bi bi-mic-fill"></i>
+                </button>
+            </div>
+            <button id="sendButton" class="send-button" title="Enviar mensaje">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Funcionalidad del chat
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const voiceButton = document.getElementById('voiceButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const voiceModeButton = document.getElementById('voiceModeButton');
+        const audioToggleButton = document.getElementById('audioToggleButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const voiceModeIndicator = document.getElementById('voiceModeIndicator');
+        const voiceListeningOverlay = document.getElementById('voiceListeningOverlay');
+        const cancelVoiceButton = document.getElementById('cancelVoiceButton');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const recordingStatusText = document.getElementById('recordingStatusText');
+        const inputWrapper = document.getElementById('inputWrapper');
+        const avatarElement = document.querySelector('.avatar');
+        let isAudioMuted = localStorage.getItem('sofiaAudioMuted') === 'true';
+        
+        // URL del avatar de Sofia
+        const sofiaAvatarUrl = "{% static 'avatarSOFIA.jpeg' %}";
+        
+        let recognition;  // Para botón normal de voz
+        let voiceRecognition;  // Para modo de voz continuo
+        let voiceModeActive = false;
+        let isManualRecording = false;
+        let settingsPanelVisible = false;
+        let isProcessing = false;  // Flag para saber si se está procesando una consulta
+        let selectionMode = false;  // Modo de selección de mensajes
+        let selectedMessages = new Set();  // IDs de mensajes seleccionados
+        let longPressTimer = null;  // Timer para long press
+        let longPressDelay = 500;  // Delay en ms para long press
+        
+        function setSofiaSpeaking(active) {
+            if (!avatarElement) return;
+            if (active && !isAudioMuted) {
+                avatarElement.classList.add('speaking');
+                avatarElement.classList.remove('processing');
+            } else {
+                avatarElement.classList.remove('speaking');
+            }
+        }
+
+        function setSofiaProcessing(active) {
+            isProcessing = active;
+            if (!avatarElement) return;
+            if (active) {
+                avatarElement.classList.add('processing');
+            } else {
+                avatarElement.classList.remove('processing');
+            }
+        }
+        
+        // Memoria de Sofia: recordar último móvil consultado
+        let ultimoMovilConsultado = null;
+        
+        // Función para extraer el móvil de un texto
+        function extraerMovil(texto) {
+            // Palabras comunes que seguida de números NO son patentes
+            const palabrasComunes = ['HACE', 'HAY', 'TIENE', 'SON', 'DIEZ', 'DIECI', 'TREINTA', 'CIEN', 'VER', 'HABIA'];
+            
+            // Buscar patrón de patente: letras + números (ej: OVV799, ASN773, ASN 773, etc.)
+            // IMPORTANTE: Verificar que NO sea una palabra común
+            const patron = /\b([A-Z]{2,4})\s*(\d{2,4})\b/i;
+            
+            // Buscar TODOS los matches (no solo el primero)
+            let match;
+            while ((match = patron.exec(texto)) !== null) {
+                const letras = match[1].toUpperCase();
+                const numeros = match[2];
+                const posiblePatente = letras + numeros;
+                
+                // Verificar que NO sea una palabra común seguida de números
+                const esComun = palabrasComunes.some(palabra => {
+                    return letras === palabra || letras.includes(palabra);
+                });
+                
+                // Solo aceptar si NO es común y tiene longitud razonable
+                if (!esComun && posiblePatente.length >= 5) {
+                    console.log(`✅ Móvil encontrado: ${posiblePatente}`);
+                    return posiblePatente;
+                } else {
+                    console.log(`⚠️ Ignorado (palabra común): ${posiblePatente}`);
+                }
+            }
+            
+            return null;
+        }
+        
+        // Función para verificar si la consulta necesita un móvil
+        function necesitaMovil(texto) {
+            const textoLower = texto.toLowerCase();
+            // Consultas que requieren un móvil específico
+            const consultasMovil = [
+                'donde está', 'donde esta', 'donde esté', 'donde este',
+                'donde estuvo', 'donde estaba', 'donde estaba',
+                'ubicación', 'ubicacion', 'posicion', 'posición',
+                'recorrido', 'historial', 'ayer', 'hoy',
+                'llegará', 'llegara', 'llega', 'arribo', 'arribará', 'arribara',
+                'tiempo de llegada', 'eta', 'a qué hora', 'a que hora', 'cuando llegará', 'cuando llegara',
+                'hace', 'minutos', 'horas', 'dias', 'semanas', 'meses',  // Expresiones temporales
+                'la semana pasada', 'el mes pasado', 'hace una semana', 'hace un mes',
+                'cerca', 'cercano', 'cercanos', 'cuánto está', 'cuanto está', 'cuánto demora', 'cuanto demora',
+                'a qué distancia', 'a que distancia'
+            ];
+            // Verificar si es un número seguido de una unidad de tiempo (típico de consultas históricas)
+            const tienePeriodoTemporal = /\d+\s*(minuto|hora|día|semana|mes)/i.test(texto);
+            
+            return consultasMovil.some(consulta => textoLower.includes(consulta)) || tienePeriodoTemporal;
+        }
+        
+        // Función para activar/desactivar modo de voz
+        function toggleVoiceMode() {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                alert('El reconocimiento de voz no está disponible en este navegador');
+                return;
+            }
+            
+            voiceModeActive = !voiceModeActive;
+            
+            if (voiceModeActive) {
+                // Activar modo de voz
+                startVoiceMode();
+                voiceModeButton.classList.add('voice-mode-on');
+                voiceModeButton.innerHTML = '<i class="bi bi-headphones" style="filter: drop-shadow(0 0 5px #ffd700);"></i>';
+                voiceModeIndicator.classList.add('active');
+                console.log('🎤 Modo de voz ACTIVADO');
+            } else {
+                // Desactivar modo de voz
+                stopVoiceMode();
+                voiceModeButton.classList.remove('voice-mode-on');
+                voiceModeButton.innerHTML = '<i class="bi bi-headphones"></i>';
+                voiceModeIndicator.classList.remove('active');
+                console.log('🔇 Modo de voz DESACTIVADO');
+            }
+        }
+        
+        // Función para iniciar modo de voz continuo
+        function startVoiceMode() {
+            if (!voiceRecognition) {
+                voiceRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                voiceRecognition.lang = 'es-AR';
+                voiceRecognition.continuous = true;
+                voiceRecognition.interimResults = false;
+                
+                voiceRecognition.onresult = (event) => {
+                    const transcript = event.results[event.results.length - 1][0].transcript;
+                    console.log('🗣️ STT:', transcript);
+                    
+                    // Agregar mensaje del usuario
+                    addMessage(transcript, 'sent');
+                    
+                    // Procesar consulta
+                    processVoiceQuery(transcript);
+                };
+                
+                voiceRecognition.onerror = (event) => {
+                    console.error('Error en reconocimiento de voz:', event.error);
+                    if (event.error === 'no-speech') {
+                        // Si no hay habla por un tiempo, reiniciar
+                        console.log('No se detectó habla, reiniciando...');
+                        if (voiceModeActive && voiceRecognition) {
+                            voiceRecognition.stop();
+                            setTimeout(() => {
+                                if (voiceModeActive) voiceRecognition.start();
+                            }, 500);
+                        }
+                    } else if (event.error === 'audio-capture') {
+                        alert('No se pudo acceder al micrófono. Verificá los permisos.');
+                        toggleVoiceMode(); // Desactivar modo de voz
+                    }
+                };
+                
+                voiceRecognition.onend = () => {
+                    console.log('Reconocimiento finalizado');
+                    // NO reiniciar automáticamente aquí si estamos procesando una consulta
+                    // El reinicio se manejará en processVoiceQuery después del audio
+                    // Solo reiniciar si no hay procesamiento activo
+                    if (voiceModeActive && voiceRecognition && !isProcessing) {
+                        console.log('Reiniciando reconocimiento...');
+                        setTimeout(() => {
+                            if (voiceModeActive && !isProcessing) {
+                                try {
+                                    voiceRecognition.start();
+                                } catch (e) {
+                                    console.warn('Error reiniciando reconocimiento en onend:', e);
+                                }
+                            }
+                        }, 500);
+                    }
+                };
+            }
+            
+            voiceRecognition.start();
+            voiceListeningOverlay.classList.add('active');
+        }
+        
+        // Función para detener modo de voz
+        function stopVoiceMode() {
+            if (voiceRecognition) {
+                voiceRecognition.stop();
+            }
+            voiceListeningOverlay.classList.remove('active');
+        }
+        
+        // Función para procesar consulta de voz
+        async function processVoiceQuery(message) {
+            // Detener temporalmente el reconocimiento de voz mientras se procesa
+            if (voiceRecognition && voiceModeActive) {
+                try {
+                    voiceRecognition.stop();
+                    console.log('⏸️ Reconocimiento de voz detenido temporalmente para procesar consulta');
+                } catch (e) {
+                    console.warn('No se pudo detener el reconocimiento:', e);
+                }
+            }
+            
+            // Mostrar indicador de escritura
+            showTyping();
+            setSofiaProcessing(true);
+            
+            // Detectar si hay un móvil en el mensaje
+            const movilEnMensaje = extraerMovil(message);
+            console.log('🔍 Móvil extraído del mensaje:', movilEnMensaje);
+            
+            // Si encontramos un móvil, actualizar memoria
+            if (movilEnMensaje) {
+                ultimoMovilConsultado = movilEnMensaje;
+                console.log('🧠 Sofia recordará el móvil:', ultimoMovilConsultado);
+            }
+            
+            // Si la consulta necesita un móvil y no especificamos uno
+            let mensajeEnviar = message;
+            const necesitaMovilFlag = necesitaMovil(message);
+            console.log('🔍 ¿Necesita móvil?', necesitaMovilFlag);
+            console.log('🔍 Móvil en memoria actual:', ultimoMovilConsultado);
+            
+            if (necesitaMovilFlag && !movilEnMensaje && ultimoMovilConsultado) {
+                // Usar el último móvil consultado
+                mensajeEnviar = `${ultimoMovilConsultado} ${message}`;
+                console.log('🧠 Usando móvil en memoria:', ultimoMovilConsultado);
+                console.log('📤 Mensaje modificado:', mensajeEnviar);
+            }
+            
+            try {
+                // Enviar consulta al servidor
+                const response = await fetch('/agenteIA/api/procesar-consulta/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mensaje: mensajeEnviar,
+                        modo: 'voz'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                hideTyping();
+                
+                if (data.success) {
+                    // Mostrar mensaje con botón de audio
+                    const textoAudio = data.respuesta_audio || data.respuesta;
+                    const googleMapsLink = data.google_maps_link || null;
+                    const whatsappData = data.whatsapp_data || null;
+                    const msgElement = addMessage(data.respuesta, 'received', textoAudio, googleMapsLink, whatsappData);
+                    
+                    if (data.usando_contexto && data.datos_consulta && data.datos_consulta.movil) {
+                        ultimoMovilConsultado = data.datos_consulta.movil;
+                    }
+                    
+                    // Reproducir respuesta en audio automáticamente
+                    if (!isAudioMuted && 'speechSynthesis' in window) {
+                        const button = msgElement ? msgElement.querySelector('.message-audio-btn') : null;
+                        const utterance = speak(textoAudio, button);
+                        
+                        // Reiniciar reconocimiento de voz después de que termine el audio
+                        if (utterance && voiceModeActive) {
+                            utterance.onend = () => {
+                                stopCurrentAudio(button);
+                                setSofiaSpeaking(false);
+                                // Reiniciar reconocimiento de voz después de un breve delay
+                                setTimeout(() => {
+                                    if (voiceModeActive && voiceRecognition) {
+                                        try {
+                                            console.log('🔄 Reiniciando reconocimiento de voz después del audio');
+                                            voiceRecognition.start();
+                                        } catch (e) {
+                                            console.warn('Error reiniciando reconocimiento:', e);
+                                            // Intentar de nuevo después de un delay más largo
+                                            setTimeout(() => {
+                                                if (voiceModeActive && voiceRecognition) {
+                                                    try {
+                                                        voiceRecognition.start();
+                                                    } catch (e2) {
+                                                        console.error('Error crítico reiniciando reconocimiento:', e2);
+                                                    }
+                                                }
+                                            }, 1000);
+                                        }
+                                    }
+                                }, 300);
+                            };
+                            
+                            utterance.onerror = () => {
+                                stopCurrentAudio(button);
+                                setSofiaSpeaking(false);
+                                // Reiniciar reconocimiento incluso si hay error en el audio
+                                setTimeout(() => {
+                                    if (voiceModeActive && voiceRecognition) {
+                                        try {
+                                            voiceRecognition.start();
+                                        } catch (e) {
+                                            console.warn('Error reiniciando reconocimiento después de error de audio:', e);
+                                        }
+                                    }
+                                }, 300);
+                            };
+                        }
+                    } else {
+                        // Si no hay audio, reiniciar reconocimiento inmediatamente
+                        setTimeout(() => {
+                            if (voiceModeActive && voiceRecognition) {
+                                try {
+                                    voiceRecognition.start();
+                                } catch (e) {
+                                    console.warn('Error reiniciando reconocimiento:', e);
+                                }
+                            }
+                        }, 300);
+                    }
+                } else {
+                    addMessage('Lo siento, ocurrió un error al procesar tu consulta.', 'received');
+                    // Reiniciar reconocimiento incluso si hay error
+                    setTimeout(() => {
+                        if (voiceModeActive && voiceRecognition) {
+                            try {
+                                voiceRecognition.start();
+                            } catch (e) {
+                                console.warn('Error reiniciando reconocimiento después de error:', e);
+                            }
+                        }
+                    }, 300);
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('Error enviando mensaje:', error);
+                addMessage('Error de conexión. Por favor intenta nuevamente.', 'received');
+                // Reiniciar reconocimiento incluso si hay error de conexión
+                setTimeout(() => {
+                    if (voiceModeActive && voiceRecognition) {
+                        try {
+                            voiceRecognition.start();
+                        } catch (e) {
+                            console.warn('Error reiniciando reconocimiento después de error de conexión:', e);
+                        }
+                    }
+                }, 300);
+            } finally {
+                setSofiaProcessing(false);
+            }
+        }
+        
+        // Función para compartir por WhatsApp
+        function compartirPorWhatsApp(whatsappData) {
+            const fechaActual = new Date().toLocaleString('es-AR');
+            const identificacion = whatsappData.alias || whatsappData.patente || 'Sin identificar';
+            const patente = whatsappData.patente || 'Sin patente';
+            const domicilio = whatsappData.direccion || 'Sin geocodificación';
+            const ultimaActualizacion = whatsappData.fecha_actualizacion || 'Sin datos';
+            
+            let mensaje = `*Seguimiento GPS* - ${fechaActual}\n`;
+            mensaje += `*Vehículo:* ${patente}${identificacion !== patente ? ` (${identificacion})` : ''}\n\n`;
+            mensaje += `*Ubicación Actual:*\n`;
+            mensaje += `• Dirección: ${domicilio}\n`;
+            if (whatsappData.lat && whatsappData.lon) {
+                mensaje += `• Coordenadas: ${whatsappData.lat}, ${whatsappData.lon}\n`;
+            }
+            mensaje += `• Hora: ${ultimaActualizacion}\n\n`;
+            
+            // Agregar enlace de Google Maps si hay coordenadas
+            if (whatsappData.lat && whatsappData.lon) {
+                mensaje += `Ver en Google Maps:\n`;
+                mensaje += `https://www.google.com/maps?q=${whatsappData.lat},${whatsappData.lon}\n\n`;
+            }
+            
+            mensaje += `📱 Información compartida desde WayGPS`;
+            
+            // Abrir WhatsApp
+            const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+            window.open(urlWhatsApp, '_blank');
+        }
+        
+        // Inicializar reconocimiento de voz (para el botón normal)
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            // Crear instancia temporal para el botón normal
+            let tempRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            tempRecognition.lang = 'es-AR';
+            tempRecognition.continuous = false;
+            tempRecognition.interimResults = false;
+            
+            tempRecognition.onstart = () => {
+                voiceButton.classList.add('recording');
+                if (inputWrapper) inputWrapper.classList.add('recording');
+                if (recordingStatus) recordingStatus.classList.add('active');
+                if (recordingStatusText) recordingStatusText.textContent = 'Escuchando...';
+                messageInput.setAttribute('disabled', 'disabled');
+                messageInput.blur();
+                isManualRecording = true;
+                console.log('Grabación iniciada');
+            };
+            
+            tempRecognition.onend = () => {
+                voiceButton.classList.remove('recording');
+                if (inputWrapper) inputWrapper.classList.remove('recording');
+                if (recordingStatus) recordingStatus.classList.remove('active');
+                messageInput.removeAttribute('disabled');
+                isManualRecording = false;
+                console.log('Grabación finalizada');
+            };
+            
+            tempRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                console.log('🗣️ STT:', transcript);
+                messageInput.value = transcript;
+                sendMessage();
+            };
+            
+            tempRecognition.onerror = (event) => {
+                console.error('Error en reconocimiento de voz:', event.error);
+                alert('Error en el reconocimiento de voz: ' + event.error);
+                voiceButton.classList.remove('recording');
+                if (inputWrapper) inputWrapper.classList.remove('recording');
+                if (recordingStatus) recordingStatus.classList.remove('active');
+                messageInput.removeAttribute('disabled');
+            };
+            
+            // Guardar en variable para el botón normal
+            recognition = tempRecognition;
+        } else {
+            voiceButton.style.display = 'none';
+            if (cancelVoiceButton) cancelVoiceButton.style.display = 'none';
+            console.warn('Reconocimiento de voz no disponible en este navegador');
+        }
+        
+        // Event listeners para modo de voz
+        if (voiceModeButton) {
+            voiceModeButton.addEventListener('click', toggleVoiceMode);
+        }
+        
+        if (voiceModeIndicator) {
+            voiceModeIndicator.addEventListener('click', toggleVoiceMode);
+        }
+        
+        // Event listeners para modo selección
+        const selectionModeButton = document.getElementById('selectionModeButton');
+        const selectAllButton = document.getElementById('selectAllButton');
+        const copySelectedButton = document.getElementById('copySelectedButton');
+        const forwardSelectedButton = document.getElementById('forwardSelectedButton');
+        const cancelSelectionButton = document.getElementById('cancelSelectionButton');
+        
+        if (selectionModeButton) {
+            selectionModeButton.addEventListener('click', toggleSelectionMode);
+        }
+        
+        if (selectAllButton) {
+            selectAllButton.addEventListener('click', selectAllMessages);
+        }
+        
+        if (copySelectedButton) {
+            copySelectedButton.addEventListener('click', copySelectedMessages);
+        }
+        
+        if (forwardSelectedButton) {
+            forwardSelectedButton.addEventListener('click', forwardSelectedMessages);
+        }
+        
+        if (cancelSelectionButton) {
+            cancelSelectionButton.addEventListener('click', toggleSelectionMode);
+        }
+        
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        if (voiceButton) {
+            voiceButton.addEventListener('click', () => {
+                if (recognition && typeof recognition.start === 'function') {
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        console.error('Error iniciando reconocimiento:', error);
+                    }
+                }
+            });
+        }
+ 
+         if (cancelVoiceButton) {
+             cancelVoiceButton.addEventListener('click', () => {
+                 if (recognition && typeof recognition.stop === 'function' && isManualRecording) {
+                     recognition.stop();
+                 }
+                 if (inputWrapper) inputWrapper.classList.remove('recording');
+                 if (recordingStatus) recordingStatus.classList.remove('active');
+                 voiceButton.classList.remove('recording');
+                 messageInput.removeAttribute('disabled');
+            });
+        }
+        
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        
+        // Variable para controlar si ya se mostró el saludo inicial
+        let saludoInicialMostrado = false;
+        let audioSaludoReproducido = false;
+        
+        // Función para mostrar saludo inicial
+        function mostrarSaludoInicial() {
+            // Evitar mostrar el saludo múltiples veces
+            if (saludoInicialMostrado) return;
+            saludoInicialMostrado = true;
+            
+            // Mostrar mensaje de saludo inicial de Sofia
+            const saludosIniciales = [
+                "¡Hola! 👋 Soy Sofia, tu asistente de WayGPS. ¿En qué puedo ayudarte hoy?",
+                "¡Hola! 😊 Estoy aquí para ayudarte con información sobre tu flota. ¿Qué necesitas?",
+                "¡Hola! 👋 ¿Cómo puedo asistirte con el seguimiento de tus vehículos?",
+                "¡Bienvenido! 👋 Soy Sofia. Puedo ayudarte con información sobre tu flota. ¿En qué puedo asistirte?",
+                "¡Hola! 😊 Soy Sofia, tu asistente. ¿Qué información necesitas sobre tus vehículos?"
+            ];
+            
+            // Obtener hora actual para saludo contextual
+            const hora = new Date().getHours();
+            let saludoContextual = saludosIniciales[Math.floor(Math.random() * saludosIniciales.length)];
+            
+            if (hora >= 6 && hora < 12) {
+                saludoContextual = "¡Buenos días! ☀️ Soy Sofia, tu asistente de WayGPS. ¿En qué puedo ayudarte?";
+            } else if (hora >= 12 && hora < 20) {
+                saludoContextual = "¡Buenas tardes! 🌅 Soy Sofia. ¿Cómo puedo ayudarte con tu flota?";
+            } else {
+                saludoContextual = "¡Buenas noches! 🌙 Soy Sofia, tu asistente. ¿En qué puedo ayudarte?";
+            }
+            
+            // Agregar mensaje de saludo inicial
+            const msgElement = addMessage(saludoContextual, 'received', saludoContextual);
+            
+            // Reproducir audio del saludo automáticamente
+            if (!isAudioMuted && 'speechSynthesis' in window && !audioSaludoReproducido) {
+                audioSaludoReproducido = true;
+                const button = msgElement ? msgElement.querySelector('.message-audio-btn') : null;
+                
+                // Esperar a que las voces estén cargadas antes de reproducir
+                // Usar un timeout simple en lugar de un loop recursivo
+                setTimeout(() => {
+                    // Verificar que no se haya cancelado
+                    if (audioSaludoReproducido && !isAudioMuted) {
+                        console.log('🎤 Reproduciendo saludo inicial...');
+                        speak(saludoContextual, button);
+                    }
+                }, 1200);
+            }
+        }
+        
+        // Enfocar input al cargar la página y mostrar saludo inicial
+        document.addEventListener('DOMContentLoaded', function() {
+            messageInput.focus();
+            // Configurar selección para mensajes existentes
+            document.querySelectorAll('.message').forEach(msg => {
+                if (!msg.getAttribute('data-message-id')) {
+                    // Si el mensaje no tiene ID, generarlo
+                    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    msg.setAttribute('data-message-id', messageId);
+                    const textContent = msg.textContent.trim();
+                    msg.setAttribute('data-message-text', textContent);
+                    const type = msg.classList.contains('sent') ? 'sent' : 'received';
+                    msg.setAttribute('data-message-type', type);
+                    
+                    // Extraer la hora del mensaje si existe
+                    const timeElement = msg.querySelector('.message-time');
+                    if (timeElement) {
+                        const time = timeElement.textContent.trim();
+                        msg.setAttribute('data-message-time', time);
+                        msg.setAttribute('data-message-time-full', time);
+                    }
+                }
+                // Agregar checkbox si no existe
+                if (!msg.querySelector('.message-checkbox')) {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'message-checkbox';
+                    checkbox.innerHTML = '<i class="bi bi-check"></i>';
+                    msg.insertBefore(checkbox, msg.firstChild);
+                }
+                setupMessageSelection(msg);
+            });
+            // Mostrar saludo después de un pequeño delay para asegurar que todo esté inicializado
+            setTimeout(mostrarSaludoInicial, 500);
+        });
+        
+        // Función para enviar mensaje
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Detectar si hay un móvil en el mensaje
+            const movilEnMensaje = extraerMovil(message);
+            console.log('🔍 Móvil extraído del mensaje:', movilEnMensaje);
+            
+            // Si encontramos un móvil, actualizar memoria
+            if (movilEnMensaje) {
+                ultimoMovilConsultado = movilEnMensaje;
+                console.log('🧠 Sofia recordará el móvil:', ultimoMovilConsultado);
+            }
+            
+            // Si la consulta necesita un móvil y no especificamos uno
+            let mensajeEnviar = message;
+            const necesitaMovilFlag = necesitaMovil(message);
+            console.log('🔍 ¿Necesita móvil?', necesitaMovilFlag);
+            console.log('🔍 Móvil en memoria actual:', ultimoMovilConsultado);
+            
+            if (necesitaMovilFlag && !movilEnMensaje && ultimoMovilConsultado) {
+                // Usar el último móvil consultado
+                mensajeEnviar = `${ultimoMovilConsultado} ${message}`;
+                console.log('🧠 Usando móvil en memoria:', ultimoMovilConsultado);
+                console.log('📤 Mensaje modificado:', mensajeEnviar);
+            }
+            
+            // Limpiar input y enfocar automáticamente
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            messageInput.focus(); // Enfocar el input para escribir siguiente mensaje
+            
+            // Ocultar mensaje de bienvenida
+            const welcomeMsg = messagesContainer.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.remove();
+            }
+            
+            // Agregar mensaje del usuario (mostrar el original, no el modificado)
+            addMessage(message, 'sent');
+            
+            // Mostrar indicador de escritura
+            showTyping();
+            setSofiaProcessing(true);
+
+            try {
+                // Enviar consulta al servidor (con el móvil agregado si corresponde)
+                const response = await fetch('/agenteIA/api/procesar-consulta/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mensaje: mensajeEnviar,
+                        modo: 'texto'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                hideTyping();
+                
+                if (data.success) {
+                    // Mostrar mensaje con botón de audio
+                    const textoAudio = data.respuesta_audio || data.respuesta;
+                    const googleMapsLink = data.google_maps_link || null;
+                    const whatsappData = data.whatsapp_data || null;
+                    const msgElement = addMessage(data.respuesta, 'received', textoAudio, googleMapsLink, whatsappData);
+                    
+                    if (data.usando_contexto && data.datos_consulta && data.datos_consulta.movil) {
+                        ultimoMovilConsultado = data.datos_consulta.movil;
+                    }
+
+                    // Reproducir respuesta en audio automáticamente
+                    if (!isAudioMuted && 'speechSynthesis' in window) {
+                        const button = msgElement ? msgElement.querySelector('.message-audio-btn') : null;
+                        speak(textoAudio, button);
+                    }
+                } else {
+                    addMessage('Lo siento, ocurrió un error al procesar tu consulta.', 'received');
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('Error enviando mensaje:', error);
+                addMessage('Error de conexión. Por favor intenta nuevamente.', 'received');
+            } finally {
+                setSofiaProcessing(false);
+            }
+        }
+        
+        // Función para agregar mensaje al chat
+        function addMessage(text, type, audioText = null, googleMapsLink = null, whatsappData = null) {
+            const messageDiv = document.createElement('div');
+            // Generar ID único para el mensaje
+            const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            messageDiv.className = `message ${type}`;
+            messageDiv.setAttribute('data-message-id', messageId);
+            messageDiv.setAttribute('data-message-text', text);
+            messageDiv.setAttribute('data-message-type', type);
+            
+            const now = new Date();
+            const time = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+            const timeFull = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            // Guardar la hora en el atributo data para usar en reenvío
+            messageDiv.setAttribute('data-message-time', time);
+            messageDiv.setAttribute('data-message-time-full', timeFull);
+            
+            // Usar audioText si está disponible, sino el texto normal
+            const textoParaAudio = audioText || text;
+            
+            // Generar botones de acción (Maps y WhatsApp)
+            let actionButtons = '';
+            if (googleMapsLink || whatsappData) {
+                actionButtons = '<div class="message-action-buttons">';
+                
+                if (googleMapsLink) {
+                    actionButtons += `
+                        <button class="message-maps-btn" onclick="window.open('${googleMapsLink}', '_blank')" title="Ver en Google Maps">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </button>
+                    `;
+                }
+                
+                if (whatsappData) {
+                    // Usar atributo data para almacenar los datos JSON
+                    // Escapar comillas dobles y comillas simples correctamente para HTML
+                    let whatsappDataJSON = JSON.stringify(whatsappData);
+                    whatsappDataJSON = whatsappDataJSON.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    actionButtons += `
+                        <button class="message-whatsapp-btn" data-whatsapp="${whatsappDataJSON}" title="Compartir por WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </button>
+                    `;
+                }
+                
+                actionButtons += '</div>';
+            }
+            
+            const audioIconClass = isAudioMuted ? 'bi bi-volume-mute' : 'bi bi-volume-up';
+            const audioButtonTitle = isAudioMuted ? 'Audio silenciado' : 'Reproducir audio';
+            
+            if (type === 'received') {
+                messageDiv.innerHTML = `
+                    <div class="message-checkbox">
+                        <i class="bi bi-check"></i>
+                    </div>
+                    <div class="message-avatar">
+                        <img src="${sofiaAvatarUrl}" alt="Sofia">
+                    </div>
+                    <div>
+                        <div class="message-bubble" style="position: relative;">
+                            ${escapeHtml(text)}
+                            ${actionButtons}
+                            <button class="message-audio-btn" onclick="playMessageAudio('${escapeHtml(textoParaAudio).replace(/'/g, "\\'")}', this)" title="${audioButtonTitle}">
+                                <i class="${audioIconClass}"></i>
+                            </button>
+                        </div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-checkbox">
+                        <i class="bi bi-check"></i>
+                    </div>
+                    <div>
+                        <div class="message-bubble" style="position: relative;">
+                            ${escapeHtml(text)}
+                            <button class="message-audio-btn" onclick="playMessageAudio('${escapeHtml(textoParaAudio).replace(/'/g, "\\'")}', this)" title="${audioButtonTitle}">
+                                <i class="${audioIconClass}"></i>
+                            </button>
+                        </div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            }
+            
+            messagesContainer.appendChild(messageDiv);
+            
+            // Agregar event listener para el botón de WhatsApp si existe
+            if (whatsappData && type === 'received') {
+                const whatsappBtn = messageDiv.querySelector('.message-whatsapp-btn');
+                if (whatsappBtn) {
+                    whatsappBtn.addEventListener('click', function() {
+                        let dataAttr = this.getAttribute('data-whatsapp');
+                        // Desescaper HTML
+                        dataAttr = dataAttr.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+                        const data = JSON.parse(dataAttr);
+                        compartirPorWhatsApp(data);
+                    });
+                }
+            }
+            
+            // Agregar event listeners para selección
+            setupMessageSelection(messageDiv);
+            
+            scrollToBottom();
+            updateMessageAudioButtons();
+            return messageDiv;
+        }
+        
+        // Función para configurar selección de mensaje
+        function setupMessageSelection(messageDiv) {
+            let pressStartTime = 0;
+            let isLongPress = false;
+            let longPressTriggered = false;
+            
+            // Click normal en modo selección (tiene prioridad)
+            messageDiv.addEventListener('click', function(e) {
+                // Si estamos en modo selección, manejar la selección
+                if (selectionMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const messageId = messageDiv.getAttribute('data-message-id');
+                    if (messageId) {
+                        toggleMessageSelection(messageId);
+                    }
+                    return false;
+                }
+            }, true); // Usar capture phase para que se ejecute primero
+            
+            // Long press para activar modo selección y seleccionar (solo si NO está en modo selección)
+            messageDiv.addEventListener('mousedown', function(e) {
+                // Si ya estamos en modo selección, no hacer nada aquí (el click lo maneja)
+                if (selectionMode) {
+                    return;
+                }
+                
+                pressStartTime = Date.now();
+                isLongPress = false;
+                longPressTriggered = false;
+                
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    longPressTriggered = true;
+                    if (!selectionMode) {
+                        toggleSelectionMode();
+                        const messageId = messageDiv.getAttribute('data-message-id');
+                        if (messageId) {
+                            toggleMessageSelection(messageId);
+                        }
+                    }
+                }, longPressDelay);
+            });
+            
+            messageDiv.addEventListener('mouseup', function(e) {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                // Si se activó el long press, prevenir el click normal
+                if (longPressTriggered) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    longPressTriggered = false;
+                }
+            });
+            
+            messageDiv.addEventListener('mouseleave', function() {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                longPressTriggered = false;
+            });
+            
+            // Touch events para móviles
+            messageDiv.addEventListener('touchstart', function(e) {
+                // Si ya estamos en modo selección, no hacer nada aquí (el click lo maneja)
+                if (selectionMode) {
+                    return;
+                }
+                
+                pressStartTime = Date.now();
+                isLongPress = false;
+                longPressTriggered = false;
+                
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    longPressTriggered = true;
+                    if (!selectionMode) {
+                        toggleSelectionMode();
+                        const messageId = messageDiv.getAttribute('data-message-id');
+                        if (messageId) {
+                            toggleMessageSelection(messageId);
+                        }
+                    }
+                }, longPressDelay);
+            });
+            
+            messageDiv.addEventListener('touchend', function(e) {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                // Si se activó el long press, prevenir el click normal
+                if (longPressTriggered) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    longPressTriggered = false;
+                }
+            });
+            
+            messageDiv.addEventListener('touchcancel', function() {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                longPressTriggered = false;
+            });
+        }
+        
+        // Función para activar/desactivar modo selección
+        function toggleSelectionMode() {
+            selectionMode = !selectionMode;
+            const messagesContainer = document.getElementById('messagesContainer');
+            const selectionButton = document.getElementById('selectionModeButton');
+            const actionsBar = document.getElementById('selectionActionsBar');
+            
+            if (selectionMode) {
+                messagesContainer.classList.add('selection-mode');
+                selectionButton.classList.add('active');
+                updateSelectionUI();
+            } else {
+                messagesContainer.classList.remove('selection-mode');
+                selectionButton.classList.remove('active');
+                selectedMessages.clear();
+                actionsBar.classList.remove('active');
+                updateSelectionUI();
+            }
+        }
+        
+        // Función para seleccionar/deseleccionar mensaje
+        function toggleMessageSelection(messageId) {
+            if (!selectionMode) return;
+            
+            if (selectedMessages.has(messageId)) {
+                selectedMessages.delete(messageId);
+            } else {
+                selectedMessages.add(messageId);
+            }
+            
+            const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageDiv) {
+                if (selectedMessages.has(messageId)) {
+                    messageDiv.classList.add('selected');
+                } else {
+                    messageDiv.classList.remove('selected');
+                }
+            }
+            
+            updateSelectionUI();
+        }
+        
+        // Función para actualizar UI de selección
+        function updateSelectionUI() {
+            const count = selectedMessages.size;
+            const countElement = document.getElementById('selectionCount');
+            const actionsBar = document.getElementById('selectionActionsBar');
+            
+            if (countElement) {
+                countElement.textContent = `${count} mensaje${count !== 1 ? 's' : ''} seleccionado${count !== 1 ? 's' : ''}`;
+            }
+            
+            if (actionsBar) {
+                if (count > 0) {
+                    actionsBar.classList.add('active');
+                } else {
+                    actionsBar.classList.remove('active');
+                }
+            }
+            
+            // Actualizar todos los mensajes
+            document.querySelectorAll('.message').forEach(msg => {
+                const msgId = msg.getAttribute('data-message-id');
+                if (selectedMessages.has(msgId)) {
+                    msg.classList.add('selected');
+                } else {
+                    msg.classList.remove('selected');
+                }
+            });
+        }
+        
+        // Función para seleccionar todos los mensajes
+        function selectAllMessages() {
+            if (!selectionMode) return;
+            
+            document.querySelectorAll('.message').forEach(msg => {
+                const msgId = msg.getAttribute('data-message-id');
+                if (msgId) {
+                    selectedMessages.add(msgId);
+                }
+            });
+            
+            updateSelectionUI();
+        }
+        
+        // Función para obtener mensajes ordenados cronológicamente
+        function getSelectedMessagesOrdered() {
+            if (selectedMessages.size === 0) return [];
+            
+            // Obtener todos los mensajes del contenedor y filtrar los seleccionados
+            const allMessages = Array.from(document.querySelectorAll('.message'));
+            const selected = allMessages
+                .filter(msg => {
+                    const msgId = msg.getAttribute('data-message-id');
+                    return msgId && selectedMessages.has(msgId);
+                })
+                .map(msg => {
+                    const text = msg.getAttribute('data-message-text') || msg.textContent.trim();
+                    const type = msg.getAttribute('data-message-type');
+                    const time = msg.getAttribute('data-message-time') || '';
+                    const sender = type === 'received' ? 'Sofia' : 'Tú';
+                    // Formato similar a WhatsApp: *Sender:*\nTexto\n_Hora_
+                    const formattedText = `*${sender}:*\n${text}${time ? `\n_${time}_` : ''}`;
+                    return {
+                        text: formattedText,
+                        id: msg.getAttribute('data-message-id')
+                    };
+                });
+            
+            return selected;
+        }
+        
+        // Función para copiar mensajes seleccionados
+        function copySelectedMessages() {
+            if (selectedMessages.size === 0) return;
+            
+            const messages = getSelectedMessagesOrdered().map(msg => msg.text);
+            const textToCopy = messages.join('\n\n');
+            
+            // Copiar al portapapeles
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = textToCopy;
+            tempTextarea.style.position = 'fixed';
+            tempTextarea.style.opacity = '0';
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            tempTextarea.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                console.log('✅ Mensajes copiados al portapapeles');
+                // Feedback visual
+                const copyBtn = document.getElementById('copySelectedButton');
+                if (copyBtn) {
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="bi bi-check"></i> <span class="d-none d-sm-inline">Copiado</span>';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                    }, 2000);
+                }
+            } catch (err) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        console.log('✅ Mensajes copiados al portapapeles');
+                        const copyBtn = document.getElementById('copySelectedButton');
+                        if (copyBtn) {
+                            const originalText = copyBtn.innerHTML;
+                            copyBtn.innerHTML = '<i class="bi bi-check"></i> <span class="d-none d-sm-inline">Copiado</span>';
+                            setTimeout(() => {
+                                copyBtn.innerHTML = originalText;
+                            }, 2000);
+                        }
+                    }).catch(err => {
+                        console.error('❌ Error al copiar:', err);
+                        alert('No se pudo copiar los mensajes. Por favor, copiá el texto manualmente.');
+                    });
+                } else {
+                    alert('No se pudo copiar los mensajes. Por favor, copiá el texto manualmente.');
+                }
+            } finally {
+                document.body.removeChild(tempTextarea);
+            }
+        }
+        
+        // Función para reenviar mensajes seleccionados por WhatsApp
+        function forwardSelectedMessages() {
+            if (selectedMessages.size === 0) return;
+            
+            const messages = getSelectedMessagesOrdered().map(msg => msg.text);
+            const textToShare = messages.join('\n\n');
+            
+            // Abrir WhatsApp
+            const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(textToShare)}`;
+            window.open(urlWhatsApp, '_blank');
+        }
+        
+        // Variable global para rastrear si hay audio reproduciéndose
+        let currentUtterance = null;
+        let currentAudioButton = null;
+ 
+        function stopCurrentAudio(button = null) {
+                    if (!isAudioMuted && 'speechSynthesis' in window) {
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+            const targetButton = button || currentAudioButton;
+            if (targetButton) {
+                targetButton.classList.remove('playing');
+                const icon = targetButton.querySelector('i');
+                if (icon) {
+                    icon.className = isAudioMuted ? 'bi bi-volume-mute' : 'bi bi-volume-up';
+                }
+                targetButton.title = isAudioMuted ? 'Audio silenciado' : 'Reproducir audio';
+            }
+            currentUtterance = null;
+            currentAudioButton = null;
+            setSofiaSpeaking(false);
+        }
+        
+        // Función para reproducir audio de un mensaje
+        function playMessageAudio(text, button) {
+            // Si ya hay audio reproduciéndose, pausarlo
+            if (currentUtterance && window.speechSynthesis.speaking) {
+                stopCurrentAudio(button);
+                return;
+            }
+
+            if (isAudioMuted) {
+                if (button) {
+                    button.classList.remove('playing');
+                    const icon = button.querySelector('i');
+                    if (icon) {
+                        icon.className = 'bi bi-volume-mute';
+                    }
+                    button.title = 'Audio silenciado. Activalo desde el icono superior.';
+                }
+                setSofiaSpeaking(false);
+                return;
+            }
+            
+            // Remover la clase playing de todos los botones y restaurar iconos
+            document.querySelectorAll('.message-audio-btn').forEach(btn => {
+                btn.classList.remove('playing');
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = isAudioMuted ? 'bi bi-volume-mute' : 'bi bi-volume-up';
+                }
+                btn.title = isAudioMuted ? 'Audio silenciado' : 'Reproducir audio';
+            });
+            
+            // Agregar clase playing al botón actual y cambiar icono a pausa
+            button.classList.add('playing');
+            button.querySelector('i').className = 'bi bi-stop-fill';
+            button.title = 'Detener audio';
+            currentAudioButton = button;
+            
+            // Reproducir audio y guardar referencia
+            currentUtterance = speak(text, button);
+            
+            // Remover clase playing cuando termine y restaurar icono
+            const checkEnd = setInterval(() => {
+                if (!window.speechSynthesis.speaking) {
+                    stopCurrentAudio(button);
+                    clearInterval(checkEnd);
+                }
+            }, 100);
+        }
+        
+        // Función para escapar HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Funciones para indicador de escritura
+        function showTyping() {
+            typingIndicator.classList.add('active');
+            scrollToBottom();
+        }
+        
+        function hideTyping() {
+            typingIndicator.classList.remove('active');
+        }
+        
+        // Scroll automático
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Text to Speech
+        const voiceSelect = document.getElementById('voiceSelect');
+        let availableVoices = [];
+        const savedVoice = localStorage.getItem('sofiaVoiceSelection') || '';
+
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableVoices = window.speechSynthesis.getVoices();
+            const voiceOptions = availableVoices
+                .filter(voice => voice.localService || voice.lang.startsWith('es'))
+                .map(voice => ({
+                    name: voice.name,
+                    lang: voice.lang,
+                    default: voice.default
+                }));
+
+            if (voiceOptions.length === 0) return;
+
+            if (voiceSelect) {
+                voiceSelect.innerHTML = '<option value="">Automática</option>' + voiceOptions
+                    .map(voice => `<option value="${voice.name}" ${voice.name === savedVoice ? 'selected' : ''}>${voice.name} (${voice.lang})${voice.default ? ' ⭐' : ''}</option>`)
+                    .join('');
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        if (voiceSelect) {
+            voiceSelect.addEventListener('change', (event) => {
+                localStorage.setItem('sofiaVoiceSelection', event.target.value);
+            });
+        }
+
+        function getSelectedVoice() {
+            if (!('speechSynthesis' in window)) return null;
+            const selected = voiceSelect ? voiceSelect.value : '';
+            if (!selected) return null;
+
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(voice => voice.name === selected) || null;
+        }
+
+        function updateMessageAudioButtons() {
+            document.querySelectorAll('.message-audio-btn').forEach(btn => {
+                if (btn.classList.contains('playing')) {
+                    return;
+                }
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = isAudioMuted ? 'bi bi-volume-mute' : 'bi bi-volume-up';
+                }
+                btn.title = isAudioMuted ? 'Audio silenciado' : 'Reproducir audio';
+            });
+        }
+
+        function updateAudioToggleUI() {
+            if (!audioToggleButton) return;
+            const icon = audioToggleButton.querySelector('i');
+            const label = audioToggleButton.querySelector('span');
+            if (isAudioMuted) {
+                audioToggleButton.title = 'Activar audio de respuestas';
+                if (icon) icon.className = 'bi bi-volume-mute';
+                if (label) label.textContent = 'Silencio';
+            } else {
+                audioToggleButton.title = 'Desactivar audio de respuestas';
+                if (icon) icon.className = 'bi bi-volume-up';
+                if (label) label.textContent = 'Voz';
+            }
+            updateMessageAudioButtons();
+        }
+
+        function toggleAudioMute() {
+            isAudioMuted = !isAudioMuted;
+            localStorage.setItem('sofiaAudioMuted', isAudioMuted);
+            if (isAudioMuted) {
+                stopCurrentAudio();
+                setSofiaSpeaking(false);
+            }
+            updateAudioToggleUI();
+        }
+
+        if (audioToggleButton) {
+            audioToggleButton.addEventListener('click', toggleAudioMute);
+        }
+
+        updateAudioToggleUI();
+
+        function closeSettingsPanel() {
+            if (settingsPanel) {
+                settingsPanel.classList.remove('visible');
+                settingsPanel.style.left = '';
+                settingsPanel.style.top = '';
+            }
+            settingsPanelVisible = false;
+        }
+
+        function toggleSettingsPanel() {
+            if (!settingsPanel) return;
+            settingsPanelVisible = !settingsPanelVisible;
+            if (settingsPanelVisible) {
+                settingsPanel.classList.add('visible');
+                requestAnimationFrame(() => {
+                    const panelWidth = settingsPanel.offsetWidth || 280;
+                    const padding = 16;
+                    const rect = settingsButton
+                        ? settingsButton.getBoundingClientRect()
+                        : { right: window.innerWidth - padding, bottom: 80 };
+                    let left = rect.right - panelWidth;
+                    left = Math.max(padding, Math.min(left, window.innerWidth - panelWidth - padding));
+                    const top = rect.bottom + 8;
+                    settingsPanel.style.left = `${left}px`;
+                    settingsPanel.style.top = `${top}px`;
+                });
+            } else {
+                settingsPanel.classList.remove('visible');
+                settingsPanel.style.left = '';
+                settingsPanel.style.top = '';
+            }
+        }
+
+        if (settingsButton) {
+            settingsButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                toggleSettingsPanel();
+            });
+        }
+
+        if (settingsPanel) {
+            settingsPanel.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+        }
+
+        document.addEventListener('click', () => {
+            if (settingsPanelVisible) {
+                closeSettingsPanel();
+            }
+        });
+
+        // Función para remover emojis del texto antes de reproducir audio
+        function removeEmojis(text) {
+            // Patrón para detectar emojis (incluye emojis Unicode, variantes, y símbolos)
+            const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2190}-\u{21FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}-\u{2B55}]|[\u{3030}-\u{303F}]|[\u{FE00}-\u{FE0F}]|[\u{1F018}-\u{1F270}]/gu;
+            return text.replace(emojiRegex, '').trim();
+        }
+        
+        function speak(text, button = null) {
+            // Remover emojis del texto antes de reproducir
+            const textoSinEmojis = removeEmojis(text);
+            
+            if (isAudioMuted) {
+                setSofiaSpeaking(false);
+                return null;
+            }
+            
+            if (!('speechSynthesis' in window)) {
+                console.warn('⚠️ Text-to-Speech no está disponible en este navegador');
+                setSofiaSpeaking(false);
+                return null;
+            }
+            
+            // Cancelar cualquier síntesis anterior
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+            
+            // Verificar que las voces estén disponibles
+            // Si no hay voces, intentar forzar la carga
+            let voices = window.speechSynthesis.getVoices();
+            if (voices.length === 0) {
+                // Forzar carga de voces
+                window.speechSynthesis.getVoices();
+                voices = window.speechSynthesis.getVoices();
+            }
+            
+            // Si aún no hay voces después de forzar, continuar de todas formas
+            // El navegador usará una voz por defecto
+            
+            // Usar texto sin emojis para la reproducción de audio
+            const utterance = new SpeechSynthesisUtterance(textoSinEmojis);
+            utterance.lang = 'es-AR'; // Usar español argentino
+            utterance.rate = 0.95; // Velocidad ligeramente más rápida
+            utterance.pitch = 1.1; // Tono un poco más agudo (más alegre)
+            utterance.volume = 1.0;
+
+            const selectedVoice = getSelectedVoice();
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+                utterance.lang = selectedVoice.lang;
+            }
+            
+            console.log('🎤 Reproduciendo audio:', textoSinEmojis.substring(0, 100));
+
+            if (button) {
+                currentAudioButton = button;
+                button.classList.add('playing');
+                const icon = button.querySelector('i');
+                if (icon) {
+                    icon.className = 'bi bi-stop-fill';
+                }
+                button.title = 'Detener audio';
+            }
+            
+            setSofiaSpeaking(true);
+            
+            // Si ya hay handlers establecidos (del modo voz), no los sobrescribimos
+            if (!utterance.onend) {
+                utterance.onend = () => {
+                    stopCurrentAudio(button);
+                    setSofiaSpeaking(false);
+                };
+            }
+            
+            if (!utterance.onerror) {
+                utterance.onerror = (event) => {
+                    console.error('❌ Error en síntesis de voz:', event);
+                    stopCurrentAudio(button);
+                    setSofiaSpeaking(false);
+                };
+            }
+            
+            // Reproducir
+            try {
+                window.speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.error('❌ Error al reproducir audio:', error);
+                stopCurrentAudio(button);
+                setSofiaSpeaking(false);
+            }
+            
+            return utterance; // Retornar utterance para control
+        }
+    </script>
+</body>
+</html>
+

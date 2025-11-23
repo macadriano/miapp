@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WayGPS - Instrucciones de Instalación</title>
+    <style>
+        @media print {
+            body { margin: 0; padding: 20px; }
+            .no-print { display: none; }
+            .page-break { page-break-before: always; }
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            margin: 0;
+            font-size: 2.5em;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+        
+        .step {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .step h3 {
+            color: #764ba2;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #c7254e;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 10px 0;
+        }
+        
+        .check-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .check-list li {
+            padding: 8px 0;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .check-list li:before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-size: 1.5em;
+            color: #667eea;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 5px 0;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .button {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        
+        .button:hover {
+            background: #5a6fd8;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        table th {
+            background: #667eea;
+            color: white;
+        }
+        
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #667eea;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 WayGPS</h1>
+            <div class="subtitle">Sistema de Seguimiento GPS - Guía de Instalación</div>
+            <p style="color: #999; margin-top: 10px;">Versión 1.0 - Octubre 2025</p>
+        </div>
+
+        <div class="no-print" style="text-align: center; margin: 20px 0;">
+            <button class="button" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+        </div>
+
+        <!-- Introducción -->
+        <div class="section">
+            <h2>📋 Descripción del Sistema</h2>
+            <p>WayGPS Frontend es una interfaz web moderna y completa que se conecta a tu API REST de Django para gestionar móviles con GPS en tiempo real.</p>
+            
+            <h3>Características Principales:</h3>
+            <ul class="feature-list">
+                <li>Dashboard con estadísticas en tiempo real</li>
+                <li>Gestión completa de móviles (CRUD)</li>
+                <li>Mapas interactivos con ubicaciones GPS</li>
+                <li>Filtros y búsquedas avanzadas</li>
+                <li>Actualización automática cada 30 segundos</li>
+                <li>Diseño responsivo para móviles y tablets</li>
+                <li>Interfaz moderna con Bootstrap 5</li>
+            </ul>
+        </div>
+
+        <!-- Instalación -->
+        <div class="section">
+            <h2>🚀 Instalación Paso a Paso</h2>
+
+            <div class="step">
+                <h3><span class="step-number">1</span> Instalar django-cors-headers</h3>
+                <p>Abre una terminal (PowerShell o CMD) en la carpeta del proyecto:</p>
+                <div class="code-block">cd C:\desa\wayGps\app</div>
+                <p>Instala el paquete necesario:</p>
+                <div class="code-block">pip install django-cors-headers</div>
+                <p>O instala todas las dependencias actualizadas:</p>
+                <div class="code-block">pip install -r requirements.txt</div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">2</span> Verificar Configuración Django</h3>
+                <div class="success">
+                    <strong>✓ La configuración ya está lista</strong><br>
+                    Los archivos <code>settings.py</code> y <code>requirements.txt</code> ya tienen todo configurado. No necesitas modificar nada.
+                </div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">3</span> Reiniciar Servidor Django</h3>
+                <p>Si tu servidor Django está corriendo:</p>
+                <ol>
+                    <li>Presiona <code>Ctrl+C</code> para detenerlo</li>
+                    <li>Reinícialo con:</li>
+                </ol>
+                <div class="code-block">python manage.py runserver</div>
+                <p>Deberías ver:</p>
+                <div class="code-block">Starting development server at http://127.0.0.1:8000/<br>Quit the server with CTRL-BREAK.</div>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">4</span> Abrir el Frontend</h3>
+                <p><strong>Opción A - Abrir directamente (más simple):</strong></p>
+                <ol>
+                    <li>Navega a: <code>C:\desa\wayGps\app\</code></li>
+                    <li>Doble clic en <code>index.html</code></li>
+                    <li>Se abrirá en tu navegador predeterminado</li>
+                </ol>
+
+                <p><strong>Opción B - Usar Live Server (VS Code):</strong></p>
+                <ol>
+                    <li>Abre la carpeta en VS Code</li>
+                    <li>Clic derecho en <code>index.html</code></li>
+                    <li>Selecciona "Open with Live Server"</li>
+                </ol>
+
+                <p><strong>Opción C - Usar servidor Python:</strong></p>
+                <div class="code-block">python -m http.server 8080</div>
+                <p>Luego abre: <code>http://localhost:8080</code></p>
+            </div>
+
+            <div class="step">
+                <h3><span class="step-number">5</span> Verificar que Funcione</h3>
+                <ul class="feature-list">
+                    <li>Dashboard muestra estadísticas</li>
+                    <li>No hay errores en la consola del navegador (F12)</li>
+                    <li>Mapa se carga correctamente</li>
+                    <li>Lista de móviles se muestra</li>
+                    <li>Puedes crear, editar y eliminar móviles</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Solución CORS -->
+        <div class="section">
+            <h2>⚠️ Solución al Error de CORS</h2>
+            
+            <div class="warning">
+                <strong>Error Común:</strong><br>
+                "Access to fetch at 'http://127.0.0.1:8000/api/moviles/' from origin 'null' has been blocked by CORS policy"
+            </div>
+
+            <h3>Causa del Error:</h3>
+            <p>El navegador bloquea peticiones entre diferentes orígenes por seguridad (política CORS).</p>
+
+            <h3>Solución:</h3>
+            <ol>
+                <li><strong>Instalar:</strong> <code>pip install django-cors-headers</code></li>
+                <li><strong>Verificar:</strong> La configuración ya está en <code>settings.py</code></li>
+                <li><strong>Reiniciar:</strong> El servidor Django</li>
+                <li><strong>Recargar:</strong> El frontend en el navegador (F5)</li>
+            </ol>
+
+            <div class="success">
+                <strong>¡Listo!</strong> El error de CORS debería estar resuelto.
+            </div>
+        </div>
+
+        <!-- Uso del Sistema -->
+        <div class="section">
+            <h2>📱 Uso del Sistema</h2>
+
+            <h3>Dashboard</h3>
+            <p>Vista principal con estadísticas en tiempo real, mapa con ubicaciones activas y lista de móviles recientes.</p>
+
+            <h3>Gestión de Móviles</h3>
+            <table>
+                <tr>
+                    <th>Acción</th>
+                    <th>Cómo hacerlo</th>
+                </tr>
+                <tr>
+                    <td><strong>Crear</strong></td>
+                    <td>Clic en botón "Nuevo Móvil" → Completar formulario → Guardar</td>
+                </tr>
+                <tr>
+                    <td><strong>Editar</strong></td>
+                    <td>Clic en ícono de lápiz ✏️ → Modificar datos → Guardar</td>
+                </tr>
+                <tr>
+                    <td><strong>Ver</strong></td>
+                    <td>Clic en ícono de ojo 👁️ → Ver detalles completos</td>
+                </tr>
+                <tr>
+                    <td><strong>Eliminar</strong></td>
+                    <td>Clic en ícono de basura 🗑️ → Confirmar eliminación</td>
+                </tr>
+                <tr>
+                    <td><strong>Filtrar</strong></td>
+                    <td>Usar campos de filtro en la parte superior</td>
+                </tr>
+                <tr>
+                    <td><strong>Buscar</strong></td>
+                    <td>Escribir en campo de búsqueda (patente, alias, código)</td>
+                </tr>
+            </table>
+
+            <h3>Mapa Interactivo</h3>
+            <ul>
+                <li><strong style="color: green;">🟢 Verde:</strong> Móviles en línea</li>
+                <li><strong style="color: red;">🔴 Rojo:</strong> Móviles desconectados</li>
+                <li><strong>Clic en marcador:</strong> Ver información del móvil</li>
+            </ul>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Personalización -->
+        <div class="section">
+            <h2>⚙️ Personalización</h2>
+            <p>Edita el archivo <code>config.js</code> para personalizar:</p>
+
+            <table>
+                <tr>
+                    <th>Configuración</th>
+                    <th>Variable</th>
+                    <th>Valor por Defecto</th>
+                </tr>
+                <tr>
+                    <td>URL de la API</td>
+                    <td><code>API_BASE_URL</code></td>
+                    <td>http://127.0.0.1:8000/api</td>
+                </tr>
+                <tr>
+                    <td>Intervalo de actualización</td>
+                    <td><code>AUTO_REFRESH_INTERVAL</code></td>
+                    <td>30000 (30 segundos)</td>
+                </tr>
+                <tr>
+                    <td>Latitud por defecto</td>
+                    <td><code>DEFAULT_LAT</code></td>
+                    <td>-34.6037 (Buenos Aires)</td>
+                </tr>
+                <tr>
+                    <td>Longitud por defecto</td>
+                    <td><code>DEFAULT_LON</code></td>
+                    <td>-58.3816 (Buenos Aires)</td>
+                </tr>
+                <tr>
+                    <td>Zoom del mapa</td>
+                    <td><code>DEFAULT_ZOOM</code></td>
+                    <td>10</td>
+                </tr>
+                <tr>
+                    <td>Tiempo online (minutos)</td>
+                    <td><code>ONLINE_THRESHOLD_MINUTES</code></td>
+                    <td>15 minutos</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Solución de Problemas -->
+        <div class="section">
+            <h2>🔧 Solución de Problemas Comunes</h2>
+
+            <div class="step">
+                <h3>Problema: Error de CORS</h3>
+                <p><strong>Solución:</strong></p>
+                <ol>
+                    <li><code>pip install django-cors-headers</code></li>
+                    <li>Reiniciar servidor Django</li>
+                    <li>Recargar frontend (F5)</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h3>Problema: No carga datos</h3>
+                <p><strong>Solución:</strong></p>
+                <ol>
+                    <li>Verifica que Django esté corriendo en <code>http://127.0.0.1:8000</code></li>
+                    <li>Abre <code>http://127.0.0.1:8000/api/moviles/</code> en navegador</li>
+                    <li>Debe mostrar JSON con datos</li>
+                    <li>Revisa consola del navegador (F12)</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h3>Problema: Mapa no se ve</h3>
+                <p><strong>Solución:</strong></p>
+                <ol>
+                    <li>Verifica conexión a internet</li>
+                    <li>Abre consola (F12) para ver errores</li>
+                    <li>Recarga página (F5)</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Checklist -->
+        <div class="section">
+            <h2>✅ Checklist de Instalación</h2>
+            <ul class="check-list">
+                <li>Backend Django corriendo en http://127.0.0.1:8000</li>
+                <li>Endpoint /api/moviles/ responde correctamente</li>
+                <li>django-cors-headers instalado</li>
+                <li>Configuración CORS en settings.py</li>
+                <li>Servidor Django reiniciado</li>
+                <li>Archivos frontend en la carpeta correcta</li>
+                <li>Frontend abierto en navegador</li>
+                <li>Sin errores CORS en consola (F12)</li>
+                <li>Dashboard muestra datos</li>
+                <li>Mapa se carga correctamente</li>
+                <li>Funciones CRUD funcionan</li>
+            </ul>
+        </div>
+
+        <!-- Comandos Rápidos -->
+        <div class="section">
+            <h2>⌨️ Comandos Rápidos</h2>
+            <table>
+                <tr>
+                    <th>Acción</th>
+                    <th>Comando</th>
+                </tr>
+                <tr>
+                    <td>Instalar dependencias</td>
+                    <td><code>pip install -r requirements.txt</code></td>
+                </tr>
+                <tr>
+                    <td>Iniciar Django</td>
+                    <td><code>python manage.py runserver</code></td>
+                </tr>
+                <tr>
+                    <td>Detener servidor</td>
+                    <td><code>Ctrl+C</code></td>
+                </tr>
+                <tr>
+                    <td>Servidor HTTP Python</td>
+                    <td><code>python -m http.server 8080</code></td>
+                </tr>
+                <tr>
+                    <td>Ver consola navegador</td>
+                    <td><code>F12</code></td>
+                </tr>
+                <tr>
+                    <td>Recargar página</td>
+                    <td><code>F5</code> o <code>Ctrl+R</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Archivos -->
+        <div class="section">
+            <h2>📁 Archivos del Proyecto</h2>
+            <h3>Frontend:</h3>
+            <ul>
+                <li><code>index.html</code> - Página principal</li>
+                <li><code>app.js</code> - Lógica JavaScript</li>
+                <li><code>styles.css</code> - Estilos personalizados</li>
+                <li><code>config.js</code> - Configuración</li>
+            </ul>
+
+            <h3>Backend:</h3>
+            <ul>
+                <li><code>requirements.txt</code> - Dependencias</li>
+                <li><code>wayproject/settings.py</code> - Configuración Django</li>
+                <li><code>gps/models.py</code> - Modelo de datos</li>
+                <li><code>gps/views.py</code> - Vistas de la API</li>
+            </ul>
+
+            <h3>Documentación:</h3>
+            <ul>
+                <li><code>README.md</code> - Documentación principal</li>
+                <li><code>INSTALACION_CORS.md</code> - Guía CORS</li>
+                <li><code>INSTRUCCIONES_COMPLETAS.txt</code> - Guía detallada</li>
+                <li><code>GUIA_RAPIDA.txt</code> - Referencia rápida</li>
+                <li><code>INSTRUCCIONES_IMPRIMIR.html</code> - Este archivo</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p><strong>WayGPS Frontend</strong> - Sistema de Seguimiento GPS</p>
+            <p>Versión 1.0 - Octubre 2025</p>
+            <p style="margin-top: 20px;">
+                <strong>🚗 ¡Gracias por usar WayGPS! 📍</strong>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

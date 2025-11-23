@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas de Receptor - WayGPS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/global.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .metric-box {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body data-page="comunicaciones-estadisticas">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-broadcast me-2"></i> Comunicaciones
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-light btn-sm" href="/moviles/dashboard/">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </div>
+            </div>
+            <div class="app-content">
+                <div class="container px-0 mt-4">
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <a class="nav-link" href="/comunicaciones/">
+                    <i class="bi bi-speedometer2 me-1"></i> Panel
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/comunicaciones/configuraciones/">
+                    <i class="bi bi-sliders me-1"></i> Configuraciones
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/comunicaciones/logs/">
+                    <i class="bi bi-journal-text me-1"></i> Logs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/comunicaciones/estadisticas/">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Estadísticas
+                </a>
+            </li>
+        </ul>
+        <h2 class="h4 mb-4">
+            <i class="fas fa-chart-bar me-2"></i> Estadísticas de Receptor
+            <small id="receptor-nombre" class="text-muted"></small>
+        </h2>
+
+        <!-- Métricas generales -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="total-equipos">0</div>
+                    <div class="metric-label">Equipos Conectados</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="total-datos">0</div>
+                    <div class="metric-label">Datos Recibidos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="total-procesados">0</div>
+                    <div class="metric-label">Datos Procesados</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-value" id="total-errores">0</div>
+                    <div class="metric-label">Errores</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Datos por Receptor</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="chartReceptores"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Evolución Temporal</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="chartTemporal"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de estadísticas -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Estadísticas Detalladas</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Receptor</th>
+                                <th>Fecha</th>
+                                <th>Equipos Conectados</th>
+                                <th>Datos Recibidos</th>
+                                <th>Datos Procesados</th>
+                                <th>Errores</th>
+                                <th>Latencia Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="estadisticas-tbody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+                </div> <!-- container -->
+            </div> <!-- app-content -->
+        </div> <!-- main-area -->
+    </div> <!-- app-wrapper -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page=\"${currentPage}\"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/api-client.js"></script>
+    <script>
+        // Variables globales para los gráficos
+        let chartReceptores = null;
+        let chartTemporal = null;
+        
+        // Obtener ID del receptor desde la URL
+        function getReceptorIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('receptor');
+        }
+        
+        // Cargar nombre del receptor y estadísticas al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarNombreReceptor();
+            cargarEstadisticas();
+            
+            // Actualizar cada 2 segundos
+            setInterval(cargarEstadisticas, 2000);
+        });
+        
+        // Cargar nombre del receptor
+        async function cargarNombreReceptor() {
+            const receptorId = getReceptorIdFromUrl();
+            if (!receptorId) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/configuraciones-receptores/${receptorId}/`);
+                if (response.ok) {
+                    const config = await response.json();
+                    const nombreCompleto = `${config.nombre} (Puerto ${config.puerto})`;
+                    document.getElementById('receptor-nombre').textContent = nombreCompleto;
+                }
+            } catch (error) {
+                console.error('Error cargando nombre del receptor:', error);
+            }
+        }
+
+        // Cargar estadísticas
+        async function cargarEstadisticas() {
+            try {
+                const receptorId = getReceptorIdFromUrl();
+                
+                // Construir URL con filtro si hay receptor específico
+                let url = '/api/estadisticas-recepcion/';
+                if (receptorId) {
+                    url += `?receptor=${receptorId}`;
+                }
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const estadisticas = await response.json();
+                
+                if (!Array.isArray(estadisticas)) {
+                    console.error('La respuesta no es un array:', estadisticas);
+                    estadisticas = [];
+                }
+                
+                if (estadisticas.length === 0) {
+                    // No hay estadísticas, mostrar mensaje
+                    document.getElementById('estadisticas-tbody').innerHTML = 
+                        '<tr><td colspan="7" class="text-center text-muted">No hay estadísticas disponibles. El receptor debe estar activo y procesar datos.</td></tr>';
+                    return;
+                }
+                
+                actualizarMetricas(estadisticas);
+                actualizarTabla(estadisticas);
+                crearGraficos(estadisticas);
+                
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+                document.getElementById('estadisticas-tbody').innerHTML = 
+                    '<tr><td colspan="7" class="text-center text-danger">Error cargando estadísticas: ' + error.message + '</td></tr>';
+            }
+        }
+
+        // Actualizar métricas generales
+        function actualizarMetricas(estadisticas) {
+            const totalEquipos = estadisticas.reduce((sum, stat) => sum + stat.equipos_conectados, 0);
+            const totalDatos = estadisticas.reduce((sum, stat) => sum + stat.datos_recibidos, 0);
+            const totalProcesados = estadisticas.reduce((sum, stat) => sum + stat.datos_procesados, 0);
+            const totalErrores = estadisticas.reduce((sum, stat) => sum + stat.errores, 0);
+            
+            document.getElementById('total-equipos').textContent = totalEquipos;
+            document.getElementById('total-datos').textContent = totalDatos.toLocaleString();
+            document.getElementById('total-procesados').textContent = totalProcesados.toLocaleString();
+            document.getElementById('total-errores').textContent = totalErrores;
+        }
+
+        // Actualizar tabla
+        function actualizarTabla(estadisticas) {
+            const tbody = document.getElementById('estadisticas-tbody');
+            
+            if (estadisticas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay estadísticas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = estadisticas.map(stat => `
+                <tr>
+                    <td>${stat.receptor_nombre || '-'}</td>
+                    <td>${new Date(stat.fecha).toLocaleDateString('es-AR')}</td>
+                    <td>${stat.equipos_conectados}</td>
+                    <td>${stat.datos_recibidos.toLocaleString()}</td>
+                    <td>${stat.datos_procesados.toLocaleString()}</td>
+                    <td><span class="badge ${stat.errores > 0 ? 'bg-danger' : 'bg-success'}">${stat.errores}</span></td>
+                    <td>${stat.latencia_promedio ? (parseFloat(stat.latencia_promedio).toFixed(2) + ' ms') : '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Crear o actualizar gráficos
+        function crearGraficos(estadisticas) {
+            if (!estadisticas || estadisticas.length === 0) {
+                return;
+            }
+            
+            // Agrupar por receptor
+            const porReceptor = {};
+            estadisticas.forEach(stat => {
+                const receptor = stat.receptor_nombre || 'Desconocido';
+                if (!porReceptor[receptor]) {
+                    porReceptor[receptor] = 0;
+                }
+                porReceptor[receptor] += stat.datos_recibidos;
+            });
+
+            const labels = Object.keys(porReceptor).length > 0 ? Object.keys(porReceptor) : ['Sin datos'];
+            const data = Object.values(porReceptor).length > 0 ? Object.values(porReceptor) : [0];
+            
+            // Crear o actualizar gráfico de barras
+            if (!chartReceptores) {
+                const ctxReceptores = document.getElementById('chartReceptores').getContext('2d');
+                chartReceptores = new Chart(ctxReceptores, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Datos Recibidos',
+                            data: data,
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } else {
+                chartReceptores.data.labels = labels;
+                chartReceptores.data.datasets[0].data = data;
+                chartReceptores.update();
+            }
+
+            // Preparar datos temporales
+            const estadisticas_ordenadas = estadisticas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            const fechas = estadisticas_ordenadas.slice(-7).map(stat => new Date(stat.fecha).toLocaleDateString('es-AR'));
+            const datos_temporal = estadisticas_ordenadas.slice(-7).map(stat => stat.datos_recibidos);
+            
+            // Crear o actualizar gráfico temporal
+            if (!chartTemporal) {
+                const ctxTemporal = document.getElementById('chartTemporal').getContext('2d');
+                chartTemporal = new Chart(ctxTemporal, {
+                    type: 'line',
+                    data: {
+                        labels: fechas.length > 0 ? fechas : ['Sin datos'],
+                        datasets: [{
+                            label: 'Datos Recibidos',
+                            data: datos_temporal.length > 0 ? datos_temporal : [0],
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } else {
+                chartTemporal.data.labels = fechas.length > 0 ? fechas : ['Sin datos'];
+                chartTemporal.data.datasets[0].data = datos_temporal.length > 0 ? datos_temporal : [0];
+                chartTemporal.update();
+            }
+        }
+    </script>
+</body>
+</html>

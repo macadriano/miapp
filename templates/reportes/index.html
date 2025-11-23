@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - WayGPS</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    
+    <style>
+        .development-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            margin: 40px 0;
+        }
+        
+        .development-banner i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .development-banner h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .development-banner p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 0;
+        }
+        
+        .features-preview {
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .feature-card i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .feature-card h5 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .feature-card p {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body data-page="reportes">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i> Reportes
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-light btn-sm" href="/moviles/dashboard/">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </div>
+            </div>
+            <div class="app-content">
+                <!-- Banner de desarrollo -->
+                <div class="development-banner">
+                    <i class="bi bi-tools"></i>
+                    <h2>Reportes en Desarrollo</h2>
+                    <p>Estamos trabajando en esta funcionalidad. Próximamente podrás generar reportes detallados de tu flota.</p>
+                </div>
+
+                <!-- Vista previa de funcionalidades -->
+                <div class="features-preview">
+                    <h3 class="mb-4 text-center">Funcionalidades que estarán disponibles:</h3>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <i class="bi bi-geo-alt"></i>
+                                <h5>Ubicación Actual</h5>
+                                <p>Reporte de la ubicación actual de todos los vehículos de la flota</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <i class="bi bi-signpost-split"></i>
+                                <h5>Historial de Rutas</h5>
+                                <p>Análisis completo de recorridos y rutas realizadas por los vehículos</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <i class="bi bi-fuel-pump"></i>
+                                <h5>Consumo de Combustible</h5>
+                                <p>Reportes detallados de consumo y eficiencia de combustible</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <i class="bi bi-clock-history"></i>
+                                <h5>Tiempos de Parada</h5>
+                                <p>Análisis de tiempos de parada y detenciones de los vehículos</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <i class="bi bi-speedometer2"></i>
+                                <h5>Excesos de Velocidad</h5>
+                                <p>Reportes de excesos de velocidad y eventos de conducción</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <i class="bi bi-calendar-range"></i>
+                                <h5>Reportes Personalizados</h5>
+                                <p>Crea reportes personalizados según tus necesidades específicas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Auth -->
+    <script src="{% static 'js/auth.js' %}"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Configurar sidebar toggle
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page="${currentPage}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
+

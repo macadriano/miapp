@@ -1,0 +1,33 @@
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-153-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Tue Oct  7 20:09:53 -03 2025
+
+  System load:  0.1                Processes:             125
+  Usage of /:   57.5% of 15.66GB   Users logged in:       1
+  Memory usage: 63%                IPv4 address for eth0: 168.197.48.154
+  Swap usage:   0%                 IPv6 address for eth0: 2800:6c0:5::1faf
+
+Expanded Security Maintenance for Applications is not enabled.
+
+7 updates can be applied immediately.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+
+*** System restart required ***
+Last login: Tue Oct  7 20:09:54 2025 from 181.46.66.102
+[?2004h[root@vps-5273003-x ~] # [?2004l[?2004h[?2004l
+[?2004h[root@vps-5273003-x ~] # [?2004l[?2004h[?2004l
+[?2004h[root@vps-5273003-x ~] # [?2004l[?2004h[?2004l
+[?2004h[root@vps-5273003-x ~] # [?2004l[?2004h[?2004l
+[?2004h[root@vps-5273003-x ~] # 
+[?2004l[?2004h[root@vps-5273003-x ~] # 
+[?2004l[?2004h[root@vps-5273003-x ~] # 
+[?2004l[?2004h[root@vps-5273003-x ~] # exit
+[?2004llogout

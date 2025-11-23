@@ -1,0 +1,223 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zonas | WayGPS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/zonas.css' %}">
+</head>
+<body data-page="zonas">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-bounding-box-circles me-2"></i> Administrador de Zonas
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-light btn-sm" onclick="window.location.href='/moviles/dashboard/'">
+                        <i class="bi bi-house"></i> Home
+                    </button>
+                </div>
+            </div>
+
+            <div class="app-content">
+                <!-- Controles de Vista (Toggle Mapa/Lista) -->
+                <div class="view-controls mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="view-toggle">
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="view-mode" id="view-map" value="map" checked>
+                                <label class="btn btn-outline-primary" for="view-map">
+                                    <i class="bi bi-map"></i> Mapa
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="view-mode" id="view-list" value="list">
+                                <label class="btn btn-outline-primary" for="view-list">
+                                    <i class="bi bi-list-ul"></i> Lista
+                                </label>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary" id="zonasCount">0 zonas</span>
+                            <button class="btn btn-success btn-sm" id="btnNuevaZona">
+                                <i class="bi bi-plus"></i> Nueva Zona
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista de Mapa -->
+                <div id="zonas-map-view" class="content-view">
+                    <div class="card mb-3 position-relative overflow-visible">
+                        <div class="card-header">
+                            <div class="zonas-search-bar">
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button" id="voiceSearchBtn" title="Buscar por voz">
+                                        <i class="bi bi-mic-fill"></i>
+                                    </button>
+                                    <input type="text" class="form-control" id="zonaSearchInput" placeholder="Buscar dirección o lugar (ej. 'Av. Corrientes 1234, CABA')">
+                                    <button class="btn btn-outline-secondary" type="button" id="zonaSearchClear" title="Limpiar búsqueda">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="search-status small text-muted" id="zonaSearchStatus"></div>
+                                <div class="search-suggestions" id="zonaSearchSuggestions"></div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0 position-relative zonas-map-shell" id="zonas-map-wrapper">
+                            <div id="zonasMap"></div>
+                        </div>
+                        <div class="map-tips">
+                            <span class="badge bg-info text-dark me-2">1</span>Elegí el tipo
+                            <span class="badge bg-info text-dark mx-2">2</span>Dibujá en el mapa
+                            <span class="badge bg-info text-dark ms-2">3</span>Guardá los cambios
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista de Lista -->
+                <div id="zonas-list-view" class="content-view" style="display: none;">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Zonas registradas</h5>
+                            <span class="badge bg-secondary" id="zonasCountList">0 zonas</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-zonas mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Tipo</th>
+                                            <th>Visible</th>
+                                            <th>Actualizado</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="zonasTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">
+                                                No hay zonas cargadas.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para Crear/Editar Zona -->
+            <div class="modal fade" id="zonaFormModal" tabindex="-1" aria-labelledby="zonaFormModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="zonaFormModalLabel">Crear / Editar Zona</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="zonaForm">
+                                <input type="hidden" id="zonaId">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="nombre" required maxlength="100">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="descripcion" rows="2"></textarea>
+                                </div>
+                                <div class="mb-3 tipo-select-wrapper">
+                                    <label class="form-label">Tipo</label>
+                                    <select class="form-select" id="tipo" required>
+                                        <option value="">Seleccioná...</option>
+                                        <option value="punto">Punto</option>
+                                        <option value="circulo">Círculo</option>
+                                        <option value="poligono">Polígono</option>
+                                        <option value="polilinea">Polilínea</option>
+                                    </select>
+                                    <small class="text-muted">Elegí el tipo antes de dibujar en el mapa.</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Color</label>
+                                        <input type="color" class="form-control form-control-color" id="color" value="#FF0000">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Opacidad</label>
+                                        <input type="number" class="form-control" id="opacidad" min="0" max="1" step="0.05" value="0.5">
+                                    </div>
+                                </div>
+                                <div class="mb-3" id="radioGroup" style="display:none;">
+                                    <label class="form-label">Radio (metros)</label>
+                                    <input type="number" class="form-control" id="radio_metros" min="50" step="50">
+                                    <small class="text-muted">Se calcula automáticamente al dibujar un círculo, pero podés ajustarlo.</small>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="visible" checked>
+                                    <label class="form-check-label" for="visible">Visible en mapas</label>
+                                </div>
+                                <div class="alert alert-info py-2" id="drawInfo">
+                                    <strong>1.</strong> Elegí el tipo.<br>
+                                    <strong>2.</strong> Dibujá en el mapa.<br>
+                                    <strong>3.</strong> Guardá los cambios.
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-outline-secondary" id="resetFormBtn">Nuevo</button>
+                            <button type="button" class="btn btn-primary" id="saveZonaBtn">
+                                <i class="bi bi-save me-1"></i> Guardar zona
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/zonas.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page="${currentPage}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
+

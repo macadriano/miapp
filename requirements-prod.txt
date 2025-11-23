@@ -1,0 +1,6 @@
+Django==5.1.2
+djangorestframework
+django-cors-headers
+python-decouple
+psycopg2-binary
+requests

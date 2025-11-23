@@ -1,0 +1,144 @@
+/* Estilos específicos para el módulo de Equipos GPS */
+
+/* Layout SOLO para escritorio.
+   En móviles, el layout general (app-wrapper, sidebar, main-area, etc.)
+   lo maneja global.css para que todas las interfaces se comporten igual. */
+@media (min-width: 992px) {
+    .sidebar {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar .position-sticky {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        background-color: #f8f9fa;
+    }
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Estados de equipos */
+.badge-operativo {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-mantenimiento {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.badge-stock {
+    background-color: #6c757d;
+    color: white;
+}
+
+.badge-baja {
+    background-color: #dc3545;
+    color: white;
+}
+
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.loading {
+    display: none;
+}
+
+.filter-section {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Estilos para campos obligatorios */
+.form-label .text-danger {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-left: 3px;
+}
+
+/* Estilos responsive para equipos */
+@media (max-width: 768px) {
+    .filter-section {
+        padding: 0.75rem;
+    }
+
+    .filter-section .row {
+        margin: 0;
+    }
+
+    .filter-section .col-md-3,
+    .filter-section .col-md-2 {
+        margin-bottom: 0.75rem;
+        padding: 0 0.5rem;
+    }
+
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+    }
+
+    /* Ocultar columnas menos importantes en móviles */
+    .table th:nth-child(2),
+    .table td:nth-child(2),
+    .table th:nth-child(5),
+    .table td:nth-child(5) {
+        display: none;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    .card-header {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .filter-section {
+        padding: 0.5rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.4rem 0.2rem;
+        font-size: 0.75rem;
+    }
+
+    /* Ocultar más columnas en móviles muy pequeños */
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+

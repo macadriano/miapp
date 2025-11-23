@@ -1,0 +1,377 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controles NEO - WayGPS</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    
+    <style>
+        .assistant-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .assistant-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .assistant-banner h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .assistant-banner p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .assistant-icons {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1;
+        }
+        
+        .assistant-icons i {
+            font-size: 2.5rem;
+            opacity: 0.9;
+        }
+        
+        .step-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 3px solid transparent;
+            cursor: pointer;
+        }
+        
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .step-card.active {
+            border-color: #ff6b35;
+            background: linear-gradient(135deg, #fff5f0 0%, #ffffff 100%);
+        }
+        
+        .step-card.active .step-icon {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            color: white;
+        }
+        
+        .step-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .step-card h5 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .step-card p {
+            color: #666;
+            font-size: 0.95rem;
+            text-align: center;
+            margin-bottom: 0;
+        }
+        
+        .selection-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.3rem;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .form-check-label {
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+        }
+        
+        .search-input-group {
+            margin-top: 20px;
+        }
+        
+        .development-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 193, 7, 0.95);
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(255, 193, 7, 0.4);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body data-page="controles-neo">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-bell-slash me-2"></i> Controles NEO
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-light btn-sm" href="/moviles/dashboard/">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </div>
+            </div>
+            <div class="app-content">
+                <div class="development-badge">
+                    <i class="bi bi-tools me-1"></i> En Desarrollo
+                </div>
+
+                <!-- Banner del Asistente -->
+                <div class="assistant-banner">
+                    <div class="assistant-icons">
+                        <i class="bi bi-stars" style="color: #ffc107;"></i>
+                        <i class="bi bi-feather" style="color: #87ceeb;"></i>
+                    </div>
+                    <h1>Asistente</h1>
+                    <p>Genere sus controles guiado por el asistente de Neo</p>
+                </div>
+
+                <!-- Tarjetas de Pasos -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="step-card active" onclick="selectStep(1)">
+                            <div class="step-icon">
+                                <i class="bi bi-truck"></i>
+                            </div>
+                            <h5>Selección de Móviles</h5>
+                            <p>Seleccione los móviles y/o flotas sobre los que aplicará el control</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="step-card" onclick="selectStep(2)">
+                            <div class="step-icon">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            <h5>Criterios de Control</h5>
+                            <p>Configure los criterios: velocidad, zonas, detenciones, kilometraje o combinaciones</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="step-card" onclick="selectStep(3)">
+                            <div class="step-icon">
+                                <i class="bi bi-bullseye"></i>
+                            </div>
+                            <h5>Destinatarios</h5>
+                            <p>Configure los destinatarios: mensajes en plataforma, email u otros medios</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="step-card" onclick="selectStep(4)">
+                            <div class="step-icon">
+                                <i class="bi bi-file-text"></i>
+                            </div>
+                            <h5>Información de Alertas</h5>
+                            <p>Defina qué información incluir en las alertas y notificaciones</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Selección -->
+                <div class="selection-section">
+                    <h3 class="section-title">Selección de Móviles y/o Flotas</h3>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold mb-3">Tipo de Selección</label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="tipoSeleccion" id="individuales" value="individuales" checked>
+                            <label class="form-check-label" for="individuales">
+                                Móviles individuales
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="tipoSeleccion" id="flotaCompleta" value="flotaCompleta">
+                            <label class="form-check-label" for="flotaCompleta">
+                                Flota completa
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipoSeleccion" id="mixtos" value="mixtos">
+                            <label class="form-check-label" for="mixtos">
+                                Móviles y flotas mixtos
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="seleccionIndividuales">
+                        <label class="form-label fw-bold mb-3">Seleccionar Móviles Individuales</label>
+                        <div class="input-group search-input-group">
+                            <input type="text" class="form-control" id="buscarMovil" placeholder="Buscar móvil por patente, código...">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscar">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="movil1" disabled>
+                                <label class="form-check-label text-muted" for="movil1">
+                                    (Seleccione un tipo de búsqueda para comenzar)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje de Desarrollo -->
+                <div class="alert alert-info mt-4" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Funcionalidad en Desarrollo</h5>
+                    <p class="mb-0">
+                        Esta interfaz permitirá de forma muy sencilla e intuitiva generar y administrar controles de todo tipo sobre la flota. 
+                        Próximamente podrás configurar alertas de velocidad, zonas, detenciones, kilometraje y mucho más.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Auth -->
+    <script src="{% static 'js/auth.js' %}"></script>
+    
+    <script>
+        // Función para seleccionar un paso
+        function selectStep(step) {
+            // Remover clase active de todas las tarjetas
+            document.querySelectorAll('.step-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // Agregar clase active a la tarjeta seleccionada
+            const cards = document.querySelectorAll('.step-card');
+            if (cards[step - 1]) {
+                cards[step - 1].classList.add('active');
+            }
+        }
+
+        // Configurar sidebar toggle
+        document.addEventListener('DOMContentLoaded', function () {
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page="${currentPage}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // Manejar cambio de tipo de selección
+            document.querySelectorAll('input[name="tipoSeleccion"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const tipo = this.value;
+                    const seleccionDiv = document.getElementById('seleccionIndividuales');
+                    
+                    if (tipo === 'individuales') {
+                        seleccionDiv.style.display = 'block';
+                    } else {
+                        seleccionDiv.style.display = 'none';
+                    }
+                });
+            });
+
+            // Manejar búsqueda de móviles
+            document.getElementById('btnBuscar')?.addEventListener('click', function() {
+                const busqueda = document.getElementById('buscarMovil').value;
+                if (busqueda.trim()) {
+                    // Aquí se implementará la búsqueda real cuando esté desarrollado
+                    console.log('Buscando:', busqueda);
+                }
+            });
+
+            document.getElementById('buscarMovil')?.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('btnBuscar')?.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

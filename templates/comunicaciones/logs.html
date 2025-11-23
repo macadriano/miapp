@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs de Receptores - WayGPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/global.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .log-container {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .log-line {
+            margin-bottom: 2px;
+            word-wrap: break-word;
+        }
+        .log-error {
+            color: #f85149;
+        }
+        .log-warning {
+            color: #d29922;
+        }
+        .log-info {
+            color: #58a6ff;
+        }
+        .log-success {
+            color: #3fb950;
+        }
+        .file-card {
+            transition: transform 0.2s;
+        }
+        .file-card:hover {
+            transform: translateY(-2px);
+        }
+        .file-size {
+            font-size: 0.85em;
+            color: #6c757d;
+        }
+        .port-badge {
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body data-page="comunicaciones-logs">
+    <div class="app-wrapper" id="appWrapper">
+        {% include 'partials/sidebar.html' %}
+        <div class="main-area">
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h1 class="topbar-title mb-0">
+                        <i class="bi bi-broadcast me-2"></i> Comunicaciones
+                    </h1>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-light btn-sm" href="/moviles/dashboard/">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </div>
+            </div>
+            <div class="app-content">
+                <div class="container-fluid px-0 mt-4">
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <a class="nav-link" href="/comunicaciones/">
+                    <i class="bi bi-speedometer2 me-1"></i> Panel
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/comunicaciones/configuraciones/">
+                    <i class="bi bi-sliders me-1"></i> Configuraciones
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/comunicaciones/logs/">
+                    <i class="bi bi-journal-text me-1"></i> Logs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/comunicaciones/estadisticas/">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Estadísticas
+                </a>
+            </li>
+        </ul>
+        <div class="row">
+            <div class="col-12">
+                <h2 class="h4 mb-4">
+                    <i class="fas fa-file-alt me-2"></i> Logs de Receptores
+                </h2>
+                
+                <!-- Filtros -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="portFilter" class="form-label">Filtrar por Puerto:</label>
+                                <select class="form-select" id="portFilter" onchange="filtrarLogs()">
+                                    <option value="">Todos los puertos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="linesFilter" class="form-label">Líneas a mostrar:</label>
+                                <select class="form-select" id="linesFilter" onchange="cargarLogSeleccionado()">
+                                    <option value="50">50 líneas</option>
+                                    <option value="100" selected>100 líneas</option>
+                                    <option value="200">200 líneas</option>
+                                    <option value="500">500 líneas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-primary" onclick="cargarLogs()">
+                                    <i class="fas fa-sync-alt"></i> Actualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Lista de archivos de log -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-folder-open"></i> Archivos de Log</h5>
+                            </div>
+                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                                <div id="log-files-list">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin"></i> Cargando archivos...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido del log -->
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-file-code"></i> Contenido del Log</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="copiarLog()" title="Copiar al portapapeles">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="descargarLog()" title="Descargar archivo">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="log-content" class="log-container">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-info-circle"></i> Selecciona un archivo de log para ver su contenido
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+                </div> <!-- container-fluid -->
+            </div> <!-- app-content -->
+        </div> <!-- main-area -->
+    </div> <!-- app-wrapper -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const wrapper = document.getElementById('appWrapper');
+            const toggle = document.getElementById('sidebarToggle');
+            const storedState = localStorage.getItem('sidebarCollapsed');
+
+            if (storedState === 'true') {
+                wrapper.classList.add('collapsed');
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    wrapper.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                });
+            }
+
+            const currentPage = document.body.dataset.page;
+            const activeLink = document.querySelector(`.sidebar-nav a[data-page=\"${currentPage}\"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script>
+        let logFiles = [];
+        let selectedLogFile = null;
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarLogs();
+        });
+
+        // Cargar lista de archivos de log
+        async function cargarLogs() {
+            try {
+                const response = await fetch('/api/receiver/logs/');
+                logFiles = await response.json();
+                console.log('Archivos de log recibidos:', logFiles);
+                
+                renderizarLogFiles();
+                actualizarFiltroPuertos();
+            } catch (error) {
+                console.error('Error cargando logs:', error);
+                document.getElementById('log-files-list').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error cargando archivos de log
+                    </div>
+                `;
+            }
+        }
+
+        // Renderizar lista de archivos
+        function renderizarLogFiles() {
+            const container = document.getElementById('log-files-list');
+            
+            if (logFiles.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-folder-open"></i>
+                        <p class="mt-2">No hay archivos de log disponibles</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = logFiles.map(file => {
+                const sizeKB = (file.size / 1024).toFixed(1);
+                const modifiedDate = new Date(file.modified).toLocaleString('es-AR');
+                // Escapar comillas simples y barras invertidas para JavaScript
+                const escapedPath = file.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                
+                return `
+                    <div class="card file-card mb-2" onclick="seleccionarLog('${escapedPath}', this)" style="cursor: pointer;">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title mb-1">
+                                        <i class="fas fa-file-alt"></i> ${file.name}
+                                    </h6>
+                                    <span class="badge bg-info port-badge">Puerto ${file.port}</span>
+                                </div>
+                                <div class="text-end">
+                                    <div class="file-size">${sizeKB} KB</div>
+                                    <div class="file-size">${modifiedDate}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        // Actualizar filtro de puertos
+        function actualizarFiltroPuertos() {
+            const portFilter = document.getElementById('portFilter');
+            const puertos = [...new Set(logFiles.map(file => file.port))].sort();
+            
+            portFilter.innerHTML = '<option value="">Todos los puertos</option>' +
+                puertos.map(puerto => `<option value="${puerto}">Puerto ${puerto}</option>`).join('');
+        }
+
+        // Filtrar logs por puerto
+        function filtrarLogs() {
+            const portFilter = document.getElementById('portFilter');
+            const puertoSeleccionado = portFilter.value;
+            
+            if (!puertoSeleccionado) {
+                renderizarLogFiles();
+                return;
+            }
+            
+            const archivosFiltrados = logFiles.filter(file => file.port === puertoSeleccionado);
+            const container = document.getElementById('log-files-list');
+            
+            if (archivosFiltrados.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-search"></i>
+                        <p class="mt-2">No hay archivos para el puerto ${puertoSeleccionado}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = archivosFiltrados.map(file => {
+                const sizeKB = (file.size / 1024).toFixed(1);
+                const modifiedDate = new Date(file.modified).toLocaleString('es-AR');
+                // Escapar comillas simples y barras invertidas para JavaScript
+                const escapedPath = file.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                
+                return `
+                    <div class="card file-card mb-2" onclick="seleccionarLog('${escapedPath}', this)" style="cursor: pointer;">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title mb-1">
+                                        <i class="fas fa-file-alt"></i> ${file.name}
+                                    </h6>
+                                    <span class="badge bg-info port-badge">Puerto ${file.port}</span>
+                                </div>
+                                <div class="text-end">
+                                    <div class="file-size">${sizeKB} KB</div>
+                                    <div class="file-size">${modifiedDate}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        // Seleccionar archivo de log
+        function seleccionarLog(logPath, element) {
+            selectedLogFile = logPath;
+            cargarLogSeleccionado();
+            
+            // Resaltar archivo seleccionado
+            document.querySelectorAll('.file-card').forEach(card => {
+                card.classList.remove('border-primary');
+            });
+            if (element) {
+                element.classList.add('border-primary');
+            }
+        }
+
+        // Cargar contenido del log seleccionado
+        async function cargarLogSeleccionado() {
+            if (!selectedLogFile) return;
+            
+            const lines = document.getElementById('linesFilter').value;
+            const container = document.getElementById('log-content');
+            
+            container.innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando contenido...
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`/api/receiver/log-content/?path=${encodeURIComponent(selectedLogFile)}&lines=${lines}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // Manejar errores de la API
+                    container.innerHTML = `
+                        <div class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle"></i> ${data.error || 'Error cargando el contenido del log'}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (data.content) {
+                    renderizarLogContent(data.content);
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center text-muted">
+                            <i class="fas fa-exclamation-triangle"></i> No se pudo cargar el contenido
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error cargando contenido:', error);
+                container.innerHTML = `
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error cargando contenido: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Renderizar contenido del log
+        function renderizarLogContent(content) {
+            const container = document.getElementById('log-content');
+            const lines = content.split('\n');
+            
+            const html = lines.map(line => {
+                let className = 'log-line';
+                
+                if (line.includes('ERROR') || line.includes('Error')) {
+                    className += ' log-error';
+                } else if (line.includes('WARNING') || line.includes('Warning')) {
+                    className += ' log-warning';
+                } else if (line.includes('INFO') || line.includes('Info')) {
+                    className += ' log-info';
+                } else if (line.includes('SUCCESS') || line.includes('✅')) {
+                    className += ' log-success';
+                }
+                
+                return `<div class="${className}">${line}</div>`;
+            }).join('');
+            
+            container.innerHTML = html;
+            
+            // Scroll al final
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Copiar log al portapapeles
+        function copiarLog() {
+            if (!selectedLogFile) {
+                alert('Selecciona un archivo de log primero');
+                return;
+            }
+            
+            const content = document.getElementById('log-content').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Log copiado al portapapeles');
+            }).catch(() => {
+                alert('Error al copiar al portapapeles');
+            });
+        }
+
+        // Descargar archivo de log
+        function descargarLog() {
+            if (!selectedLogFile) {
+                alert('Selecciona un archivo de log primero');
+                return;
+            }
+            
+            const fileName = selectedLogFile.split('/').pop();
+            const content = document.getElementById('log-content').textContent;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
