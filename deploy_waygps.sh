@@ -30,6 +30,7 @@ Requires=docker.service
 User=www-data
 Group=www-data
 WorkingDirectory=$APP_DIR
+EnvironmentFile=$APP_DIR/.env
 Environment="DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS"
 ExecStart=$VENV_DIR/bin/gunicorn wayproject.wsgi:application --bind 127.0.0.1:8000
 Restart=always
