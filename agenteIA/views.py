@@ -249,7 +249,7 @@ def procesar_consulta(request):
         cache_key = 'vectores_activos'
         vectores = cache.get(cache_key)
         if vectores is None:
-            vectores = list(VectorConsulta.objects.filter(activo=True).only('id', 'consulta', 'tipo_consulta', 'embedding', 'activo'))
+            vectores = list(VectorConsulta.objects.filter(activo=True).only('id', 'texto_original', 'tipo_consulta', 'vector_embedding', 'activo', 'threshold', 'variables', 'categoria'))
             cache.set(cache_key, vectores, 300)  # Cache por 5 minutos
         else:
             vectores = list(vectores)
