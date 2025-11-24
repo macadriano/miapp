@@ -280,6 +280,25 @@ class ProcesadorSimple:
         if tipo_seleccionado:
             for vector_db in vectores_db:
                 if vector_db.tipo_consulta == tipo_seleccionado and vector_db.activo:
+                    # Extraer variables del texto
+                    variables = {}
+                    movil_extraido = self.matcher.extraer_movil(texto)
+                    if movil_extraido:
+                        variables['movil'] = movil_extraido
+                        print(f\"  ✅ Móvil extraído: {movil_extraido}")
+                    
+                    # Extraer destino si es necesario (LLEGADA, CERCANIA)
+                    if tipo_seleccionado in ['LLEGADA', 'CERCANIA']:
+                        destino = self.matcher.extraer_destino(texto, exclude=[movil_extraido] if movil_extraido else [])
+                        if destino:
+                            variables['destino'] = destino
+                            print(f\"  ✅ Destino extraído: {destino}")
+                    
+                    return {
+                        'vector': vector_db,
+                        'similitud': 0.85,  # Similitud alta para indicar match
+                        'tipo': tipo_seleccionado,
+                        'categoria': vector_db.categoria,
                         'variables': variables
                     }
         
