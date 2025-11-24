@@ -37,6 +37,34 @@ def get_all_running_receivers() -> dict:
     return result
 
 
+
+def start_active_receivers():
+    """
+    Iniciar todos los receptores que estén marcados como activos en la base de datos.
+    """
+    try:
+        from gps.models import ConfiguracionReceptor
+        
+        # Obtener todos los receptores activos
+        receptores = ConfiguracionReceptor.objects.filter(activo=True)
+        
+        print(f"🔄 Iniciando {receptores.count()} receptores activos...")
+        
+        for receptor in receptores:
+            # Verificar si ya está corriendo para no duplicar
+            if is_receiver_running(receptor.puerto):
+                print(f"   ℹ️ Receptor en puerto {receptor.puerto} ya está corriendo")
+                continue
+                
+            print(f"   ➡️ Iniciando receptor {receptor.nombre} en puerto {receptor.puerto}...")
+            # Usar start_receiver pero evitar recursión infinita de actualizaciones de DB si fuera necesario
+            # En este caso start_receiver es seguro
+            start_receiver(port=receptor.puerto)
+            
+    except Exception as e:
+        print(f"❌ Error iniciando receptores activos: {e}")
+
+
 def start_receiver(host: str = '0.0.0.0', port: int = 5003) -> dict:
     """
     Iniciar un receptor en un puerto específico
@@ -64,7 +92,11 @@ def start_receiver(host: str = '0.0.0.0', port: int = 5003) -> dict:
         
         # Verificar si existe la configuración
         try:
-            ConfiguracionReceptor.objects.get(puerto=port)
+            config = ConfiguracionReceptor.objects.get(puerto=port)
+            # Asegurar que esté marcado como activo
+            if not config.activo:
+                config.activo = True
+                config.save()
         except ConfiguracionReceptor.DoesNotExist:
             # Crear configuración por defecto
             try:
@@ -159,6 +191,16 @@ def stop_receiver(port: int) -> dict:
         # Esperar a que termine el hilo
         if thread:
             thread.join(timeout=2)
+            
+        # Actualizar estado en base de datos
+        try:
+            from gps.models import ConfiguracionReceptor
+            config = ConfiguracionReceptor.objects.get(puerto=port)
+            config.activo = False
+            config.save()
+        except Exception as e:
+            print(f"⚠️ No se pudo actualizar estado en BD para puerto {port}: {e}")
+
         
         stats = receiver.get_stats() if receiver else None
         
