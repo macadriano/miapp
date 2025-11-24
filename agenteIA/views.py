@@ -256,7 +256,7 @@ def procesar_consulta(request):
         
         # Debug: verificar que hay vectores
         print(f"Consulta recibida: '{mensaje}'")
-        print(f"Total vectores disponibles: {vectores.count()}")
+        print(f"Total vectores disponibles: {len(vectores)}")
         
         # Normalizar mensaje para comparaciones
         mensaje_lower = mensaje.lower().strip()
