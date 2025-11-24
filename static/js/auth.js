@@ -3,7 +3,7 @@
  * Maneja login, logout, verificación de sesión y permisos
  */
 
-const AUTH_API_URL = 'http://127.0.0.1:8000/api/auth';
+const AUTH_API_URL = '/api/auth';
 
 // Obtener token de autenticación
 function getAuthToken() {
@@ -36,17 +36,17 @@ function isAuthenticated() {
 // Verificar si tiene permiso sobre una entidad
 function tienePermiso(entidad, accion = 'ver') {
     const permisos = getUserPermisos();
-    
+
     if (!permisos) return false;
-    
+
     // Superusuario tiene todos los permisos
     if (permisos.es_superusuario) return true;
-    
+
     // Verificar permiso específico
     if (permisos.entidades && permisos.entidades[entidad]) {
         return permisos.entidades[entidad][accion] === true;
     }
-    
+
     return false;
 }
 
@@ -104,9 +104,9 @@ async function verificarAutenticacion() {
 // Logout
 async function logout() {
     const token = getAuthToken();
-    
+
     console.log('Iniciando logout...');
-    
+
     try {
         // Siempre intentamos notificar al backend para cerrar también la sesión de Django.
         // Si hay token, lo mandamos por Authorization; si no, usamos solo la cookie de sesión.
@@ -126,12 +126,12 @@ async function logout() {
     } catch (error) {
         console.error('Error en logout:', error);
     }
-    
+
     // Limpiar datos locales SIEMPRE
     limpiarSesion();
-    
+
     console.log('Redirigiendo a login...');
-    
+
     // Redirigir a login forzando cierre de sesión de Django (?logout=1)
     // para evitar que el backend nos devuelva automáticamente al dashboard.
     window.location.href = '/login/?logout=1';
@@ -155,25 +155,25 @@ function getFetchHeaders() {
     const headers = {
         'Content-Type': 'application/json'
     };
-    
+
     if (token) {
         headers['Authorization'] = `Token ${token}`;
     }
-    
+
     return headers;
 }
 
 // Mostrar información del usuario en la interfaz
 function mostrarInfoUsuario() {
     const userData = getUserData();
-    
+
     if (userData) {
         // Actualizar nombre de usuario en la UI si existe el elemento
         const userNameElement = document.getElementById('userName');
         if (userNameElement) {
             userNameElement.textContent = userData.nombre_completo || userData.username;
         }
-        
+
         const userEmailElement = document.getElementById('userEmail');
         if (userEmailElement) {
             userEmailElement.textContent = userData.email;
@@ -187,7 +187,7 @@ function mostrarInfoUsuario() {
             if (userNameElement) {
                 userNameElement.textContent = 'admin (Demo)';
             }
-            
+
             const userEmailElement = document.getElementById('userEmail');
             if (userEmailElement) {
                 userEmailElement.textContent = 'admin@waygps.com';
@@ -199,7 +199,7 @@ function mostrarInfoUsuario() {
 // Función de prueba para simular login
 function loginDemo() {
     console.log('=== INICIANDO LOGIN DEMO ===');
-    
+
     // Simular token de prueba
     localStorage.setItem('authToken', 'demo-token-123');
     localStorage.setItem('userData', JSON.stringify({
@@ -207,13 +207,13 @@ function loginDemo() {
         nombre_completo: 'Administrador',
         email: 'admin@waygps.com'
     }));
-    
+
     console.log('Token guardado:', localStorage.getItem('authToken'));
     console.log('UserData guardado:', localStorage.getItem('userData'));
-    
+
     // Mostrar info del usuario
     mostrarInfoUsuario();
-    
+
     console.log('Login demo completado');
     console.log('Usuario actual:', getUserData());
     console.log('¡Ahora puedes hacer clic en "Cerrar Sesión"!');
