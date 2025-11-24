@@ -1300,6 +1300,12 @@
         
         // Función para verificar si la consulta necesita un móvil
         function necesitaMovil(texto) {
+            // IMPORTANTE: Si ya hay un móvil en el mensaje, NO necesita agregar otro
+            if (extraerMovil(texto)) {
+                console.log('✅ Ya hay móvil en el mensaje, no necesita agregar otro');
+                return false;
+            }
+            
             const textoLower = texto.toLowerCase();
             // Consultas que requieren un móvil específico
             const consultasMovil = [

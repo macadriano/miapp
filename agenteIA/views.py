@@ -240,6 +240,20 @@ def procesar_consulta(request):
         mensaje = data.get('mensaje', '')
         modo = data.get('modo', 'texto')  # 'texto' o 'voz'
         
+        # WORKAROUND: El frontend a veces agrega el móvil anterior al inicio del mensaje
+        # Ejemplo: "CAMION2 cuanto tarda el camion5..." → "cuanto tarda el camion5..."
+        # Detectar y remover móvil al inicio si viene seguido de una consulta
+        patron_movil_inicio = r'^([A-Z]+\d+)\s+(.+)$'
+        match_limpieza = re.match(patron_movil_inicio, mensaje.strip())
+        if match_limpieza:
+            posible_movil = match_limpieza.group(1)
+            resto_mensaje = match_limpieza.group(2)
+            # Solo limpiar si el resto del mensaje tiene palabras de consulta
+            palabras_consulta = ['donde', 'cuanto', 'cuando', 'que', 'cual', 'como', 'llega', 'tarda', 'cerca']
+            if any(palabra in resto_mensaje.lower() for palabra in palabras_consulta):
+                print(f"⚠️ Limpiando mensaje: removiendo '{posible_movil}' del inicio")
+                mensaje = resto_mensaje
+        
         # Inicializar procesadores
         procesador = ProcesadorConsultas()
         procesador_simple = ProcesadorSimple()
