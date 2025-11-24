@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="{% static 'css/global.css' %}">
     <link rel="stylesheet" href="{% static 'css/zonas.css' %}">
 </head>
+
 <body data-page="zonas">
     <div class="app-wrapper" id="appWrapper">
         {% include 'partials/sidebar.html' %}
@@ -38,11 +40,12 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="view-toggle">
                             <div class="btn-group" role="group">
-                                <input type="radio" class="btn-check" name="view-mode" id="view-map" value="map" checked>
+                                <input type="radio" class="btn-check" name="view-mode" id="view-map" value="map"
+                                    checked>
                                 <label class="btn btn-outline-primary" for="view-map">
                                     <i class="bi bi-map"></i> Mapa
                                 </label>
-                                
+
                                 <input type="radio" class="btn-check" name="view-mode" id="view-list" value="list">
                                 <label class="btn btn-outline-primary" for="view-list">
                                     <i class="bi bi-list-ul"></i> Lista
@@ -64,11 +67,14 @@
                         <div class="card-header">
                             <div class="zonas-search-bar">
                                 <div class="input-group">
-                                    <button class="btn btn-outline-secondary" type="button" id="voiceSearchBtn" title="Buscar por voz">
+                                    <button class="btn btn-outline-secondary" type="button" id="voiceSearchBtn"
+                                        title="Buscar por voz">
                                         <i class="bi bi-mic-fill"></i>
                                     </button>
-                                    <input type="text" class="form-control" id="zonaSearchInput" placeholder="Buscar dirección o lugar (ej. 'Av. Corrientes 1234, CABA')">
-                                    <button class="btn btn-outline-secondary" type="button" id="zonaSearchClear" title="Limpiar búsqueda">
+                                    <input type="text" class="form-control" id="zonaSearchInput"
+                                        placeholder="Buscar dirección o lugar (ej. 'Av. Corrientes 1234, CABA')">
+                                    <button class="btn btn-outline-secondary" type="button" id="zonaSearchClear"
+                                        title="Limpiar búsqueda">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </div>
@@ -121,12 +127,14 @@
             </div>
 
             <!-- Modal para Crear/Editar Zona -->
-            <div class="modal fade" id="zonaFormModal" tabindex="-1" aria-labelledby="zonaFormModalLabel" aria-hidden="true">
+            <div class="modal fade" id="zonaFormModal" tabindex="-1" aria-labelledby="zonaFormModalLabel"
+                aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header bg-primary text-white">
                             <h5 class="modal-title" id="zonaFormModalLabel">Crear / Editar Zona</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <form id="zonaForm">
@@ -153,17 +161,20 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Color</label>
-                                        <input type="color" class="form-control form-control-color" id="color" value="#FF0000">
+                                        <input type="color" class="form-control form-control-color" id="color"
+                                            value="#FF0000">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Opacidad</label>
-                                        <input type="number" class="form-control" id="opacidad" min="0" max="1" step="0.05" value="0.5">
+                                        <input type="number" class="form-control" id="opacidad" min="0" max="1"
+                                            step="0.05" value="0.5">
                                     </div>
                                 </div>
                                 <div class="mb-3" id="radioGroup" style="display:none;">
                                     <label class="form-label">Radio (metros)</label>
                                     <input type="number" class="form-control" id="radio_metros" min="50" step="50">
-                                    <small class="text-muted">Se calcula automáticamente al dibujar un círculo, pero podés ajustarlo.</small>
+                                    <small class="text-muted">Se calcula automáticamente al dibujar un círculo, pero
+                                        podés ajustarlo.</small>
                                 </div>
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="visible" checked>
@@ -192,7 +203,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}?v=2.1"></script>
     <script src="{% static 'js/zonas.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -219,5 +230,5 @@
         });
     </script>
 </body>
-</html>
 
+</html>

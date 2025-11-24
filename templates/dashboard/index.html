@@ -1,11 +1,12 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WayGPS - Panel de Control de Móviles</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -15,7 +16,7 @@
     <!-- CSS personalizado -->
     <link rel="stylesheet" href="{% static 'css/global.css' %}">
     <link rel="stylesheet" href="{% static 'css/moviles.css' %}">
-    
+
     <style>
         /* Estilos para mapas responsive */
         .map-container {
@@ -44,36 +45,36 @@
         .movil-card {
             transition: all 0.3s ease;
             border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border-radius: 15px;
             overflow: hidden;
             margin-bottom: 20px;
         }
-        
+
         .movil-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
-        
+
         .movil-card.conectado {
             border-left: 5px solid #28a745;
         }
-        
+
         .movil-card.desconectado {
             border-left: 5px solid #dc3545;
         }
-        
+
         .movil-card.error {
             border-left: 5px solid #ffc107;
         }
-        
+
         .movil-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 15px;
             position: relative;
         }
-        
+
         .movil-status-badge {
             position: absolute;
             top: 10px;
@@ -83,15 +84,23 @@
             border-radius: 50%;
             border: 2px solid white;
         }
-        
-        .status-conectado { background-color: #28a745; }
-        .status-desconectado { background-color: #dc3545; }
-        .status-error { background-color: #ffc107; }
-        
+
+        .status-conectado {
+            background-color: #28a745;
+        }
+
+        .status-desconectado {
+            background-color: #dc3545;
+        }
+
+        .status-error {
+            background-color: #ffc107;
+        }
+
         .movil-info {
             padding: 20px;
         }
-        
+
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -100,36 +109,36 @@
             padding: 8px 0;
             border-bottom: 1px solid #f0f0f0;
         }
-        
+
         .info-row:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-        
+
         .info-label {
             font-weight: 600;
             color: #6c757d;
             font-size: 0.9rem;
         }
-        
+
         .info-value {
             font-weight: 500;
             color: #212529;
         }
-        
+
         .movil-actions {
             padding: 15px 20px;
             background-color: #f8f9fa;
             border-top: 1px solid #e9ecef;
         }
-        
+
         .btn-action {
             margin: 0 2px;
             border-radius: 20px;
             padding: 5px 12px;
             font-size: 0.85rem;
         }
-        
+
         /* Grid responsive */
         .moviles-grid {
             display: grid;
@@ -137,57 +146,57 @@
             gap: 20px;
             padding: 20px 0;
         }
-        
+
         @media (max-width: 768px) {
             .moviles-grid {
                 grid-template-columns: 1fr;
                 padding: 10px;
             }
-            
+
             .movil-card {
                 margin-bottom: 15px;
             }
         }
-        
+
         /* Controles de vista */
         .view-controls {
             background: white;
             padding: 15px 20px;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
-        .view-toggle .btn-check:checked + .btn {
+
+        .view-toggle .btn-check:checked+.btn {
             background-color: #0d6efd;
             border-color: #0d6efd;
             color: white;
         }
-        
+
         .view-toggle .btn {
             border-radius: 8px;
             margin-right: 5px;
         }
-        
+
         /* Filtros modernos */
         .filter-card {
             background: white;
             border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
-        
+
         .filter-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 15px 20px;
             border-radius: 15px 15px 0 0;
         }
-        
+
         .filter-body {
             padding: 20px;
         }
-        
+
         /* Vista de lista */
         .table th {
             border-top: none;
@@ -195,17 +204,17 @@
             font-size: 0.9rem;
             padding: 12px 8px;
         }
-        
+
         .table td {
             padding: 12px 8px;
             vertical-align: middle;
             border-top: 1px solid #dee2e6;
         }
-        
+
         .table-hover tbody tr:hover {
-            background-color: rgba(0,123,255,0.075);
+            background-color: rgba(0, 123, 255, 0.075);
         }
-        
+
         .status-indicator {
             width: 10px;
             height: 10px;
@@ -213,36 +222,44 @@
             display: inline-block;
             margin-right: 8px;
         }
-        
-        .status-conectado { background-color: #28a745; }
-        .status-desconectado { background-color: #dc3545; }
-        .status-error { background-color: #ffc107; }
-        
+
+        .status-conectado {
+            background-color: #28a745;
+        }
+
+        .status-desconectado {
+            background-color: #dc3545;
+        }
+
+        .status-error {
+            background-color: #ffc107;
+        }
+
         .badge-status {
             font-size: 0.75rem;
             padding: 4px 8px;
         }
-        
+
         /* Modal moderno */
         .modal-content {
             border-radius: 15px;
             border: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
-        
+
         .modal-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 15px 15px 0 0;
             border-bottom: none;
         }
-        
+
         /* Tabs modernos */
         .nav-tabs-modern {
             border-bottom: 2px solid #e9ecef;
             margin-bottom: 20px;
         }
-        
+
         .nav-tabs-modern .nav-link {
             border: none;
             border-radius: 10px 10px 0 0;
@@ -251,31 +268,36 @@
             color: #6c757d;
             font-weight: 500;
         }
-        
+
         .nav-tabs-modern .nav-link.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-bottom: 2px solid #667eea;
         }
-        
+
         /* Loading states */
         .skeleton {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
             animation: loading 1.5s infinite;
         }
-        
+
         @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
         }
-        
+
         .skeleton-card {
             height: 200px;
             border-radius: 15px;
             margin-bottom: 20px;
         }
-        
+
         /* Botones flotantes */
         .fab {
             position: fixed;
@@ -288,17 +310,18 @@
             border: none;
             color: white;
             font-size: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             z-index: 1000;
             transition: all 0.3s ease;
         }
-        
+
         .fab:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
+
 <body data-page="dashboard">
     <div class="app-wrapper" id="appWrapper">
         {% include 'partials/sidebar.html' %}
@@ -328,7 +351,8 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                                 Total Móviles</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-moviles">0</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-moviles">0
+                                            </div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-truck text-primary" style="font-size: 2rem;"></i>
@@ -345,7 +369,8 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                                 En Línea</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="moviles-online">0</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="moviles-online">0
+                                            </div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-wifi text-success" style="font-size: 2rem;"></i>
@@ -362,7 +387,8 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                                 Con Encendido</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="moviles-ignicion">0</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="moviles-ignicion">0
+                                            </div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-power text-warning" style="font-size: 2rem;"></i>
@@ -379,7 +405,8 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                                 Velocidad Promedio</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="velocidad-promedio">0 km/h</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="velocidad-promedio">
+                                                0 km/h</div>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-speedometer2 text-info" style="font-size: 2rem;"></i>
@@ -422,11 +449,12 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="view-toggle">
                                 <div class="btn-group" role="group">
-                                    <input type="radio" class="btn-check" name="view-mode" id="view-cards" value="cards" checked>
+                                    <input type="radio" class="btn-check" name="view-mode" id="view-cards" value="cards"
+                                        checked>
                                     <label class="btn btn-outline-primary" for="view-cards">
                                         <i class="bi bi-grid-3x3-gap"></i> Tarjetas
                                     </label>
-                                    
+
                                     <input type="radio" class="btn-check" name="view-mode" id="view-list" value="list">
                                     <label class="btn btn-outline-primary" for="view-list">
                                         <i class="bi bi-list-ul"></i> Lista
@@ -448,46 +476,47 @@
                             <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Búsqueda</h6>
                         </div>
                         <div class="filter-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label for="filtro-busqueda" class="form-label">Buscar</label>
-                                <input type="text" class="form-control" id="filtro-busqueda" placeholder="Patente, alias, código...">
-                            </div>
-                            <div class="col-md-2">
-                                <label for="filtro-estado" class="form-label">Estado</label>
-                                <select class="form-select" id="filtro-estado">
-                                    <option value="">Todos</option>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="filtro-busqueda" class="form-label">Buscar</label>
+                                    <input type="text" class="form-control" id="filtro-busqueda"
+                                        placeholder="Patente, alias, código...">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="filtro-estado" class="form-label">Estado</label>
+                                    <select class="form-select" id="filtro-estado">
+                                        <option value="">Todos</option>
                                         <option value="conectado">En línea</option>
                                         <option value="desconectado">Desconectado</option>
                                         <option value="error">Error</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label for="filtro-encendido" class="form-label">Encendido</label>
-                                <select class="form-select" id="filtro-encendido">
-                                    <option value="">Todos</option>
-                                    <option value="true">Sí</option>
-                                    <option value="false">No</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label for="filtro-tipo" class="form-label">Tipo</label>
-                                <select class="form-select" id="filtro-tipo">
-                                    <option value="">Todos</option>
-                                    <option value="auto">Auto</option>
-                                    <option value="camion">Camión</option>
-                                    <option value="moto">Moto</option>
-                                    <option value="bus">Bus</option>
-                                    <option value="van">Van</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <button class="btn btn-primary me-2" onclick="aplicarFiltros()">
-                                    <i class="bi bi-search"></i> Filtrar
-                                </button>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="filtro-encendido" class="form-label">Encendido</label>
+                                    <select class="form-select" id="filtro-encendido">
+                                        <option value="">Todos</option>
+                                        <option value="true">Sí</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="filtro-tipo" class="form-label">Tipo</label>
+                                    <select class="form-select" id="filtro-tipo">
+                                        <option value="">Todos</option>
+                                        <option value="auto">Auto</option>
+                                        <option value="camion">Camión</option>
+                                        <option value="moto">Moto</option>
+                                        <option value="bus">Bus</option>
+                                        <option value="van">Van</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-primary me-2" onclick="aplicarFiltros()">
+                                        <i class="bi bi-search"></i> Filtrar
+                                    </button>
                                     <button class="btn btn-outline-secondary" onclick="limpiarFiltros()">
                                         <i class="bi bi-arrow-clockwise"></i> Limpiar
-                                </button>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -499,7 +528,7 @@
                         <div id="moviles-cards-view" class="moviles-grid">
                             <!-- Las tarjetas se cargarán dinámicamente -->
                         </div>
-                        
+
                         <!-- Vista de Lista -->
                         <div id="moviles-list-view" style="display: none;">
                             <div class="table-responsive">
@@ -574,22 +603,26 @@
                     <!-- Tabs para el formulario -->
                     <ul class="nav nav-tabs nav-tabs-modern" id="movilTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="movil-tab" data-bs-toggle="tab" data-bs-target="#movil-panel" type="button" role="tab">
+                            <button class="nav-link active" id="movil-tab" data-bs-toggle="tab"
+                                data-bs-target="#movil-panel" type="button" role="tab">
                                 <i class="bi bi-truck"></i> Móvil
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="datos-tab" data-bs-toggle="tab" data-bs-target="#datos-panel" type="button" role="tab">
+                            <button class="nav-link" id="datos-tab" data-bs-toggle="tab" data-bs-target="#datos-panel"
+                                type="button" role="tab">
                                 <i class="bi bi-card-text"></i> Datos
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="observaciones-tab" data-bs-toggle="tab" data-bs-target="#observaciones-panel" type="button" role="tab">
+                            <button class="nav-link" id="observaciones-tab" data-bs-toggle="tab"
+                                data-bs-target="#observaciones-panel" type="button" role="tab">
                                 <i class="bi bi-chat-text"></i> Observaciones
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos-panel" type="button" role="tab">
+                            <button class="nav-link" id="fotos-tab" data-bs-toggle="tab" data-bs-target="#fotos-panel"
+                                type="button" role="tab">
                                 <i class="bi bi-camera"></i> Fotos
                             </button>
                         </li>
@@ -598,38 +631,40 @@
                     <div class="tab-content" id="movilTabContent">
                         <!-- Panel Móvil -->
                         <div class="tab-pane fade show active" id="movil-panel" role="tabpanel">
-                    <form id="formMovil">
-                        <input type="hidden" id="movil-id">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="patente" class="form-label">
-                                        Patente <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" class="form-control" id="patente" required maxlength="20">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="alias" class="form-label">Alias</label>
-                                    <input type="text" class="form-control" id="alias" maxlength="100">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="codigo" class="form-label">Código</label>
-                                    <input type="text" class="form-control" id="codigo" maxlength="32">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="vin" class="form-label">VIN</label>
-                                    <input type="text" class="form-control" id="vin" maxlength="17">
-                                </div>
+                            <form id="formMovil">
+                                <input type="hidden" id="movil-id">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="patente" class="form-label">
+                                                Patente <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control" id="patente" required
+                                                maxlength="20">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="alias" class="form-label">Alias</label>
+                                            <input type="text" class="form-control" id="alias" maxlength="100">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="codigo" class="form-label">Código</label>
+                                            <input type="text" class="form-control" id="codigo" maxlength="32">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="vin" class="form-label">VIN</label>
+                                            <input type="text" class="form-control" id="vin" maxlength="17">
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="gps-id" class="form-label">Equipo GPS</label>
-                                    <select class="form-select" id="gps-id">
-                                        <option value="">Sin asignar</option>
-                                        <!-- Se llenarán dinámicamente los equipos disponibles -->
-                                    </select>
-                                    <small class="text-muted">Solo se muestran equipos inactivos (sin asignar)</small>
-                                </div>
+                                        <div class="mb-3">
+                                            <label for="gps-id" class="form-label">Equipo GPS</label>
+                                            <select class="form-select" id="gps-id">
+                                                <option value="">Sin asignar</option>
+                                                <!-- Se llenarán dinámicamente los equipos disponibles -->
+                                            </select>
+                                            <small class="text-muted">Solo se muestran equipos inactivos (sin
+                                                asignar)</small>
+                                        </div>
                                         <div class="mb-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" id="activo" checked>
@@ -641,43 +676,43 @@
                                     </div>
                                 </div>
                             </form>
-                            </div>
+                        </div>
 
                         <!-- Panel Datos -->
                         <div class="tab-pane fade" id="datos-panel" role="tabpanel">
                             <form id="formDatos">
                                 <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="marca" class="form-label">Marca</label>
-                                    <input type="text" class="form-control" id="marca">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="modelo" class="form-label">Modelo</label>
-                                    <input type="text" class="form-control" id="modelo">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="anio" class="form-label">Año</label>
-                                    <input type="number" class="form-control" id="anio" min="1900" max="2030">
-                            </div>
-                        </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="color" class="form-label">Color</label>
-                                    <input type="text" class="form-control" id="color">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="tipo-vehiculo" class="form-label">Tipo de Vehículo</label>
-                                    <select class="form-select" id="tipo-vehiculo">
-                                        <option value="">Seleccionar...</option>
-                                        <option value="auto">Auto</option>
-                                        <option value="camion">Camión</option>
-                                        <option value="moto">Moto</option>
-                                        <option value="bus">Bus</option>
-                                        <option value="van">Van</option>
-                                    </select>
-                                </div>
-                            </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="marca" class="form-label">Marca</label>
+                                            <input type="text" class="form-control" id="marca">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="modelo" class="form-label">Modelo</label>
+                                            <input type="text" class="form-control" id="modelo">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="anio" class="form-label">Año</label>
+                                            <input type="number" class="form-control" id="anio" min="1900" max="2030">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="color" class="form-label">Color</label>
+                                            <input type="text" class="form-control" id="color">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="tipo-vehiculo" class="form-label">Tipo de Vehículo</label>
+                                            <select class="form-select" id="tipo-vehiculo">
+                                                <option value="">Seleccionar...</option>
+                                                <option value="auto">Auto</option>
+                                                <option value="camion">Camión</option>
+                                                <option value="moto">Moto</option>
+                                                <option value="bus">Bus</option>
+                                                <option value="van">Van</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
                         </div>
@@ -686,9 +721,10 @@
                         <div class="tab-pane fade" id="observaciones-panel" role="tabpanel">
                             <div class="row">
                                 <div class="col-md-8">
-                                <div class="mb-3">
+                                    <div class="mb-3">
                                         <label for="nota-general" class="form-label">Notas Generales</label>
-                                        <textarea class="form-control" id="nota-general" rows="8" placeholder="Escribe notas generales sobre este móvil..."></textarea>
+                                        <textarea class="form-control" id="nota-general" rows="8"
+                                            placeholder="Escribe notas generales sobre este móvil..."></textarea>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -708,7 +744,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Panel Fotos -->
                         <div class="tab-pane fade" id="fotos-panel" role="tabpanel">
                             <div class="row">
@@ -812,7 +848,8 @@
     </div>
 
     <!-- Input oculto para subir fotos -->
-    <input type="file" id="file-input" accept="image/*" multiple style="display: none;" onchange="procesarFotos(this.files)">
+    <input type="file" id="file-input" accept="image/*" multiple style="display: none;"
+        onchange="procesarFotos(this.files)">
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -845,13 +882,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Scripts personalizados -->
     <script src="{% static 'js/config.js' %}"></script>
-    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}?v=2.1"></script>
     <script src="{% static 'js/api-client.js' %}"></script>
     <script src="{% static 'js/moviles.js' %}"></script>
-    
+
     <script>
         // Verificar autenticación al cargar la página
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', async function () {
             // Mostrar info del usuario si existe token
             if (auth && auth.getToken()) {
                 auth.mostrarInfo();
@@ -862,11 +899,11 @@
                     userNameElement.textContent = 'No autenticado';
                 }
             }
-            
+
             // Configurar opciones de logout (botón en footer y opción en menú simplificado)
             function setupLogout(element) {
                 if (!element) return;
-                element.addEventListener('click', function(e) {
+                element.addEventListener('click', function (e) {
                     e.preventDefault();
                     console.log('Opción de logout clickeada');
                     if (auth && typeof auth.logout === 'function') {
@@ -917,4 +954,5 @@
         }
     </script>
 </body>
+
 </html>
