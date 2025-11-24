@@ -1,18 +1,19 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sofia - Asistente IA WayGPS</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Font Awesome para los iconos de WhatsApp -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --whatsapp-green: #25d366;
@@ -21,7 +22,7 @@
             --whatsapp-header: #075e54;
             --whatsapp-chat-bg: #e5ddd5;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -29,16 +30,16 @@
             margin: 0;
             padding: 0;
         }
-        
+
         .chat-container {
             max-width: 1200px;
             margin: 20px auto;
             background: white;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
-        
+
         /* Header tipo WhatsApp */
         .chat-header {
             background: var(--whatsapp-header);
@@ -84,7 +85,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             transition: background 0.2s ease, border 0.2s ease;
         }
-        
+
         .selection-mode-toggle.active {
             background: rgba(255, 255, 255, 0.2);
             border-color: rgba(255, 255, 255, 0.6);
@@ -152,6 +153,7 @@
             background: rgba(255, 255, 255, 0.12);
             border-color: rgba(255, 255, 255, 0.5);
         }
+
         .settings-panel {
             position: fixed;
             top: 90px;
@@ -178,13 +180,13 @@
             margin-bottom: 10px;
         }
 
-        
+
         .avatar-container {
             position: relative;
             width: 60px;
             height: 60px;
         }
-        
+
         .avatar {
             width: 60px;
             height: 60px;
@@ -196,7 +198,7 @@
             font-size: 28px;
             color: white;
             border: 3px solid white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             position: relative;
             overflow: visible;
         }
@@ -279,10 +281,15 @@
         }
 
         @keyframes orbit {
-            from { transform: translate(-50%, -50%) rotate(0deg) translateY(-34px); }
-            to   { transform: translate(-50%, -50%) rotate(360deg) translateY(-34px); }
+            from {
+                transform: translate(-50%, -50%) rotate(0deg) translateY(-34px);
+            }
+
+            to {
+                transform: translate(-50%, -50%) rotate(360deg) translateY(-34px);
+            }
         }
-        
+
         .status-indicator {
             position: absolute;
             bottom: 0;
@@ -293,22 +300,25 @@
             border: 3px solid white;
             border-radius: 50%;
         }
-        
+
         /* Modo de voz activo */
         .voice-mode-active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow: 0 0 0 0 rgba(103, 126, 234, 0.7);
             }
+
             50% {
                 box-shadow: 0 0 0 10px rgba(103, 126, 234, 0);
             }
         }
-        
+
         /* Indicador de modo de voz (globo flotante) */
         .voice-mode-indicator {
             display: none;
@@ -319,42 +329,48 @@
             height: 80px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             cursor: pointer;
             animation: float 3s ease-in-out infinite;
         }
-        
+
         .voice-mode-indicator.active {
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
+
         .voice-mode-indicator i {
             font-size: 40px;
             color: white;
             animation: mic-pulse 1.5s ease-in-out infinite;
         }
-        
+
         @keyframes float {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0px);
             }
+
             50% {
                 transform: translateY(-10px);
             }
         }
-        
+
         @keyframes mic-pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.1);
             }
         }
-        
+
         /* Overlay cuando está escuchando */
         .voice-listening-overlay {
             display: none;
@@ -367,29 +383,30 @@
             z-index: 999;
             pointer-events: none;
         }
-        
+
         .voice-listening-overlay.active {
             display: block;
         }
-        
+
         .btn-link:hover {
             color: rgba(255, 255, 255, 0.8) !important;
         }
-        
+
         .btn-link.voice-mode-on {
             color: #ffd700 !important;
             animation: glow 1.5s ease-in-out infinite alternate;
         }
-        
+
         @keyframes glow {
             from {
                 text-shadow: 0 0 5px #ffd700;
             }
+
             to {
                 text-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700;
             }
         }
-        
+
         /* Botones de acción del mensaje */
         .message-action-buttons {
             position: absolute;
@@ -400,7 +417,7 @@
             flex-direction: column;
             gap: 8px;
         }
-        
+
         .message-maps-btn,
         .message-whatsapp-btn {
             background: rgba(255, 255, 255, 0.9);
@@ -413,61 +430,63 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             padding: 0;
         }
-        
+
         .message-maps-btn:hover,
         .message-whatsapp-btn:hover {
             background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             transform: scale(1.1);
         }
-        
+
         .message-maps-btn i {
             color: #4285f4;
             font-size: 14px;
         }
-        
+
         .message-whatsapp-btn i {
             color: #25d366;
             font-size: 14px;
         }
-        
+
         .chat-info {
             flex: 1;
             margin-left: 15px;
         }
-        
+
         .chat-title {
             font-size: 18px;
             font-weight: 600;
             margin: 0;
         }
-        
+
         .chat-subtitle {
             font-size: 13px;
             opacity: 0.9;
             margin: 5px 0 0 0;
         }
-        
+
         /* Área de mensajes */
         .messages-container {
             height: calc(100vh - 250px);
             min-height: 400px;
             background: var(--whatsapp-chat-bg);
-            background-image: 
-                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,.03) 10px, rgba(0,0,0,.03) 20px);
+            background-image:
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, .03) 10px, rgba(0, 0, 0, .03) 20px);
             overflow-y: auto;
             padding: 20px;
-            padding-bottom: 80px; /* Espacio para la barra de acciones */
+            padding-bottom: 80px;
+            /* Espacio para la barra de acciones */
             transition: padding-bottom 0.3s ease;
         }
-        
+
         .messages-container.selection-mode {
-            padding-bottom: 140px; /* Más espacio cuando está activa la barra */
+            padding-bottom: 140px;
+            /* Más espacio cuando está activa la barra */
         }
-        
+
         .message {
             margin-bottom: 15px;
             display: flex;
@@ -475,18 +494,18 @@
             position: relative;
             cursor: default;
         }
-        
+
         .message.selection-mode {
             cursor: pointer;
         }
-        
+
         .message.selected {
             background: rgba(37, 211, 102, 0.1);
             border-radius: 8px;
             padding: 4px;
             margin: -4px;
         }
-        
+
         .message-checkbox {
             position: absolute;
             top: 8px;
@@ -502,39 +521,39 @@
             z-index: 10;
             transition: all 0.2s;
         }
-        
+
         .selection-mode .message-checkbox {
             display: flex;
         }
-        
+
         .message.selected .message-checkbox {
             background: #25d366;
         }
-        
+
         .message-checkbox i {
             color: white;
             font-size: 12px;
             display: none;
         }
-        
+
         .message.selected .message-checkbox i {
             display: block;
         }
-        
+
         .selection-mode .message-bubble {
             margin-left: 32px;
         }
-        
+
         .selection-mode .message.sent .message-bubble {
             margin-left: 0;
             margin-right: 32px;
         }
-        
+
         .selection-mode .message-audio-btn,
         .selection-mode .message-action-buttons {
             display: none;
         }
-        
+
         /* Barra de acciones de selección */
         .selection-actions-bar {
             position: fixed;
@@ -547,26 +566,26 @@
             display: none;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             z-index: 1000;
             gap: 12px;
         }
-        
+
         .selection-actions-bar.active {
             display: flex;
         }
-        
+
         .selection-count {
             flex: 1;
             font-weight: 600;
             color: #303030;
         }
-        
+
         .selection-actions {
             display: flex;
             gap: 8px;
         }
-        
+
         .selection-action-btn {
             padding: 8px 16px;
             border: none;
@@ -579,79 +598,80 @@
             font-weight: 500;
             transition: all 0.2s;
         }
-        
+
         .selection-action-btn.primary {
             background: #25d366;
             color: white;
         }
-        
+
         .selection-action-btn.primary:hover {
             background: #20ba5a;
         }
-        
+
         .selection-action-btn.secondary {
             background: #f0f0f0;
             color: #303030;
         }
-        
+
         .selection-action-btn.secondary:hover {
             background: #e0e0e0;
         }
-        
+
         .selection-action-btn.danger {
             background: #f0f0f0;
             color: #303030;
         }
-        
+
         .selection-action-btn.danger:hover {
             background: #ffebee;
             color: #c62828;
         }
-        
+
         .selection-action-btn i {
             font-size: 16px;
         }
-        
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         .message.sent {
             justify-content: flex-end;
         }
-        
+
         .message-bubble {
             max-width: 70%;
             padding: 12px 16px;
             border-radius: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
             position: relative;
         }
-        
+
         .message.received .message-bubble {
             background: white;
             color: #303030;
         }
-        
+
         .message.sent .message-bubble {
             background: var(--whatsapp-light-green);
             color: #303030;
         }
-        
+
         .message-time {
             font-size: 11px;
             color: #999;
             margin-top: 5px;
             text-align: right;
         }
-        
+
         .message-audio-btn {
             position: absolute;
             top: 8px;
@@ -669,34 +689,37 @@
             transition: all 0.2s;
             z-index: 1;
         }
-        
+
         .message-bubble:hover .message-audio-btn {
             opacity: 1;
         }
-        
+
         .message-audio-btn:hover {
             background: rgba(0, 0, 0, 0.1);
             transform: scale(1.1);
         }
-        
+
         .message-audio-btn.playing {
             opacity: 1;
             animation: pulse-audio 1s infinite;
         }
-        
+
         .message-audio-btn.playing i {
             font-size: 12px !important;
         }
-        
+
         @keyframes pulse-audio {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
             }
+
             50% {
                 transform: scale(1.2);
             }
         }
-        
+
         .message-avatar {
             width: 32px;
             height: 32px;
@@ -711,13 +734,13 @@
             flex-shrink: 0;
             overflow: hidden;
         }
-        
+
         .message-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         /* Input area */
         .input-container {
             padding: 15px;
@@ -726,12 +749,12 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .input-wrapper {
             flex: 1;
             position: relative;
         }
-        
+
         .message-input {
             width: 100%;
             padding: 12px 50px 12px 15px;
@@ -741,7 +764,7 @@
             resize: none;
             max-height: 120px;
         }
-        
+
         .voice-button {
             position: absolute;
             right: 8px;
@@ -760,26 +783,29 @@
             cursor: pointer;
             transition: transform 0.2s ease;
         }
-        
+
         .voice-button:hover {
             background: var(--whatsapp-dark-green);
             transform: translateY(-50%) scale(1.1);
         }
-        
+
         .voice-button.recording {
             background: #dc3545;
             animation: pulse 1s infinite;
         }
-        
+
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(-50%) scale(1);
             }
+
             50% {
                 transform: translateY(-50%) scale(1.1);
             }
         }
-        
+
         .send-button {
             background: var(--whatsapp-green);
             border: none;
@@ -794,17 +820,17 @@
             font-size: 20px;
             transition: all 0.2s;
         }
-        
+
         .send-button:hover {
             background: var(--whatsapp-dark-green);
             transform: scale(1.1);
         }
-        
+
         .send-button:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
-        
+
         /* Indicador de escritura */
         .typing-indicator {
             display: none;
@@ -813,11 +839,11 @@
             border-radius: 12px;
             margin-bottom: 15px;
         }
-        
+
         .typing-indicator.active {
             display: block;
         }
-        
+
         .typing-dot {
             display: inline-block;
             width: 8px;
@@ -827,47 +853,51 @@
             margin-right: 5px;
             animation: typing 1.4s infinite;
         }
-        
+
         .typing-dot:nth-child(2) {
             animation-delay: 0.2s;
         }
-        
+
         .typing-dot:nth-child(3) {
             animation-delay: 0.4s;
         }
-        
+
         @keyframes typing {
-            0%, 60%, 100% {
+
+            0%,
+            60%,
+            100% {
                 transform: translateY(0);
             }
+
             30% {
                 transform: translateY(-10px);
             }
         }
-        
+
         /* Mensaje de bienvenida */
         .welcome-message {
             text-align: center;
             padding: 30px;
             color: #666;
         }
-        
+
         .welcome-icon {
             font-size: 48px;
             margin-bottom: 15px;
         }
-        
+
         .recording-animation {
             display: none;
             text-align: center;
             padding: 20px;
             color: #dc3545;
         }
-        
+
         .recording-animation.active {
             display: block;
         }
-        
+
         .recording-wave {
             display: inline-block;
             width: 8px;
@@ -877,16 +907,30 @@
             border-radius: 4px;
             animation: wave 1s infinite;
         }
-        
-        .recording-wave:nth-child(2) { animation-delay: 0.1s; }
-        .recording-wave:nth-child(3) { animation-delay: 0.2s; }
-        .recording-wave:nth-child(4) { animation-delay: 0.3s; }
-        .recording-wave:nth-child(5) { animation-delay: 0.4s; }
-        
+
+        .recording-wave:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .recording-wave:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .recording-wave:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .recording-wave:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
         @keyframes wave {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scaleY(0.5);
             }
+
             50% {
                 transform: scaleY(1);
             }
@@ -930,10 +974,10 @@
             display: none;
             align-items: center;
             gap: 10px;
-            background: rgba(255,255,255,0.95);
+            background: rgba(255, 255, 255, 0.95);
             padding: 8px 12px;
             border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
 
         .recording-status.active {
@@ -956,8 +1000,15 @@
         }
 
         @keyframes blink {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
         }
 
         .recording-bars {
@@ -972,12 +1023,26 @@
             animation: wave 1s ease-in-out infinite;
         }
 
-        .recording-bars span:nth-child(2) { animation-delay: 0.2s; }
-        .recording-bars span:nth-child(3) { animation-delay: 0.4s; }
+        .recording-bars span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .recording-bars span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
 
         @keyframes wave {
-            0%, 100% { height: 6px; opacity: 0.4; }
-            50% { height: 14px; opacity: 1; }
+
+            0%,
+            100% {
+                height: 6px;
+                opacity: 0.4;
+            }
+
+            50% {
+                height: 14px;
+                opacity: 1;
+            }
         }
 
         .recording-status-text {
@@ -1005,6 +1070,7 @@
             .chat-header {
                 flex-wrap: wrap;
             }
+
             .chat-header-actions {
                 justify-content: flex-end;
             }
@@ -1015,16 +1081,19 @@
                 margin: 0;
                 border-radius: 0;
             }
+
             .chat-header {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 16px;
                 padding: 16px 18px;
             }
+
             .chat-header-section {
                 width: 100%;
                 justify-content: flex-start;
             }
+
             .chat-header-actions {
                 width: 100%;
                 justify-content: flex-start;
@@ -1033,6 +1102,7 @@
                 flex-wrap: nowrap;
                 padding-bottom: 6px;
             }
+
             .voice-mode-toggle,
             .audio-toggle,
             .settings-button,
@@ -1040,18 +1110,22 @@
                 flex: 0 0 auto;
                 padding: 10px 12px;
             }
+
             .voice-mode-toggle i,
             .audio-toggle i,
             .settings-button i,
             .home-button i {
                 font-size: 1.25rem;
             }
+
             .settings-wrapper {
                 width: auto;
             }
+
             .audio-toggle span {
                 display: none;
             }
+
             .settings-panel {
                 width: min(320px, calc(100vw - 24px));
             }
@@ -1061,6 +1135,7 @@
             .chat-header-actions {
                 gap: 10px;
             }
+
             .voice-mode-toggle,
             .audio-toggle,
             .settings-button,
@@ -1070,6 +1145,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="chat-container">
         <!-- Header -->
@@ -1078,7 +1154,8 @@
                 <div class="avatar-container">
                     <div class="avatar">
                         <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia Avatar" class="avatar-static">
-                        <img src="{% static 'avatarSOFIA-speaking.gif' %}" alt="Sofia Avatar animado" class="avatar-speaking">
+                        <img src="{% static 'avatarSOFIA-speaking.gif' %}" alt="Sofia Avatar animado"
+                            class="avatar-speaking">
                     </div>
                     <div class="status-indicator"></div>
                 </div>
@@ -1088,18 +1165,22 @@
                 </div>
             </div>
             <div class="chat-header-actions">
-                <button class="btn btn-link text-white selection-mode-toggle" id="selectionModeButton" title="Seleccionar mensajes" type="button" aria-label="Activar modo selección">
+                <button class="btn btn-link text-white selection-mode-toggle" id="selectionModeButton"
+                    title="Seleccionar mensajes" type="button" aria-label="Activar modo selección">
                     <i class="bi bi-check-square"></i>
                 </button>
-                <button class="btn btn-link text-white voice-mode-toggle" id="voiceModeButton" title="Modo de voz" type="button" aria-label="Alternar modo de voz">
+                <button class="btn btn-link text-white voice-mode-toggle" id="voiceModeButton" title="Modo de voz"
+                    type="button" aria-label="Alternar modo de voz">
                     <i class="bi bi-headphones"></i>
                 </button>
-                <button class="btn btn-link text-white audio-toggle" id="audioToggleButton" title="Desactivar audio de respuestas" type="button" aria-label="Mutear respuestas de voz">
+                <button class="btn btn-link text-white audio-toggle" id="audioToggleButton"
+                    title="Desactivar audio de respuestas" type="button" aria-label="Mutear respuestas de voz">
                     <i class="bi bi-volume-up"></i>
                     <span class="d-none d-md-inline">Voz</span>
                 </button>
                 <div class="settings-wrapper">
-                    <button class="btn btn-link text-white settings-button" id="settingsButton" title="Configuración" type="button" aria-label="Abrir configuraciones">
+                    <button class="btn btn-link text-white settings-button" id="settingsButton" title="Configuración"
+                        type="button" aria-label="Abrir configuraciones">
                         <i class="bi bi-gear"></i>
                     </button>
                     <div class="settings-panel" id="settingsPanel">
@@ -1112,20 +1193,21 @@
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-link text-white home-button" type="button" title="Ir al inicio" aria-label="Ir al inicio" onclick="window.location.href='/'">
+                <button class="btn btn-link text-white home-button" type="button" title="Ir al inicio"
+                    aria-label="Ir al inicio" onclick="window.location.href='/'">
                     <i class="bi bi-house-door"></i>
                 </button>
             </div>
         </div>
-        
+
         <!-- Overlay de modo de voz -->
         <div class="voice-listening-overlay" id="voiceListeningOverlay"></div>
-        
+
         <!-- Globo flotante de modo de voz -->
         <div class="voice-mode-indicator" id="voiceModeIndicator" title="Modo de voz activo - Clic para desactivar">
             <i class="bi bi-headphones"></i>
         </div>
-        
+
         <!-- Barra de acciones de selección -->
         <div class="selection-actions-bar" id="selectionActionsBar">
             <div class="selection-count" id="selectionCount">0 mensajes seleccionados</div>
@@ -1147,7 +1229,7 @@
                 </button>
             </div>
         </div>
-        
+
         <!-- Área de mensajes -->
         <div class="messages-container" id="messagesContainer">
             <div class="welcome-message">
@@ -1162,25 +1244,21 @@
                 </ul>
                 <p><strong>Háblame o escríbeme para comenzar</strong></p>
             </div>
-            
+
             <div class="typing-indicator" id="typingIndicator">
                 <span class="typing-dot"></span>
                 <span class="typing-dot"></span>
                 <span class="typing-dot"></span>
             </div>
         </div>
-        
+
         <!-- Animación de grabación -->
-        
+
         <!-- Input -->
         <div class="input-container">
             <div class="input-wrapper" id="inputWrapper">
-                <textarea 
-                    id="messageInput" 
-                    class="message-input" 
-                    placeholder="Escribe un mensaje o presiona el micrófono..."
-                    rows="1"
-                ></textarea>
+                <textarea id="messageInput" class="message-input"
+                    placeholder="Escribe un mensaje o presiona el micrófono..." rows="1"></textarea>
                 <div class="recording-status" id="recordingStatus">
                     <div class="recording-indicator">
                         <div class="recording-dot"></div>
@@ -1207,7 +1285,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // Funcionalidad del chat
         const messagesContainer = document.getElementById('messagesContainer');
@@ -1227,10 +1305,10 @@
         const inputWrapper = document.getElementById('inputWrapper');
         const avatarElement = document.querySelector('.avatar');
         let isAudioMuted = localStorage.getItem('sofiaAudioMuted') === 'true';
-        
+
         // URL del avatar de Sofia
         const sofiaAvatarUrl = "{% static 'avatarSOFIA.jpeg' %}";
-        
+
         let recognition;  // Para botón normal de voz
         let voiceRecognition;  // Para modo de voz continuo
         let voiceModeActive = false;
@@ -1241,7 +1319,7 @@
         let selectedMessages = new Set();  // IDs de mensajes seleccionados
         let longPressTimer = null;  // Timer para long press
         let longPressDelay = 500;  // Delay en ms para long press
-        
+
         function setSofiaSpeaking(active) {
             if (!avatarElement) return;
             if (active && !isAudioMuted) {
@@ -1261,43 +1339,52 @@
                 avatarElement.classList.remove('processing');
             }
         }
-        
+
         // Memoria de Sofia: recordar último móvil consultado
         let ultimoMovilConsultado = null;
-        
+
         // Función para extraer el móvil de un texto
         function extraerMovil(texto) {
+            const textoUpper = texto.toUpperCase();
+
+            // Primero intentar detectar patrones específicos: CAMION5, MOVIL3, VEHICULO2, etc.
+            const patronEspecifico = /\b(CAMION|CAMIÓN|MOVIL|MÓVIL|VEHICULO|VEHÍCULO)\s*(\d{1,4})\b/i;
+            const matchEspecifico = patronEspecifico.exec(textoUpper);
+            if (matchEspecifico) {
+                const resultado = matchEspecifico[1].replace(/[ÓÍ]/g, (m) => m === 'Ó' ? 'O' : 'I') + matchEspecifico[2];
+                console.log(`✅ Móvil encontrado (específico): ${resultado}`);
+                return resultado;
+            }
+
             // Palabras comunes que seguida de números NO son patentes
-            const palabrasComunes = ['HACE', 'HAY', 'TIENE', 'SON', 'DIEZ', 'DIECI', 'TREINTA', 'CIEN', 'VER', 'HABIA'];
-            
+            const palabrasComunes = ['HACE', 'HAY', 'TIENE', 'SON', 'DIEZ', 'DIECI', 'TREINTA', 'CIEN', 'VER', 'HABIA', 'DONDE', 'ESTA', 'QUEDA'];
+
             // Buscar patrón de patente: letras + números (ej: OVV799, ASN773, ASN 773, etc.)
-            // IMPORTANTE: Verificar que NO sea una palabra común
-            const patron = /\b([A-Z]{2,4})\s*(\d{2,4})\b/i;
-            
-            // Buscar TODOS los matches (no solo el primero)
+            const patron = /\b([A-Z]{2,5})\s*(\d{2,4})\b/i;
+
             let match;
-            while ((match = patron.exec(texto)) !== null) {
+            while ((match = patron.exec(textoUpper)) !== null) {
                 const letras = match[1].toUpperCase();
                 const numeros = match[2];
                 const posiblePatente = letras + numeros;
-                
+
                 // Verificar que NO sea una palabra común seguida de números
                 const esComun = palabrasComunes.some(palabra => {
                     return letras === palabra || letras.includes(palabra);
                 });
-                
+
                 // Solo aceptar si NO es común y tiene longitud razonable
-                if (!esComun && posiblePatente.length >= 5) {
+                if (!esComun && posiblePatente.length >= 4) {
                     console.log(`✅ Móvil encontrado: ${posiblePatente}`);
                     return posiblePatente;
                 } else {
-                    console.log(`⚠️ Ignorado (palabra común): ${posiblePatente}`);
+                    console.log(`⚠️ Ignorado (palabra común o muy corto): ${posiblePatente}`);
                 }
             }
-            
+
             return null;
         }
-        
+
         // Función para verificar si la consulta necesita un móvil
         function necesitaMovil(texto) {
             // IMPORTANTE: Si ya hay un móvil en el mensaje, NO necesita agregar otro
@@ -1305,7 +1392,7 @@
                 console.log('✅ Ya hay móvil en el mensaje, no necesita agregar otro');
                 return false;
             }
-            
+
             const textoLower = texto.toLowerCase();
             // Consultas que requieren un móvil específico
             const consultasMovil = [
@@ -1322,19 +1409,19 @@
             ];
             // Verificar si es un número seguido de una unidad de tiempo (típico de consultas históricas)
             const tienePeriodoTemporal = /\d+\s*(minuto|hora|día|semana|mes)/i.test(texto);
-            
+
             return consultasMovil.some(consulta => textoLower.includes(consulta)) || tienePeriodoTemporal;
         }
-        
+
         // Función para activar/desactivar modo de voz
         function toggleVoiceMode() {
             if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
                 alert('El reconocimiento de voz no está disponible en este navegador');
                 return;
             }
-            
+
             voiceModeActive = !voiceModeActive;
-            
+
             if (voiceModeActive) {
                 // Activar modo de voz
                 startVoiceMode();
@@ -1351,7 +1438,7 @@
                 console.log('🔇 Modo de voz DESACTIVADO');
             }
         }
-        
+
         // Función para iniciar modo de voz continuo
         function startVoiceMode() {
             if (!voiceRecognition) {
@@ -1359,18 +1446,18 @@
                 voiceRecognition.lang = 'es-AR';
                 voiceRecognition.continuous = true;
                 voiceRecognition.interimResults = false;
-                
+
                 voiceRecognition.onresult = (event) => {
                     const transcript = event.results[event.results.length - 1][0].transcript;
                     console.log('🗣️ STT:', transcript);
-                    
+
                     // Agregar mensaje del usuario
                     addMessage(transcript, 'sent');
-                    
+
                     // Procesar consulta
                     processVoiceQuery(transcript);
                 };
-                
+
                 voiceRecognition.onerror = (event) => {
                     console.error('Error en reconocimiento de voz:', event.error);
                     if (event.error === 'no-speech') {
@@ -1387,7 +1474,7 @@
                         toggleVoiceMode(); // Desactivar modo de voz
                     }
                 };
-                
+
                 voiceRecognition.onend = () => {
                     console.log('Reconocimiento finalizado');
                     // NO reiniciar automáticamente aquí si estamos procesando una consulta
@@ -1407,11 +1494,11 @@
                     }
                 };
             }
-            
+
             voiceRecognition.start();
             voiceListeningOverlay.classList.add('active');
         }
-        
+
         // Función para detener modo de voz
         function stopVoiceMode() {
             if (voiceRecognition) {
@@ -1419,7 +1506,7 @@
             }
             voiceListeningOverlay.classList.remove('active');
         }
-        
+
         // Función para procesar consulta de voz
         async function processVoiceQuery(message) {
             // Detener temporalmente el reconocimiento de voz mientras se procesa
@@ -1431,34 +1518,34 @@
                     console.warn('No se pudo detener el reconocimiento:', e);
                 }
             }
-            
+
             // Mostrar indicador de escritura
             showTyping();
             setSofiaProcessing(true);
-            
+
             // Detectar si hay un móvil en el mensaje
             const movilEnMensaje = extraerMovil(message);
             console.log('🔍 Móvil extraído del mensaje:', movilEnMensaje);
-            
+
             // Si encontramos un móvil, actualizar memoria
             if (movilEnMensaje) {
                 ultimoMovilConsultado = movilEnMensaje;
                 console.log('🧠 Sofia recordará el móvil:', ultimoMovilConsultado);
             }
-            
+
             // Si la consulta necesita un móvil y no especificamos uno
             let mensajeEnviar = message;
             const necesitaMovilFlag = necesitaMovil(message);
             console.log('🔍 ¿Necesita móvil?', necesitaMovilFlag);
             console.log('🔍 Móvil en memoria actual:', ultimoMovilConsultado);
-            
+
             if (necesitaMovilFlag && !movilEnMensaje && ultimoMovilConsultado) {
                 // Usar el último móvil consultado
                 mensajeEnviar = `${ultimoMovilConsultado} ${message}`;
                 console.log('🧠 Usando móvil en memoria:', ultimoMovilConsultado);
                 console.log('📤 Mensaje modificado:', mensajeEnviar);
             }
-            
+
             try {
                 // Enviar consulta al servidor
                 const response = await fetch('/agenteIA/api/procesar-consulta/', {
@@ -1471,27 +1558,27 @@
                         modo: 'voz'
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 hideTyping();
-                
+
                 if (data.success) {
                     // Mostrar mensaje con botón de audio
                     const textoAudio = data.respuesta_audio || data.respuesta;
                     const googleMapsLink = data.google_maps_link || null;
                     const whatsappData = data.whatsapp_data || null;
                     const msgElement = addMessage(data.respuesta, 'received', textoAudio, googleMapsLink, whatsappData);
-                    
+
                     if (data.usando_contexto && data.datos_consulta && data.datos_consulta.movil) {
                         ultimoMovilConsultado = data.datos_consulta.movil;
                     }
-                    
+
                     // Reproducir respuesta en audio automáticamente
                     if (!isAudioMuted && 'speechSynthesis' in window) {
                         const button = msgElement ? msgElement.querySelector('.message-audio-btn') : null;
                         const utterance = speak(textoAudio, button);
-                        
+
                         // Reiniciar reconocimiento de voz después de que termine el audio
                         if (utterance && voiceModeActive) {
                             utterance.onend = () => {
@@ -1519,7 +1606,7 @@
                                     }
                                 }, 300);
                             };
-                            
+
                             utterance.onerror = () => {
                                 stopCurrentAudio(button);
                                 setSofiaSpeaking(false);
@@ -1578,7 +1665,7 @@
                 setSofiaProcessing(false);
             }
         }
-        
+
         // Función para compartir por WhatsApp
         function compartirPorWhatsApp(whatsappData) {
             const fechaActual = new Date().toLocaleString('es-AR');
@@ -1586,7 +1673,7 @@
             const patente = whatsappData.patente || 'Sin patente';
             const domicilio = whatsappData.direccion || 'Sin geocodificación';
             const ultimaActualizacion = whatsappData.fecha_actualizacion || 'Sin datos';
-            
+
             let mensaje = `*Seguimiento GPS* - ${fechaActual}\n`;
             mensaje += `*Vehículo:* ${patente}${identificacion !== patente ? ` (${identificacion})` : ''}\n\n`;
             mensaje += `*Ubicación Actual:*\n`;
@@ -1595,20 +1682,20 @@
                 mensaje += `• Coordenadas: ${whatsappData.lat}, ${whatsappData.lon}\n`;
             }
             mensaje += `• Hora: ${ultimaActualizacion}\n\n`;
-            
+
             // Agregar enlace de Google Maps si hay coordenadas
             if (whatsappData.lat && whatsappData.lon) {
                 mensaje += `Ver en Google Maps:\n`;
                 mensaje += `https://www.google.com/maps?q=${whatsappData.lat},${whatsappData.lon}\n\n`;
             }
-            
+
             mensaje += `📱 Información compartida desde WayGPS`;
-            
+
             // Abrir WhatsApp
             const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
             window.open(urlWhatsApp, '_blank');
         }
-        
+
         // Inicializar reconocimiento de voz (para el botón normal)
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             // Crear instancia temporal para el botón normal
@@ -1616,7 +1703,7 @@
             tempRecognition.lang = 'es-AR';
             tempRecognition.continuous = false;
             tempRecognition.interimResults = false;
-            
+
             tempRecognition.onstart = () => {
                 voiceButton.classList.add('recording');
                 if (inputWrapper) inputWrapper.classList.add('recording');
@@ -1627,7 +1714,7 @@
                 isManualRecording = true;
                 console.log('Grabación iniciada');
             };
-            
+
             tempRecognition.onend = () => {
                 voiceButton.classList.remove('recording');
                 if (inputWrapper) inputWrapper.classList.remove('recording');
@@ -1636,14 +1723,14 @@
                 isManualRecording = false;
                 console.log('Grabación finalizada');
             };
-            
+
             tempRecognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 console.log('🗣️ STT:', transcript);
                 messageInput.value = transcript;
                 sendMessage();
             };
-            
+
             tempRecognition.onerror = (event) => {
                 console.error('Error en reconocimiento de voz:', event.error);
                 alert('Error en el reconocimiento de voz: ' + event.error);
@@ -1652,7 +1739,7 @@
                 if (recordingStatus) recordingStatus.classList.remove('active');
                 messageInput.removeAttribute('disabled');
             };
-            
+
             // Guardar en variable para el botón normal
             recognition = tempRecognition;
         } else {
@@ -1660,53 +1747,53 @@
             if (cancelVoiceButton) cancelVoiceButton.style.display = 'none';
             console.warn('Reconocimiento de voz no disponible en este navegador');
         }
-        
+
         // Event listeners para modo de voz
         if (voiceModeButton) {
             voiceModeButton.addEventListener('click', toggleVoiceMode);
         }
-        
+
         if (voiceModeIndicator) {
             voiceModeIndicator.addEventListener('click', toggleVoiceMode);
         }
-        
+
         // Event listeners para modo selección
         const selectionModeButton = document.getElementById('selectionModeButton');
         const selectAllButton = document.getElementById('selectAllButton');
         const copySelectedButton = document.getElementById('copySelectedButton');
         const forwardSelectedButton = document.getElementById('forwardSelectedButton');
         const cancelSelectionButton = document.getElementById('cancelSelectionButton');
-        
+
         if (selectionModeButton) {
             selectionModeButton.addEventListener('click', toggleSelectionMode);
         }
-        
+
         if (selectAllButton) {
             selectAllButton.addEventListener('click', selectAllMessages);
         }
-        
+
         if (copySelectedButton) {
             copySelectedButton.addEventListener('click', copySelectedMessages);
         }
-        
+
         if (forwardSelectedButton) {
             forwardSelectedButton.addEventListener('click', forwardSelectedMessages);
         }
-        
+
         if (cancelSelectionButton) {
             cancelSelectionButton.addEventListener('click', toggleSelectionMode);
         }
-        
+
         // Event listeners
         sendButton.addEventListener('click', sendMessage);
-        
+
         messageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         });
-        
+
         if (voiceButton) {
             voiceButton.addEventListener('click', () => {
                 if (recognition && typeof recognition.start === 'function') {
@@ -1718,35 +1805,35 @@
                 }
             });
         }
- 
-         if (cancelVoiceButton) {
-             cancelVoiceButton.addEventListener('click', () => {
-                 if (recognition && typeof recognition.stop === 'function' && isManualRecording) {
-                     recognition.stop();
-                 }
-                 if (inputWrapper) inputWrapper.classList.remove('recording');
-                 if (recordingStatus) recordingStatus.classList.remove('active');
-                 voiceButton.classList.remove('recording');
-                 messageInput.removeAttribute('disabled');
+
+        if (cancelVoiceButton) {
+            cancelVoiceButton.addEventListener('click', () => {
+                if (recognition && typeof recognition.stop === 'function' && isManualRecording) {
+                    recognition.stop();
+                }
+                if (inputWrapper) inputWrapper.classList.remove('recording');
+                if (recordingStatus) recordingStatus.classList.remove('active');
+                voiceButton.classList.remove('recording');
+                messageInput.removeAttribute('disabled');
             });
         }
-        
+
         // Auto-resize textarea
-        messageInput.addEventListener('input', function() {
+        messageInput.addEventListener('input', function () {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
-        
+
         // Variable para controlar si ya se mostró el saludo inicial
         let saludoInicialMostrado = false;
         let audioSaludoReproducido = false;
-        
+
         // Función para mostrar saludo inicial
         function mostrarSaludoInicial() {
             // Evitar mostrar el saludo múltiples veces
             if (saludoInicialMostrado) return;
             saludoInicialMostrado = true;
-            
+
             // Mostrar mensaje de saludo inicial de Sofia
             const saludosIniciales = [
                 "¡Hola! 👋 Soy Sofia, tu asistente de WayGPS. ¿En qué puedo ayudarte hoy?",
@@ -1755,11 +1842,11 @@
                 "¡Bienvenido! 👋 Soy Sofia. Puedo ayudarte con información sobre tu flota. ¿En qué puedo asistirte?",
                 "¡Hola! 😊 Soy Sofia, tu asistente. ¿Qué información necesitas sobre tus vehículos?"
             ];
-            
+
             // Obtener hora actual para saludo contextual
             const hora = new Date().getHours();
             let saludoContextual = saludosIniciales[Math.floor(Math.random() * saludosIniciales.length)];
-            
+
             if (hora >= 6 && hora < 12) {
                 saludoContextual = "¡Buenos días! ☀️ Soy Sofia, tu asistente de WayGPS. ¿En qué puedo ayudarte?";
             } else if (hora >= 12 && hora < 20) {
@@ -1767,15 +1854,15 @@
             } else {
                 saludoContextual = "¡Buenas noches! 🌙 Soy Sofia, tu asistente. ¿En qué puedo ayudarte?";
             }
-            
+
             // Agregar mensaje de saludo inicial
             const msgElement = addMessage(saludoContextual, 'received', saludoContextual);
-            
+
             // Reproducir audio del saludo automáticamente
             if (!isAudioMuted && 'speechSynthesis' in window && !audioSaludoReproducido) {
                 audioSaludoReproducido = true;
                 const button = msgElement ? msgElement.querySelector('.message-audio-btn') : null;
-                
+
                 // Esperar a que las voces estén cargadas antes de reproducir
                 // Usar un timeout simple en lugar de un loop recursivo
                 setTimeout(() => {
@@ -1787,9 +1874,9 @@
                 }, 1200);
             }
         }
-        
+
         // Enfocar input al cargar la página y mostrar saludo inicial
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             messageInput.focus();
             // Configurar selección para mensajes existentes
             document.querySelectorAll('.message').forEach(msg => {
@@ -1801,7 +1888,7 @@
                     msg.setAttribute('data-message-text', textContent);
                     const type = msg.classList.contains('sent') ? 'sent' : 'received';
                     msg.setAttribute('data-message-type', type);
-                    
+
                     // Extraer la hora del mensaje si existe
                     const timeElement = msg.querySelector('.message-time');
                     if (timeElement) {
@@ -1822,49 +1909,49 @@
             // Mostrar saludo después de un pequeño delay para asegurar que todo esté inicializado
             setTimeout(mostrarSaludoInicial, 500);
         });
-        
+
         // Función para enviar mensaje
         async function sendMessage() {
             const message = messageInput.value.trim();
             if (!message) return;
-            
+
             // Detectar si hay un móvil en el mensaje
             const movilEnMensaje = extraerMovil(message);
             console.log('🔍 Móvil extraído del mensaje:', movilEnMensaje);
-            
+
             // Si encontramos un móvil, actualizar memoria
             if (movilEnMensaje) {
                 ultimoMovilConsultado = movilEnMensaje;
                 console.log('🧠 Sofia recordará el móvil:', ultimoMovilConsultado);
             }
-            
+
             // Si la consulta necesita un móvil y no especificamos uno
             let mensajeEnviar = message;
             const necesitaMovilFlag = necesitaMovil(message);
             console.log('🔍 ¿Necesita móvil?', necesitaMovilFlag);
             console.log('🔍 Móvil en memoria actual:', ultimoMovilConsultado);
-            
+
             if (necesitaMovilFlag && !movilEnMensaje && ultimoMovilConsultado) {
                 // Usar el último móvil consultado
                 mensajeEnviar = `${ultimoMovilConsultado} ${message}`;
                 console.log('🧠 Usando móvil en memoria:', ultimoMovilConsultado);
                 console.log('📤 Mensaje modificado:', mensajeEnviar);
             }
-            
+
             // Limpiar input y enfocar automáticamente
             messageInput.value = '';
             messageInput.style.height = 'auto';
             messageInput.focus(); // Enfocar el input para escribir siguiente mensaje
-            
+
             // Ocultar mensaje de bienvenida
             const welcomeMsg = messagesContainer.querySelector('.welcome-message');
             if (welcomeMsg) {
                 welcomeMsg.remove();
             }
-            
+
             // Agregar mensaje del usuario (mostrar el original, no el modificado)
             addMessage(message, 'sent');
-            
+
             // Mostrar indicador de escritura
             showTyping();
             setSofiaProcessing(true);
@@ -1881,18 +1968,18 @@
                         modo: 'texto'
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 hideTyping();
-                
+
                 if (data.success) {
                     // Mostrar mensaje con botón de audio
                     const textoAudio = data.respuesta_audio || data.respuesta;
                     const googleMapsLink = data.google_maps_link || null;
                     const whatsappData = data.whatsapp_data || null;
                     const msgElement = addMessage(data.respuesta, 'received', textoAudio, googleMapsLink, whatsappData);
-                    
+
                     if (data.usando_contexto && data.datos_consulta && data.datos_consulta.movil) {
                         ultimoMovilConsultado = data.datos_consulta.movil;
                     }
@@ -1913,7 +2000,7 @@
                 setSofiaProcessing(false);
             }
         }
-        
+
         // Función para agregar mensaje al chat
         function addMessage(text, type, audioText = null, googleMapsLink = null, whatsappData = null) {
             const messageDiv = document.createElement('div');
@@ -1923,23 +2010,23 @@
             messageDiv.setAttribute('data-message-id', messageId);
             messageDiv.setAttribute('data-message-text', text);
             messageDiv.setAttribute('data-message-type', type);
-            
+
             const now = new Date();
             const time = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
             const timeFull = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
+
             // Guardar la hora en el atributo data para usar en reenvío
             messageDiv.setAttribute('data-message-time', time);
             messageDiv.setAttribute('data-message-time-full', timeFull);
-            
+
             // Usar audioText si está disponible, sino el texto normal
             const textoParaAudio = audioText || text;
-            
+
             // Generar botones de acción (Maps y WhatsApp)
             let actionButtons = '';
             if (googleMapsLink || whatsappData) {
                 actionButtons = '<div class="message-action-buttons">';
-                
+
                 if (googleMapsLink) {
                     actionButtons += `
                         <button class="message-maps-btn" onclick="window.open('${googleMapsLink}', '_blank')" title="Ver en Google Maps">
@@ -1947,7 +2034,7 @@
                         </button>
                     `;
                 }
-                
+
                 if (whatsappData) {
                     // Usar atributo data para almacenar los datos JSON
                     // Escapar comillas dobles y comillas simples correctamente para HTML
@@ -1959,13 +2046,13 @@
                         </button>
                     `;
                 }
-                
+
                 actionButtons += '</div>';
             }
-            
+
             const audioIconClass = isAudioMuted ? 'bi bi-volume-mute' : 'bi bi-volume-up';
             const audioButtonTitle = isAudioMuted ? 'Audio silenciado' : 'Reproducir audio';
-            
+
             if (type === 'received') {
                 messageDiv.innerHTML = `
                     <div class="message-checkbox">
@@ -2001,14 +2088,14 @@
                     </div>
                 `;
             }
-            
+
             messagesContainer.appendChild(messageDiv);
-            
+
             // Agregar event listener para el botón de WhatsApp si existe
             if (whatsappData && type === 'received') {
                 const whatsappBtn = messageDiv.querySelector('.message-whatsapp-btn');
                 if (whatsappBtn) {
-                    whatsappBtn.addEventListener('click', function() {
+                    whatsappBtn.addEventListener('click', function () {
                         let dataAttr = this.getAttribute('data-whatsapp');
                         // Desescaper HTML
                         dataAttr = dataAttr.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
@@ -2017,23 +2104,23 @@
                     });
                 }
             }
-            
+
             // Agregar event listeners para selección
             setupMessageSelection(messageDiv);
-            
+
             scrollToBottom();
             updateMessageAudioButtons();
             return messageDiv;
         }
-        
+
         // Función para configurar selección de mensaje
         function setupMessageSelection(messageDiv) {
             let pressStartTime = 0;
             let isLongPress = false;
             let longPressTriggered = false;
-            
+
             // Click normal en modo selección (tiene prioridad)
-            messageDiv.addEventListener('click', function(e) {
+            messageDiv.addEventListener('click', function (e) {
                 // Si estamos en modo selección, manejar la selección
                 if (selectionMode) {
                     e.preventDefault();
@@ -2045,18 +2132,18 @@
                     return false;
                 }
             }, true); // Usar capture phase para que se ejecute primero
-            
+
             // Long press para activar modo selección y seleccionar (solo si NO está en modo selección)
-            messageDiv.addEventListener('mousedown', function(e) {
+            messageDiv.addEventListener('mousedown', function (e) {
                 // Si ya estamos en modo selección, no hacer nada aquí (el click lo maneja)
                 if (selectionMode) {
                     return;
                 }
-                
+
                 pressStartTime = Date.now();
                 isLongPress = false;
                 longPressTriggered = false;
-                
+
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
                     longPressTriggered = true;
@@ -2069,8 +2156,8 @@
                     }
                 }, longPressDelay);
             });
-            
-            messageDiv.addEventListener('mouseup', function(e) {
+
+            messageDiv.addEventListener('mouseup', function (e) {
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
@@ -2082,26 +2169,26 @@
                     longPressTriggered = false;
                 }
             });
-            
-            messageDiv.addEventListener('mouseleave', function() {
+
+            messageDiv.addEventListener('mouseleave', function () {
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
                 longPressTriggered = false;
             });
-            
+
             // Touch events para móviles
-            messageDiv.addEventListener('touchstart', function(e) {
+            messageDiv.addEventListener('touchstart', function (e) {
                 // Si ya estamos en modo selección, no hacer nada aquí (el click lo maneja)
                 if (selectionMode) {
                     return;
                 }
-                
+
                 pressStartTime = Date.now();
                 isLongPress = false;
                 longPressTriggered = false;
-                
+
                 longPressTimer = setTimeout(() => {
                     isLongPress = true;
                     longPressTriggered = true;
@@ -2114,8 +2201,8 @@
                     }
                 }, longPressDelay);
             });
-            
-            messageDiv.addEventListener('touchend', function(e) {
+
+            messageDiv.addEventListener('touchend', function (e) {
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
@@ -2127,8 +2214,8 @@
                     longPressTriggered = false;
                 }
             });
-            
-            messageDiv.addEventListener('touchcancel', function() {
+
+            messageDiv.addEventListener('touchcancel', function () {
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
@@ -2136,14 +2223,14 @@
                 longPressTriggered = false;
             });
         }
-        
+
         // Función para activar/desactivar modo selección
         function toggleSelectionMode() {
             selectionMode = !selectionMode;
             const messagesContainer = document.getElementById('messagesContainer');
             const selectionButton = document.getElementById('selectionModeButton');
             const actionsBar = document.getElementById('selectionActionsBar');
-            
+
             if (selectionMode) {
                 messagesContainer.classList.add('selection-mode');
                 selectionButton.classList.add('active');
@@ -2156,17 +2243,17 @@
                 updateSelectionUI();
             }
         }
-        
+
         // Función para seleccionar/deseleccionar mensaje
         function toggleMessageSelection(messageId) {
             if (!selectionMode) return;
-            
+
             if (selectedMessages.has(messageId)) {
                 selectedMessages.delete(messageId);
             } else {
                 selectedMessages.add(messageId);
             }
-            
+
             const messageDiv = document.querySelector(`[data-message-id="${messageId}"]`);
             if (messageDiv) {
                 if (selectedMessages.has(messageId)) {
@@ -2175,20 +2262,20 @@
                     messageDiv.classList.remove('selected');
                 }
             }
-            
+
             updateSelectionUI();
         }
-        
+
         // Función para actualizar UI de selección
         function updateSelectionUI() {
             const count = selectedMessages.size;
             const countElement = document.getElementById('selectionCount');
             const actionsBar = document.getElementById('selectionActionsBar');
-            
+
             if (countElement) {
                 countElement.textContent = `${count} mensaje${count !== 1 ? 's' : ''} seleccionado${count !== 1 ? 's' : ''}`;
             }
-            
+
             if (actionsBar) {
                 if (count > 0) {
                     actionsBar.classList.add('active');
@@ -2196,7 +2283,7 @@
                     actionsBar.classList.remove('active');
                 }
             }
-            
+
             // Actualizar todos los mensajes
             document.querySelectorAll('.message').forEach(msg => {
                 const msgId = msg.getAttribute('data-message-id');
@@ -2207,25 +2294,25 @@
                 }
             });
         }
-        
+
         // Función para seleccionar todos los mensajes
         function selectAllMessages() {
             if (!selectionMode) return;
-            
+
             document.querySelectorAll('.message').forEach(msg => {
                 const msgId = msg.getAttribute('data-message-id');
                 if (msgId) {
                     selectedMessages.add(msgId);
                 }
             });
-            
+
             updateSelectionUI();
         }
-        
+
         // Función para obtener mensajes ordenados cronológicamente
         function getSelectedMessagesOrdered() {
             if (selectedMessages.size === 0) return [];
-            
+
             // Obtener todos los mensajes del contenedor y filtrar los seleccionados
             const allMessages = Array.from(document.querySelectorAll('.message'));
             const selected = allMessages
@@ -2245,17 +2332,17 @@
                         id: msg.getAttribute('data-message-id')
                     };
                 });
-            
+
             return selected;
         }
-        
+
         // Función para copiar mensajes seleccionados
         function copySelectedMessages() {
             if (selectedMessages.size === 0) return;
-            
+
             const messages = getSelectedMessagesOrdered().map(msg => msg.text);
             const textToCopy = messages.join('\n\n');
-            
+
             // Copiar al portapapeles
             const tempTextarea = document.createElement('textarea');
             tempTextarea.value = textToCopy;
@@ -2264,7 +2351,7 @@
             document.body.appendChild(tempTextarea);
             tempTextarea.select();
             tempTextarea.setSelectionRange(0, 99999);
-            
+
             try {
                 document.execCommand('copy');
                 console.log('✅ Mensajes copiados al portapapeles');
@@ -2300,25 +2387,25 @@
                 document.body.removeChild(tempTextarea);
             }
         }
-        
+
         // Función para reenviar mensajes seleccionados por WhatsApp
         function forwardSelectedMessages() {
             if (selectedMessages.size === 0) return;
-            
+
             const messages = getSelectedMessagesOrdered().map(msg => msg.text);
             const textToShare = messages.join('\n\n');
-            
+
             // Abrir WhatsApp
             const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(textToShare)}`;
             window.open(urlWhatsApp, '_blank');
         }
-        
+
         // Variable global para rastrear si hay audio reproduciéndose
         let currentUtterance = null;
         let currentAudioButton = null;
- 
+
         function stopCurrentAudio(button = null) {
-                    if (!isAudioMuted && 'speechSynthesis' in window) {
+            if (!isAudioMuted && 'speechSynthesis' in window) {
                 if (window.speechSynthesis.speaking) {
                     window.speechSynthesis.cancel();
                 }
@@ -2336,7 +2423,7 @@
             currentAudioButton = null;
             setSofiaSpeaking(false);
         }
-        
+
         // Función para reproducir audio de un mensaje
         function playMessageAudio(text, button) {
             // Si ya hay audio reproduciéndose, pausarlo
@@ -2357,7 +2444,7 @@
                 setSofiaSpeaking(false);
                 return;
             }
-            
+
             // Remover la clase playing de todos los botones y restaurar iconos
             document.querySelectorAll('.message-audio-btn').forEach(btn => {
                 btn.classList.remove('playing');
@@ -2367,16 +2454,16 @@
                 }
                 btn.title = isAudioMuted ? 'Audio silenciado' : 'Reproducir audio';
             });
-            
+
             // Agregar clase playing al botón actual y cambiar icono a pausa
             button.classList.add('playing');
             button.querySelector('i').className = 'bi bi-stop-fill';
             button.title = 'Detener audio';
             currentAudioButton = button;
-            
+
             // Reproducir audio y guardar referencia
             currentUtterance = speak(text, button);
-            
+
             // Remover clase playing cuando termine y restaurar icono
             const checkEnd = setInterval(() => {
                 if (!window.speechSynthesis.speaking) {
@@ -2385,29 +2472,29 @@
                 }
             }, 100);
         }
-        
+
         // Función para escapar HTML
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-        
+
         // Funciones para indicador de escritura
         function showTyping() {
             typingIndicator.classList.add('active');
             scrollToBottom();
         }
-        
+
         function hideTyping() {
             typingIndicator.classList.remove('active');
         }
-        
+
         // Scroll automático
         function scrollToBottom() {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-        
+
         // Text to Speech
         const voiceSelect = document.getElementById('voiceSelect');
         let availableVoices = [];
@@ -2556,27 +2643,27 @@
             const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{2190}-\u{21FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}-\u{2B55}]|[\u{3030}-\u{303F}]|[\u{FE00}-\u{FE0F}]|[\u{1F018}-\u{1F270}]/gu;
             return text.replace(emojiRegex, '').trim();
         }
-        
+
         function speak(text, button = null) {
             // Remover emojis del texto antes de reproducir
             const textoSinEmojis = removeEmojis(text);
-            
+
             if (isAudioMuted) {
                 setSofiaSpeaking(false);
                 return null;
             }
-            
+
             if (!('speechSynthesis' in window)) {
                 console.warn('⚠️ Text-to-Speech no está disponible en este navegador');
                 setSofiaSpeaking(false);
                 return null;
             }
-            
+
             // Cancelar cualquier síntesis anterior
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
             }
-            
+
             // Verificar que las voces estén disponibles
             // Si no hay voces, intentar forzar la carga
             let voices = window.speechSynthesis.getVoices();
@@ -2585,10 +2672,10 @@
                 window.speechSynthesis.getVoices();
                 voices = window.speechSynthesis.getVoices();
             }
-            
+
             // Si aún no hay voces después de forzar, continuar de todas formas
             // El navegador usará una voz por defecto
-            
+
             // Usar texto sin emojis para la reproducción de audio
             const utterance = new SpeechSynthesisUtterance(textoSinEmojis);
             utterance.lang = 'es-AR'; // Usar español argentino
@@ -2601,7 +2688,7 @@
                 utterance.voice = selectedVoice;
                 utterance.lang = selectedVoice.lang;
             }
-            
+
             console.log('🎤 Reproduciendo audio:', textoSinEmojis.substring(0, 100));
 
             if (button) {
@@ -2613,9 +2700,9 @@
                 }
                 button.title = 'Detener audio';
             }
-            
+
             setSofiaSpeaking(true);
-            
+
             // Si ya hay handlers establecidos (del modo voz), no los sobrescribimos
             if (!utterance.onend) {
                 utterance.onend = () => {
@@ -2623,7 +2710,7 @@
                     setSofiaSpeaking(false);
                 };
             }
-            
+
             if (!utterance.onerror) {
                 utterance.onerror = (event) => {
                     console.error('❌ Error en síntesis de voz:', event);
@@ -2631,7 +2718,7 @@
                     setSofiaSpeaking(false);
                 };
             }
-            
+
             // Reproducir
             try {
                 window.speechSynthesis.speak(utterance);
@@ -2640,10 +2727,10 @@
                 stopCurrentAudio(button);
                 setSofiaSpeaking(false);
             }
-            
+
             return utterance; // Retornar utterance para control
         }
     </script>
 </body>
-</html>
 
+</html>
