@@ -3,7 +3,7 @@
  * Maneja login, logout, verificación de sesión y permisos
  */
 
-const AUTH_API_URL = '/api/auth';
+const AUTH_API_URL = window.location.origin + '/api/auth';
 
 // Obtener token de autenticación
 function getAuthToken() {
