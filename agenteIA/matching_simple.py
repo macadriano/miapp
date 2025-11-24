@@ -1,13 +1,23 @@
+# Sistema de matching simple por palabras clave para Sofia
+
+"""Matching logic for Sofia assistant.
+
+Provides:
+- Text normalization
+- Simple keyword matcher
+- Mobile ID extraction
+- Destination extraction for proximity queries
+- Query processing with variable extraction
 """
-Sistema de matching simple por palabras clave para Sofia
-"""
-from typing import Dict, List, Optional
+
+from typing import Dict, List, Optional, Tuple
 import re
 import unicodedata
 
 
 def normalizar_texto(texto: str, mayusculas: bool = True) -> str:
-    """Normaliza texto removiendo tildes y signos raros."""
+    """Normaliza texto removiendo tildes y signos raros.
+    """
     texto_nfkd = unicodedata.normalize('NFKD', texto)
     texto_sin_tilde = ''.join(
         c for c in texto_nfkd
@@ -23,14 +33,11 @@ def normalizar_texto(texto: str, mayusculas: bool = True) -> str:
 
 
 class SimpleMatcher:
-    """
-    Matcher simple basado en palabras clave
-    """
-    
+    """Matcher simple basado en palabras clave"""
+
     def __init__(self):
         self.patrones = {
             'POSICION': [
-                # Verbos explícitos
                 r'd(ó|o)nde.*est(a|á)',
                 r'd(ó|o)nde.*(se\s+encuentra|queda)',
                 r'ubicaci(o|ó)n',
@@ -89,7 +96,6 @@ class SimpleMatcher:
                 r'cu[aá]nt[oa]?\s+tiempo\s+demora\s+(?:en\s+)?llegar\s+a\s+',
             ],
             'UBICACION_ZONA': [
-                # Patrones específicos con la palabra "zona"
                 r'd(ó|o)nde\s+est(a|á)\s+(?:la\s+)?zona',
                 r'd(ó|o)nde\s+queda\s+(?:la\s+)?zona',
                 r'ubicaci(o|ó)n\s+de\s+(?:la\s+)?zona',
@@ -99,7 +105,6 @@ class SimpleMatcher:
                 r'cu(a|á)l\s+es\s+el\s+domicilio\s+de\s+(?:la\s+)?zona',
                 r'd(ó|o)nde\s+se\s+encuentra\s+(?:la\s+)?zona',
                 r'd(ó|o)nde\s+se\s+ubica\s+(?:la\s+)?zona',
-                # Patrones para ubicación/dirección de lugares (depósito, almacén, etc.)
                 r'd(ó|o)nde\s+(?:est(a|á)|queda|se\s+encuentra|se\s+ubica)\s+(?:el|la)\s+(?:dep(o|ó)sito|almac(e|é)n|zona|base|sede|oficina|planta)',
                 r'ubicaci(o|ó)n\s+(?:del|de\s+la|de)\s+(?:dep(o|ó)sito|almac(e|é)n|zona|base|sede|oficina|planta)',
                 r'direcci(o|ó)n\s+(?:del|de\s+la|de)\s+(?:dep(o|ó)sito|almac(e|é)n|zona|base|sede|oficina|planta)',
@@ -123,30 +128,27 @@ class SimpleMatcher:
                 r'a\s+qu[eé]\s+distancia\s+est[aá]\s+(?:de|a)',
                 r'cu[aá]nt[oa]?\s+est[aá]\s+el\s+(camion|vehiculo|movil)\s+\w+\s+(?:de|del|de\s+el)\s+(camion|vehiculo|movil)\s+\w+',
                 r'a\s+qu[eé]\s+distancia\s+est[aá]\s+el\s+(camion|vehiculo|movil)\s+\w+\s+(?:de|del|de\s+el)\s+(camion|vehiculo|movil)\s+\w+',
-            ]
+            ],
         }
-    
+
     def buscar_patron(self, texto: str, tipo: str) -> bool:
         """Verifica si el texto coincide con algún patrón del tipo"""
         if tipo not in self.patrones:
             return False
-        
         texto_normalizado = ''.join(
             c for c in unicodedata.normalize('NFD', texto)
             if unicodedata.category(c) != 'Mn'
         )
-
         for patron in self.patrones[tipo]:
             if re.search(patron, texto, re.IGNORECASE) or re.search(patron, texto_normalizado, re.IGNORECASE):
                 return True
-
         if tipo == 'CERCANIA':
             texto_lower = texto_normalizado.lower()
             keywords = ['cerca', 'distancia', 'cuanto esta', 'cuanto tarda', 'cuanto demora', 'tiempo']
             if any(kw in texto_lower for kw in keywords):
                 return True
         return False
-    
+
     def extraer_movil(self, texto: str, exclude: Optional[List[str]] = None) -> Optional[str]:
         """Extrae el identificador del móvil del texto"""
         exclude = set(exclude or [])
@@ -157,43 +159,22 @@ class SimpleMatcher:
             (r'\b([A-Z]+)\s*(\d{1,4})\b', lambda m: m.group(1) + m.group(2)),
             (r'\b([A-Z]+\d{1,4})\b', lambda m: m.group(1)),
         ]
-
         texto_normalizado = normalizar_texto(texto, mayusculas=True)
-
         numeros_map = {
-            'CERO': '0',
-            'UNO': '1', 'UN': '1', 'UNA': '1',
-            'DOS': '2',
-            'TRES': '3',
-            'CUATRO': '4',
-            'CINCO': '5',
-            'SEIS': '6',
-            'SIETE': '7',
-            'OCHO': '8',
-            'NUEVE': '9',
-            'DIEZ': '10',
-            'ONCE': '11',
-            'DOCE': '12',
-            'TRECE': '13',
-            'CATORCE': '14',
-            'QUINCE': '15',
-            'DIECISEIS': '16', 'DIECISÉIS': '16',
-            'DIECISIETE': '17',
-            'DIECIOCHO': '18',
-            'DIECINUEVE': '19',
-            'VEINTE': '20',
+            'CERO': '0', 'UNO': '1', 'UN': '1', 'UNA': '1',
+            'DOS': '2', 'TRES': '3', 'CUATRO': '4', 'CINCO': '5',
+            'SEIS': '6', 'SIETE': '7', 'OCHO': '8', 'NUEVE': '9',
+            'DIEZ': '10', 'ONCE': '11', 'DOCE': '12', 'TRECE': '13',
+            'CATORCE': '14', 'QUINCE': '15', 'DIECISEIS': '16', 'DIECISÉIS': '16',
+            'DIECISIETE': '17', 'DIECIOCHO': '18', 'DIECINUEVE': '19', 'VEINTE': '20',
         }
-
         def reemplazar_palabra(match):
-            palabra = match.group(0)
-            return numeros_map.get(palabra, palabra)
-
+            return numeros_map.get(match.group(0), match.group(0))
         texto_normalizado = re.sub(
             r'\b(' + '|'.join(numeros_map.keys()) + r')\b',
             reemplazar_palabra,
             texto_normalizado
         )
-
         for patron, extractor in patrones_movil:
             match = re.search(patron, texto_normalizado, re.IGNORECASE)
             if match:
@@ -201,112 +182,91 @@ class SimpleMatcher:
                 candidato = re.sub(r'\s+', '', candidato)
                 if candidato not in exclude and len(candidato) >= 3:
                     return candidato
-
         return None
+
+    def extraer_destino(self, texto: str, exclude: Optional[List[str]] = None) -> Optional[str]:
+        """Extrae el destino usando la lógica de cercanía"""
+        destino, _, _ = extraer_destino_cercania(texto)
+        if destino and exclude:
+            if isinstance(exclude, (list, set)) and destino in exclude:
+                return None
+        return destino
 
 
 class ProcesadorSimple:
-    """
-    Procesador simple que usa matching por palabras clave
-    """
-    
+    """Procesador simple que usa matching por palabras clave"""
+
     def __init__(self):
         self.matcher = SimpleMatcher()
-    
+
     def procesar_consulta(self, texto: str, vectores_db: List) -> Optional[Dict]:
-        """
-        Procesa una consulta usando matching simple
-        
-        Args:
-            texto: Consulta del usuario
-            vectores_db: Lista de VectoresConsulta de la BD
-            
-        Returns:
-            Diccionario con información del vector más similar o None
-        """
+        """Procesa una consulta usando matching simple"""
         texto_lower = texto.lower()
-        
-        # PRIMERO: Detectar todos los tipos posibles
+        # Detectar tipos posibles
         tipos_detectados = []
         for tipo in ['POSICION', 'RECORRIDO', 'COMANDO_WHATSAPP', 'LLEGADA', 'CERCANIA', 'UBICACION_ZONA', 'SALUDO']:
             if self.matcher.buscar_patron(texto, tipo):
                 tipos_detectados.append(tipo)
-        
-        # Si se detectaron múltiples tipos, priorizar según orden de importancia
-        # IMPORTANTE: Solo priorizar COMANDO_WHATSAPP si hay palabras clave explícitas
-        # Orden de prioridad: POSICION (con móvil) > UBICACION_ZONA (con zona) > COMANDO_WHATSAPP (con keywords) > LLEGADA > CERCANIA > RECORRIDO > SALUDO
-        tipo_seleccionado = None
+        # Variables auxiliares
         tiene_palabra_zona = re.search(r'\b(?:zona|dep(o|ó)sito|almac(e|é)n|base|sede|oficina|planta)\b', texto_lower, re.IGNORECASE)
-        tiene_palabra_whatsapp = re.search(r'\b(?:whatsapp|wsp|wapp|envi[aá]|compart[eí]|mand[aá]|pas[aá])\\b', texto_lower, re.IGNORECASE)
+        tiene_palabra_whatsapp = re.search(r'\b(?:whatsapp|wsp|wapp|envi[aá]|compart[eí]|mand[aá]|pas[aá])\b', texto_lower, re.IGNORECASE)
         tiene_movil = self.matcher.extraer_movil(texto) is not None
         tiene_palabra_cercania = re.search(r'\b(?:cerca|cercano|distancia|proximo|próximo)\b', texto_lower, re.IGNORECASE)
-        
-        # Debug: mostrar qué se detectó
         print(f"  Tipos detectados: {tipos_detectados}")
         print(f"  tiene_movil={tiene_movil}, tiene_zona={bool(tiene_palabra_zona)}, tiene_whatsapp={bool(tiene_palabra_whatsapp)}, tiene_cercania={bool(tiene_palabra_cercania)}")
-        
-        # Priorizar UBICACION_ZONA si hay palabra "zona" explícita
+        # Priorizar según reglas
+        tipo_seleccionado = None
         if 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
             tipo_seleccionado = 'UBICACION_ZONA'
-            print(f"  → Seleccionado: UBICACION_ZONA (tiene palabra zona)")
-        # Priorizar POSICION si hay un móvil identificado y NO hay palabras de cercanía/llegada
+            print("  → Seleccionado: UBICACION_ZONA (tiene palabra zona)")
         elif 'POSICION' in tipos_detectados and tiene_movil and not tiene_palabra_cercania:
             tipo_seleccionado = 'POSICION'
-            print(f"  → Seleccionado: POSICION (tiene móvil, sin cercanía)")
-        # Solo usar COMANDO_WHATSAPP si hay palabras clave explícitas de WhatsApp
+            print("  → Seleccionado: POSICION (tiene móvil, sin cercanía)")
         elif 'COMANDO_WHATSAPP' in tipos_detectados and tiene_palabra_whatsapp:
             tipo_seleccionado = 'COMANDO_WHATSAPP'
-            print(f"  → Seleccionado: COMANDO_WHATSAPP (tiene keyword whatsapp)")
+            print("  → Seleccionado: COMANDO_WHATSAPP (tiene keyword whatsapp)")
         elif 'LLEGADA' in tipos_detectados:
             tipo_seleccionado = 'LLEGADA'
-            print(f"  → Seleccionado: LLEGADA")
+            print("  → Seleccionado: LLEGADA")
             if 'CERCANIA' in tipos_detectados:
-                print(f"  ⚠️ Se detectaron ambos LLEGADA y CERCANIA, priorizando LLEGADA")
+                print("  ⚠️ Se detectaron ambos LLEGADA y CERCANIA, priorizando LLEGADA")
         elif 'CERCANIA' in tipos_detectados:
             tipo_seleccionado = 'CERCANIA'
-            print(f"  → Seleccionado: CERCANIA")
+            print("  → Seleccionado: CERCANIA")
         elif 'POSICION' in tipos_detectados:
-            # Fallback para POSICION sin móvil identificado
             tipo_seleccionado = 'POSICION'
-            print(f"  → Seleccionado: POSICION (fallback)")
+            print("  → Seleccionado: POSICION (fallback)")
         elif 'RECORRIDO' in tipos_detectados:
             tipo_seleccionado = 'RECORRIDO'
-            print(f"  → Seleccionado: RECORRIDO")
+            print("  → Seleccionado: RECORRIDO")
         elif 'SALUDO' in tipos_detectados:
             tipo_seleccionado = 'SALUDO'
-            print(f"  → Seleccionado: SALUDO")
-        
-        # Buscar vector del tipo seleccionado
+            print("  → Seleccionado: SALUDO")
+        # Buscar vector y extraer variables
         if tipo_seleccionado:
+            variables: Dict[str, str] = {}
+            movil_extraido = self.matcher.extraer_movil(texto)
+            if movil_extraido:
+                variables['movil'] = movil_extraido
+                print(f"  ✅ Móvil extraído: {movil_extraido}")
+            if tipo_seleccionado in ['LLEGADA', 'CERCANIA']:
+                destino = self.matcher.extraer_destino(texto, exclude=[movil_extraido] if movil_extraido else [])
+                if destino:
+                    variables['destino'] = destino
+                    print(f"  ✅ Destino extraído: {destino}")
             for vector_db in vectores_db:
                 if vector_db.tipo_consulta == tipo_seleccionado and vector_db.activo:
-                    # Extraer variables del texto
-                    variables = {}
-                    movil_extraido = self.matcher.extraer_movil(texto)
-                    if movil_extraido:
-                        variables['movil'] = movil_extraido
-                        print(f\"  ✅ Móvil extraído: {movil_extraido}")
-                    
-                    # Extraer destino si es necesario (LLEGADA, CERCANIA)
-                    if tipo_seleccionado in ['LLEGADA', 'CERCANIA']:
-                        destino = self.matcher.extraer_destino(texto, exclude=[movil_extraido] if movil_extraido else [])
-                        if destino:
-                            variables['destino'] = destino
-                            print(f\"  ✅ Destino extraído: {destino}")
-                    
                     return {
                         'vector': vector_db,
-                        'similitud': 0.85,  # Similitud alta para indicar match
+                        'similitud': 0.85,
                         'tipo': tipo_seleccionado,
                         'categoria': vector_db.categoria,
-                        'variables': variables
+                        'variables': variables,
                     }
-        
-        # Heurística: si el usuario solo menciona un identificador (patente/alias/código)
-        # asumimos que está pidiendo la posición actual.
+        # Heurística para móvil solo
         movil = self.matcher.extraer_movil(texto)
         tokens = texto.strip().split()
-        if movil and len(tokens) <= 4:  # Frases muy cortas como "OVV799" o "donde OVV799"
+        if movil and len(tokens) <= 4:
             for vector_db in vectores_db:
                 if vector_db.tipo_consulta == 'POSICION' and vector_db.activo:
                     return {
@@ -314,20 +274,16 @@ class ProcesadorSimple:
                         'similitud': 0.80,
                         'tipo': 'POSICION',
                         'categoria': vector_db.categoria,
-                        'variables': {'movil': movil}
+                        'variables': {'movil': movil},
                     }
-        
         return None
-    
+
     def extraer_variables(self, texto: str, variables: Dict[str, str]) -> Dict[str, str]:
-        """Extrae variables del texto"""
-        resultado = {}
-        
-        # Extraer móvil
+        """Extrae variables del texto (legacy helper)"""
+        resultado: Dict[str, str] = {}
         movil = self.matcher.extraer_movil(texto)
         if movil:
             resultado['movil'] = movil
- 
         destino, movil_referencia, destino_es_movil = extraer_destino_cercania(texto)
         if destino:
             resultado['destino'] = destino
@@ -337,21 +293,18 @@ class ProcesadorSimple:
             resultado['movil_referencia'] = movil_referencia
         if destino_es_movil:
             resultado['destino_es_movil'] = True
- 
         return resultado
 
 
-def extraer_destino_cercania(texto: str) -> tuple[Optional[str], Optional[str], bool]:
+def extraer_destino_cercania(texto: str) -> Tuple[Optional[str], Optional[str], bool]:
     """Intenta extraer el destino de una consulta de cercanía."""
     texto_normalizado = normalizar_texto(texto, mayusculas=True)
     texto_limpio = normalizar_texto(texto, mayusculas=False)
-
     mobile_matches: List[str] = []
     for m in re.finditer(r'\b(?:CAMION|MOVIL|VEHICULO)\s*(\d{1,4})\b', texto_normalizado, re.IGNORECASE):
         mobile_id = re.sub(r'\s+', '', m.group(0)).upper()
         if mobile_id not in mobile_matches:
             mobile_matches.append(mobile_id)
-
     patrones = [
         r'cercan[oa]s?\s*(?:de|del|de la|a)\s+(.+)',
         r'proxim[oa]s?\s*(?:a|de|del|de la)\s+(.+)',
@@ -368,7 +321,6 @@ def extraer_destino_cercania(texto: str) -> tuple[Optional[str], Optional[str], 
         r'a\s+que\s+distancia\s+esta\s+(?:de|a)\s+(.+)',
         r'a\s+cuanto\s+esta\s+(?:de|a)\s+(.+)',
     ]
-
     for patron in patrones:
         match = re.search(patron, texto_limpio, re.IGNORECASE)
         if match:
@@ -381,7 +333,6 @@ def extraer_destino_cercania(texto: str) -> tuple[Optional[str], Optional[str], 
                 if not re.search(r'(camion|movil|vehiculo)\s*\d+', destino_normalizado, re.IGNORECASE):
                     referencia = mobile_matches[0] if mobile_matches else None
                     return destino, referencia, False
-
     # Patrones específicos: "a cuanto está el camión 5 de Burzaco"
     if mobile_matches:
         match = re.search(
@@ -393,11 +344,8 @@ def extraer_destino_cercania(texto: str) -> tuple[Optional[str], Optional[str], 
             destino = match.group(1).strip(' ?!.')
             if destino and not re.search(r'(camion|movil|vehiculo)\s*\d+', destino, re.IGNORECASE):
                 return destino, mobile_matches[0], False
-
     if len(mobile_matches) >= 2:
         return mobile_matches[1], mobile_matches[0], True
     if len(mobile_matches) == 1:
         return None, mobile_matches[0], False
-
     return None, None, False
-
