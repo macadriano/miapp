@@ -145,6 +145,16 @@ class SimpleMatcher:
     def extraer_movil(self, texto: str, exclude: Optional[List[str]] = None) -> Optional[str]:
         """Extrae el identificador del móvil del texto"""
         exclude = set(exclude or [])
+        
+        # Palabras comunes que NO son móviles
+        stop_words = {
+            'DONDE', 'ESTA', 'QUEDA', 'ANDA', 'LLEGA', 'CERCA', 'LEJOS',
+            'ZONA', 'CLIENTE', 'DEPOSITO', 'ALMACEN', 'BASE', 'SEDE',
+            'HOLA', 'BUENAS', 'BUENOS', 'DIAS', 'TARDES', 'NOCHES',
+            'COMO', 'ESTAS', 'ESTOY', 'BIEN', 'MAL', 'GRACIAS',
+            'ENVIA', 'ENVIAME', 'MANDA', 'MANDAME', 'COMPARTE', 'PASA'
+        }
+        
         patrones_movil = [
             (r'\b([A-Z]{2,5}\d{2,4})\b', lambda m: m.group(1)),
             (r'\b([A-Z]{2,5})\s*(\d{2,4})\b', lambda m: m.group(1) + m.group(2)),
@@ -194,7 +204,8 @@ class SimpleMatcher:
             if match:
                 candidato = extractor(match).upper()
                 candidato = re.sub(r'\s+', '', candidato)
-                if candidato not in exclude and len(candidato) >= 3:
+                # Excluir stop words y palabras en la lista de exclusión
+                if candidato not in exclude and candidato not in stop_words and len(candidato) >= 3:
                     return candidato
 
         return None
@@ -228,12 +239,21 @@ class ProcesadorSimple:
                 tipos_detectados.append(tipo)
         
         # Si se detectaron múltiples tipos, priorizar según orden de importancia
-        # Orden de prioridad: COMANDO_WHATSAPP > LLEGADA > CERCANIA > POSICION > UBICACION_ZONA > RECORRIDO > SALUDO
-        # UBICACION_ZONA solo se prioriza si hay palabra "zona" explícita en el texto
+        # IMPORTANTE: Solo priorizar COMANDO_WHATSAPP si hay palabras clave explícitas
+        # Orden de prioridad: POSICION (con móvil) > UBICACION_ZONA (con zona) > COMANDO_WHATSAPP (con keywords) > LLEGADA > CERCANIA > RECORRIDO > SALUDO
         tipo_seleccionado = None
         tiene_palabra_zona = re.search(r'\b(?:zona|dep(o|ó)sito|almac(e|é)n|base|sede|oficina|planta)\b', texto_lower, re.IGNORECASE)
+        tiene_palabra_whatsapp = re.search(r'\b(?:whatsapp|wsp|wapp|envi[aá]|compart[eí]|mand[aá]|pas[aá])\b', texto_lower, re.IGNORECASE)
+        tiene_movil = self.extraer_movil(texto) is not None
         
-        if 'COMANDO_WHATSAPP' in tipos_detectados:
+        # Priorizar UBICACION_ZONA si hay palabra "zona" explícita
+        if 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
+            tipo_seleccionado = 'UBICACION_ZONA'
+        # Priorizar POSICION si hay un móvil identificado y no es comando de WhatsApp
+        elif 'POSICION' in tipos_detectados and tiene_movil and not tiene_palabra_whatsapp:
+            tipo_seleccionado = 'POSICION'
+        # Solo usar COMANDO_WHATSAPP si hay palabras clave explícitas de WhatsApp
+        elif 'COMANDO_WHATSAPP' in tipos_detectados and tiene_palabra_whatsapp:
             tipo_seleccionado = 'COMANDO_WHATSAPP'
         elif 'LLEGADA' in tipos_detectados:
             tipo_seleccionado = 'LLEGADA'
@@ -242,10 +262,8 @@ class ProcesadorSimple:
         elif 'CERCANIA' in tipos_detectados:
             tipo_seleccionado = 'CERCANIA'
         elif 'POSICION' in tipos_detectados:
+            # Fallback para POSICION sin móvil identificado
             tipo_seleccionado = 'POSICION'
-        elif 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
-            # Solo priorizar UBICACION_ZONA si hay palabra "zona" explícita
-            tipo_seleccionado = 'UBICACION_ZONA'
         elif 'RECORRIDO' in tipos_detectados:
             tipo_seleccionado = 'RECORRIDO'
         elif 'SALUDO' in tipos_detectados:
