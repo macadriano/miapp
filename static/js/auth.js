@@ -84,20 +84,40 @@ async function verificarAutenticacion() {
             } else {
                 sessionStorage.setItem('userData', JSON.stringify(userData));
             }
+            // Limpiar marca de tiempo de redirección si tuvo éxito
+            sessionStorage.removeItem('lastAuthRedirect');
             return true;
         }
 
-        limpiarSesion();
-        if (window.location.pathname !== '/login/') {
-            window.location.href = `/login/?next=${nextParam}`;
-        }
+        handleAuthError(nextParam);
         return false;
     } catch (error) {
         console.error('Error al verificar autenticación:', error);
-        if (window.location.pathname !== '/login/') {
-            window.location.href = `/login/?next=${nextParam}`;
-        }
+        handleAuthError(nextParam);
         return false;
+    }
+}
+
+function handleAuthError(nextParam) {
+    limpiarSesion();
+    if (window.location.pathname !== '/login/') {
+        // Protección contra bucles de redirección
+        const lastRedirect = sessionStorage.getItem('lastAuthRedirect');
+        const now = Date.now();
+
+        if (lastRedirect && (now - parseInt(lastRedirect)) < 5000) {
+            console.error('Detectado bucle de redirección. Deteniendo navegación.');
+            // Opcional: Mostrar mensaje al usuario
+            const mainArea = document.querySelector('.main-area') || document.body;
+            const errorMsg = document.createElement('div');
+            errorMsg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#dc3545;color:white;padding:15px;border-radius:5px;z-index:9999;box-shadow:0 4px 6px rgba(0,0,0,0.1);';
+            errorMsg.innerHTML = '<strong>Error de conexión</strong><br>No se pudo verificar su sesión. Por favor recargue la página o intente más tarde.';
+            mainArea.appendChild(errorMsg);
+            return;
+        }
+
+        sessionStorage.setItem('lastAuthRedirect', now.toString());
+        window.location.href = `/login/?next=${nextParam}`;
     }
 }
 
