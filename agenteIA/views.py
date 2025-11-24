@@ -328,13 +328,13 @@ def procesar_consulta(request):
                 'es_despedida': True
             })
         
-        # Procesar consulta con vectores
-        resultado = procesador.procesar_consulta(mensaje, vectores)
+        # SISTEMA HÍBRIDO: Primero intentar matching por patrones (preciso)
+        resultado = procesador_simple.procesar_consulta(mensaje, vectores)
+        print(f"🔍 Matching por patrones: {'✅ Match' if resultado else '❌ No match'}")
         
-        # Si no matchea, intentar sin saludo inicial (por si viene "Hola + consulta")
+        # Si no matchea con patrones, intentar sin saludo inicial
         if not resultado:
             # Detectar y remover saludos comunes del inicio
-            # Patrones más completos para detectar saludos seguidos de consulta
             patrones_saludo = [
                 r'^(hola|hey|buenos?\s*dias?|buenas?\s*tardes|buenas?\s*noches)[,\s\.!]*\s*(.+)',
                 r'^(hola\s+sofia|hey\s+sofia)[,\s\.!]*\s*(.+)',
@@ -346,13 +346,25 @@ def procesar_consulta(request):
                 if match:
                     last_group_index = match.lastindex or 0
                     consulta_despues = match.group(last_group_index).strip() if last_group_index else ''
-                    if consulta_despues and len(consulta_despues) > 3:  # Asegurar que hay una consulta real
+                    if consulta_despues and len(consulta_despues) > 3:
                         mensaje_sin_saludo = consulta_despues
                         print(f"Mensaje original tiene saludo, procesando sin él: '{mensaje_sin_saludo}'")
                         break
             
             if mensaje_sin_saludo != mensaje and len(mensaje_sin_saludo) > 5:
-                resultado = procesador.procesar_consulta(mensaje_sin_saludo, vectores)
+                resultado = procesador_simple.procesar_consulta(mensaje_sin_saludo, vectores)
+                print(f"🔍 Matching por patrones (sin saludo): {'✅ Match' if resultado else '❌ No match'}")
+        
+        # FALLBACK: Si patrones no funcionan, usar vectorización (más flexible pero menos preciso)
+        if not resultado:
+            print("🔍 Intentando con vectorización (fallback)...")
+            resultado = procesador.procesar_consulta(mensaje, vectores)
+            if resultado:
+                print(f"✅ Match por vectorización: tipo={resultado.get('tipo')}, similitud={resultado.get('similitud', 0):.2f}")
+                # Solo aceptar si la similitud es razonablemente alta (> 0.6)
+                if resultado.get('similitud', 0) < 0.6:
+                    print(f"⚠️ Similitud muy baja ({resultado.get('similitud', 0):.2f}), descartando match")
+                    resultado = None
         
         # Obtener usuario para contexto (una sola vez, antes de cualquier procesamiento)
         usuario = None

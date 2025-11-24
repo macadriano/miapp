@@ -233,28 +233,48 @@ class ProcesadorSimple:
                 tipos_detectados.append(tipo)
         
         # Si se detectaron múltiples tipos, priorizar según orden de importancia
-        # Orden de prioridad: COMANDO_WHATSAPP > LLEGADA > CERCANIA > POSICION > UBICACION_ZONA > RECORRIDO > SALUDO
-        # UBICACION_ZONA solo se prioriza si hay palabra "zona" explícita en el texto
+        # IMPORTANTE: Solo priorizar COMANDO_WHATSAPP si hay palabras clave explícitas
+        # Orden de prioridad: POSICION (con móvil) > UBICACION_ZONA (con zona) > COMANDO_WHATSAPP (con keywords) > LLEGADA > CERCANIA > RECORRIDO > SALUDO
         tipo_seleccionado = None
         tiene_palabra_zona = re.search(r'\b(?:zona|dep(o|ó)sito|almac(e|é)n|base|sede|oficina|planta)\b', texto_lower, re.IGNORECASE)
+        tiene_palabra_whatsapp = re.search(r'\b(?:whatsapp|wsp|wapp|envi[aá]|compart[eí]|mand[aá]|pas[aá])\\b', texto_lower, re.IGNORECASE)
+        tiene_movil = self.matcher.extraer_movil(texto) is not None
+        tiene_palabra_cercania = re.search(r'\b(?:cerca|cercano|distancia|proximo|próximo)\b', texto_lower, re.IGNORECASE)
         
-        if 'COMANDO_WHATSAPP' in tipos_detectados:
+        # Debug: mostrar qué se detectó
+        print(f"  Tipos detectados: {tipos_detectados}")
+        print(f"  tiene_movil={tiene_movil}, tiene_zona={bool(tiene_palabra_zona)}, tiene_whatsapp={bool(tiene_palabra_whatsapp)}, tiene_cercania={bool(tiene_palabra_cercania)}")
+        
+        # Priorizar UBICACION_ZONA si hay palabra "zona" explícita
+        if 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
+            tipo_seleccionado = 'UBICACION_ZONA'
+            print(f"  → Seleccionado: UBICACION_ZONA (tiene palabra zona)")
+        # Priorizar POSICION si hay un móvil identificado y NO hay palabras de cercanía/llegada
+        elif 'POSICION' in tipos_detectados and tiene_movil and not tiene_palabra_cercania:
+            tipo_seleccionado = 'POSICION'
+            print(f"  → Seleccionado: POSICION (tiene móvil, sin cercanía)")
+        # Solo usar COMANDO_WHATSAPP si hay palabras clave explícitas de WhatsApp
+        elif 'COMANDO_WHATSAPP' in tipos_detectados and tiene_palabra_whatsapp:
             tipo_seleccionado = 'COMANDO_WHATSAPP'
+            print(f"  → Seleccionado: COMANDO_WHATSAPP (tiene keyword whatsapp)")
         elif 'LLEGADA' in tipos_detectados:
             tipo_seleccionado = 'LLEGADA'
+            print(f"  → Seleccionado: LLEGADA")
             if 'CERCANIA' in tipos_detectados:
-                print(f"⚠️ Se detectaron ambos LLEGADA y CERCANIA, priorizando LLEGADA")
+                print(f"  ⚠️ Se detectaron ambos LLEGADA y CERCANIA, priorizando LLEGADA")
         elif 'CERCANIA' in tipos_detectados:
             tipo_seleccionado = 'CERCANIA'
+            print(f"  → Seleccionado: CERCANIA")
         elif 'POSICION' in tipos_detectados:
+            # Fallback para POSICION sin móvil identificado
             tipo_seleccionado = 'POSICION'
-        elif 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
-            # Solo priorizar UBICACION_ZONA si hay palabra "zona" explícita
-            tipo_seleccionado = 'UBICACION_ZONA'
+            print(f"  → Seleccionado: POSICION (fallback)")
         elif 'RECORRIDO' in tipos_detectados:
             tipo_seleccionado = 'RECORRIDO'
+            print(f"  → Seleccionado: RECORRIDO")
         elif 'SALUDO' in tipos_detectados:
             tipo_seleccionado = 'SALUDO'
+            print(f"  → Seleccionado: SALUDO")
         
         # Buscar vector del tipo seleccionado
         if tipo_seleccionado:
