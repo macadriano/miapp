@@ -1809,3 +1809,22 @@ function handleViewMode() {
 
 console.log('WayGPS Frontend cargado');
 
+
+
+// Auto-cambio de vista según tamaño de pantalla
+window.addEventListener('resize', () => {
+    const newMode = window.innerWidth < 768 ? 'cards' : 'list';
+    if (typeof currentViewMode !== 'undefined' && currentViewMode !== newMode) {
+        currentViewMode = newMode;
+        if (typeof cambiarVista === 'function') cambiarVista(newMode);
+    }
+});
+
+// Ejecutar al cargar
+setTimeout(() => {
+    const newMode = window.innerWidth < 768 ? 'cards' : 'list';
+    if (typeof currentViewMode !== 'undefined' && currentViewMode !== newMode) {
+        currentViewMode = newMode;
+        if (typeof cambiarVista === 'function') cambiarVista(newMode);
+    }
+}, 1000);
