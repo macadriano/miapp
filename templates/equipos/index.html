@@ -355,4 +355,17 @@
     </script>
 </body>
 
-</html>
+<style>
+    /* FORZAR OCULTAMIENTO DE BOTONES DE VISTA */
+    .view-controls,
+    .view-toggle,
+    #view-cards,
+    #view-list,
+    label[for="view-cards"],
+    label[for="view-list"] {
+        display: none !important;
+    }
+</style>
+<!-- Script para vista responsive automática -->
+<script src="{% static 'js/responsive-view.js' %}"></script>
+</body>

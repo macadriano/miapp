@@ -220,8 +220,21 @@
         #view-cards,
         #view-list,
         label[for="view-cards"],
-        label[for="view-list"] {
+        label[for="view-list"],
+        input[name="view-mode"],
+        input[type="radio"][name="view-mode"],
+        .btn-group input[value="cards"],
+        .btn-group input[value="list"],
+        .btn-group label[for*="view"],
+        button:contains("Tarjetas"),
+        button:contains("Lista"),
+        label:contains("Tarjetas"),
+        label:contains("Lista") {
             display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            position: absolute !important;
+            left: -9999px !important;
         }
 
         /* Filtros modernos */
@@ -702,6 +715,18 @@
                         </div>
                     </div>
 
+                    <!-- Controles de acción -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="badge bg-secondary" id="moviles-count">0 móviles</span>
+                        </div>
+                        <div>
+                            <button class="btn btn-success btn-sm" onclick="mostrarFormularioMovil()">
+                                <i class="bi bi-plus"></i> <span class="d-none d-sm-inline">Nuevo Móvil</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Contenedor de móviles -->
                     <div id="moviles-container">
                         <!-- Vista de Tarjetas -->
@@ -1112,90 +1137,134 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Leaflet JS -->
-    const toggle = document.getElementById('sidebarToggle');
-    const storedState = localStorage.getItem('sidebarCollapsed');
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+    // Verificar autenticación al cargar la página
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Configurar sidebar toggle
+        const wrapper = document.getElementById('appWrapper');
+        const toggle = document.getElementById('sidebarToggle');
+        const storedState = localStorage.getItem('sidebarCollapsed');
 
-    if (storedState === 'true') {
-    wrapper.classList.add('collapsed');
-    }
+        if (storedState === 'true') {
+            wrapper.classList.add('collapsed');
+        }
 
-    if (toggle) {
-    toggle.addEventListener('click', function () {
-    wrapper.classList.toggle('collapsed');
-    localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
-    });
-    }
+        if (toggle) {
+            toggle.addEventListener('click', function () {
+                wrapper.classList.toggle('collapsed');
+                localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+            });
+        }
 
-    const currentPage = document.body.dataset.page;
-    const activeLink = document.querySelector(`.sidebar-nav a[data-page="${currentPage}"]`);
-    if (activeLink) {
-    activeLink.classList.add('active');
-    }
+        const currentPage = document.body.dataset.page;
+        const activeLink = document.querySelector(`.sidebar-nav a[data-page="${currentPage}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
 
-    // Mostrar info del usuario si existe token
-    if (auth && auth.getToken()) {
-    auth.mostrarInfo();
-    } else {
-    // Si no hay token, mostrar mensaje de no autenticado
-    const userNameElement = document.getElementById('userName');
-    if (userNameElement) {
-    userNameElement.textContent = 'No autenticado';
-    }
-    }
+        // Mostrar info del usuario si existe token
+        if (auth && auth.getToken()) {
+            auth.mostrarInfo();
+        } else {
+            // Si no hay token, mostrar mensaje de no autenticado
+            const userNameElement = document.getElementById('userName');
+            if (userNameElement) {
+                userNameElement.textContent = 'No autenticado';
+            }
+        }
 
-    // Configurar opciones de logout (botón en footer y opción en menú simplificado)
-    function setupLogout(element) {
-    if (!element) return;
-    element.addEventListener('click', function (e) {
-    e.preventDefault();
-    console.log('Opción de logout clickeada');
-    if (auth && typeof auth.logout === 'function') {
-    auth.logout();
-    } else {
-    console.error('auth.logout no está disponible');
-    }
-    });
-    }
+        // Configurar opciones de logout (botón en footer y opción en menú simplificado)
+        function setupLogout(element) {
+            if (!element) return;
+            element.addEventListener('click', function (e) {
+                e.preventDefault();
+                console.log('Opción de logout clickeada');
+                if (auth && typeof auth.logout === 'function') {
+                    auth.logout();
+                } else {
+                    console.error('auth.logout no está disponible');
+                }
+            });
+        }
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
-    setupLogout(logoutBtn);
-    setupLogout(sidebarLogoutLink);
+        const logoutBtn = document.getElementById('logoutBtn');
+        const sidebarLogoutLink = document.getElementById('sidebarLogoutLink');
+        setupLogout(logoutBtn);
+        setupLogout(sidebarLogoutLink);
     });
 
     // Funciones para gestión de fotos
     function abrirCamara() {
-    const input = document.getElementById('file-input');
-    input.setAttribute('capture', 'camera');
-    input.click();
+        const input = document.getElementById('file-input');
+        input.setAttribute('capture', 'camera');
+        input.click();
     }
 
     function subirFoto() {
-    const input = document.getElementById('file-input');
-    input.removeAttribute('capture');
-    input.click();
+        const input = document.getElementById('file-input');
+        input.removeAttribute('capture');
+        input.click();
     }
 
     function procesarFotos(files) {
-    console.log('Procesando fotos:', files);
-    // Aquí se implementará la lógica para subir las fotos
-    for (let file of files) {
-    console.log('Archivo:', file.name, 'Tipo:', file.type, 'Tamaño:', file.size);
-    }
+        console.log('Procesando fotos:', files);
+        // Aquí se implementará la lógica para subir las fotos
+        for (let file of files) {
+            console.log('Archivo:', file.name, 'Tipo:', file.type, 'Tamaño:', file.size);
+        }
     }
 
     function nuevaObservacion() {
-    const modal = new bootstrap.Modal(document.getElementById('modalObservacion'));
-    modal.show();
+        const modal = new bootstrap.Modal(document.getElementById('modalObservacion'));
+        modal.show();
     }
 
     function guardarObservacion() {
-    console.log('Guardando observación...');
-    // Aquí se implementará la lógica para guardar la observación
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalObservacion'));
-    modal.hide();
+        console.log('Guardando observación...');
+        // Aquí se implementará la lógica para guardar la observación
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalObservacion'));
+        modal.hide();
     }
     </script>
+    <style>
+        /* FORZAR OCULTAMIENTO DE BOTONES DE VISTA */
+        .view-controls,
+        .view-toggle,
+        #view-cards,
+        #view-list,
+        label[for="view-cards"],
+        label[for="view-list"],
+        button[title="Vista Tarjetas"],
+        button[title="Vista Lista"],
+        input[name="view-mode"],
+        input[type="radio"][name="view-mode"],
+        .btn-group input[value="cards"],
+        .btn-group input[value="list"],
+        .btn-group label[for*="view"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            position: absolute !important;
+            left: -9999px !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+    
+    <!-- Scripts necesarios -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{% static 'js/config.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/api-client.js' %}"></script>
+    <script src="{% static 'js/moviles.js' %}"></script>
+    
+    <!-- La lógica de vista responsive automática está en moviles.js -->
 </body>
+
 
 </html>

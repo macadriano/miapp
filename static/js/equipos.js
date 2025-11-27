@@ -47,9 +47,7 @@ async function initializeApp() {
 
         await loadEquipos();
 
-        // Configurar manejo de vista responsive
-        handleViewMode();
-        window.addEventListener('resize', handleViewMode);
+        // La lógica de vista responsive se inicializa automáticamente al final del archivo
 
         setupEventListeners();
         console.log('Módulo de Equipos inicializado correctamente');
@@ -592,36 +590,52 @@ function cambiarVista(mode) {
     }
 }
 
-// Manejar modo de vista responsive
-function handleViewMode() {
-    const isMobile = window.innerWidth < 768;
-    const newMode = isMobile ? 'cards' : 'list';
+// ========================================
+// LÓGICA DE VISTA RESPONSIVE AUTOMÁTICA
+// ========================================
+// LÓGICA DE VISTA RESPONSIVE AUTOMÁTICA
+// ========================================
+// Cambia automáticamente entre vista de tarjetas (móvil) y lista (PC)
+// según el ancho de la pantalla. Los botones de cambio manual están ocultos.
 
+/**
+ * Detecta si el dispositivo es móvil basándose en el ancho de pantalla
+ * @returns {boolean} true si es móvil (< 768px), false si es PC
+ */
+function isMobileDevice() {
+    return window.innerWidth < 768;
+}
+
+/**
+ * Maneja el cambio automático de vista según el tamaño de pantalla
+ * - Móvil (< 768px): Vista de tarjetas
+ * - PC (>= 768px): Vista de lista
+ */
+function handleViewMode() {
+    const newMode = isMobileDevice() ? 'cards' : 'list';
+    
     if (currentViewMode !== newMode) {
+        console.log(`[Vista Responsive] Cambiando de ${currentViewMode} a ${newMode} (ancho: ${window.innerWidth}px)`);
         currentViewMode = newMode;
         cambiarVista(currentViewMode);
     }
 }
 
-console.log('WayGPS Equipos Frontend cargado');
-
-
-
-
-// Auto-cambio de vista seg�n tama�o de pantalla
-window.addEventListener('resize', () => {
-    const newMode = window.innerWidth < 768 ? 'cards' : 'list';
-    if (typeof currentViewMode !== 'undefined' && currentViewMode !== newMode) {
-        currentViewMode = newMode;
-        if (typeof cambiarVista === 'function') cambiarVista(newMode);
-    }
+// Inicializar vista al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar un momento para que todo esté listo
+    setTimeout(() => {
+        handleViewMode();
+    }, 100);
 });
 
-// Ejecutar al cargar
-setTimeout(() => {
-    const newMode = window.innerWidth < 768 ? 'cards' : 'list';
-    if (typeof currentViewMode !== 'undefined' && currentViewMode !== newMode) {
-        currentViewMode = newMode;
-        if (typeof cambiarVista === 'function') cambiarVista(newMode);
-    }
-}, 1000);
+// Manejar cambios de tamaño de ventana con debounce
+let resizeTimer;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(handleViewMode, 250);
+});
+
+console.log('WayGPS Equipos Frontend cargado - Vista responsive automática activada');
+
+

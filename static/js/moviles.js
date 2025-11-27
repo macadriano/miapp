@@ -9,7 +9,8 @@ let mapaPrincipal = null;
 let mapaDashboard = null;
 let markers = [];
 let currentSection = null;
-let currentViewMode = 'cards'; // 'cards' o 'list'
+// Se inicializará automáticamente según el dispositivo al cargar
+let currentViewMode = window.innerWidth < 768 ? 'cards' : 'list';
 let zonaDesdeMovilModal = null;
 let zonaMovilSeleccionado = null;
 
@@ -63,15 +64,7 @@ async function initializeApp() {
             return;
         }
 
-        // Detectar si es dispositivo móvil
-        function isMobileDevice() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                (window.innerWidth <= 768);
-        }
-
-        // Configurar manejo de vista responsive
-        handleViewMode();
-        window.addEventListener('resize', handleViewMode);
+        // La lógica de vista responsive se inicializa automáticamente al final del archivo
 
 
         await loadMoviles();
@@ -157,10 +150,18 @@ async function loadMoviles() {
             movilesData = [];
         }
         filteredMovilesData = [...movilesData];
-
-        filteredMovilesData = [...movilesData];
         console.log(`Cargados ${movilesData.length} móviles`);
         console.log('Datos de móviles cargados:', movilesData);
+        
+        // Asegurar que los botones de vista estén ocultos/eliminados
+        eliminarBotonesVista();
+        
+        // Aplicar vista responsive automática después de cargar datos
+        if (typeof handleViewMode === 'function') {
+            setTimeout(() => {
+                handleViewMode();
+            }, 200);
+        }
 
         // Si no hay datos, usar datos de prueba
         if (movilesData.length === 0) {
@@ -1412,28 +1413,44 @@ setInterval(() => {
 
 // Cambiar entre vista de tarjetas y lista
 function cambiarVista(mode) {
-    console.log('cambiarVista llamado con modo:', mode);
+    console.log('[cambiarVista] Cambiando a modo:', mode);
     const cardsView = document.getElementById('moviles-cards-view');
     const listView = document.getElementById('moviles-list-view');
 
-    console.log('cardsView encontrado:', !!cardsView);
-    console.log('listView encontrado:', !!listView);
+    if (!cardsView || !listView) {
+        console.warn('[cambiarVista] No se encontraron los contenedores de vista');
+        return;
+    }
 
     if (mode === 'cards') {
-        if (cardsView) cardsView.style.display = 'block';
-        if (listView) listView.style.display = 'none';
+        cardsView.style.display = 'grid'; // Usar 'grid' para que se muestre correctamente
+        listView.style.display = 'none';
+        console.log('[cambiarVista] Vista cambiada a TARJETAS');
     } else {
-        if (cardsView) cardsView.style.display = 'none';
-        if (listView) listView.style.display = 'block';
+        cardsView.style.display = 'none';
+        listView.style.display = 'block';
+        console.log('[cambiarVista] Vista cambiada a LISTA');
     }
 
     // Re-renderizar con el modo actual
-    renderizarMoviles();
+    if (typeof renderizarMoviles === 'function') {
+        renderizarMoviles();
+    }
+    
+    // Asegurar que los botones estén eliminados después de cambiar la vista
+    if (typeof eliminarBotonesVista === 'function') {
+        setTimeout(eliminarBotonesVista, 50);
+    }
 }
 
 // Renderizar móviles según el modo de vista actual
 function renderizarMoviles() {
     console.log('renderizarMoviles llamado - modo:', currentViewMode, 'datos:', movilesData.length);
+
+    // Asegurar que los botones estén eliminados antes de renderizar
+    if (typeof eliminarBotonesVista === 'function') {
+        eliminarBotonesVista();
+    }
 
     if (currentViewMode === 'cards') {
         renderizarTarjetas();
@@ -1796,35 +1813,134 @@ function generarMensajeWhatsAppMovil(movil, mensajePersonalizado = '') {
 
 window.abrirModalZonaDesdeMovil = abrirModalZonaDesdeMovil;
 
-// Manejar modo de vista responsive
-function handleViewMode() {
-    const isMobile = window.innerWidth < 768;
-    const newMode = isMobile ? 'cards' : 'list';
+// ========================================
+// LÓGICA DE VISTA RESPONSIVE AUTOMÁTICA
+// ========================================
+// Cambia automáticamente entre vista de tarjetas (móvil) y lista (PC)
+// según el ancho de la pantalla. Los botones de cambio manual están ocultos.
 
+/**
+ * Elimina completamente cualquier botón de cambio de vista que pueda aparecer
+ */
+function eliminarBotonesVista() {
+    const selectors = [
+        '.view-controls',
+        '.view-toggle',
+        '#view-cards',
+        '#view-list',
+        'label[for="view-cards"]',
+        'label[for="view-list"]',
+        'input[name="view-mode"]',
+        'input[type="radio"][name="view-mode"]',
+        '.btn-group input[value="cards"]',
+        '.btn-group input[value="list"]',
+        '.btn-group label[for*="view"]'
+    ];
+
+    selectors.forEach(selector => {
+        try {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                if (el) {
+                    el.remove();
+                }
+            });
+        } catch (e) {
+            // Ignorar errores de selectores inválidos
+        }
+    });
+
+    // Buscar contenedores padre que puedan tener los botones
+    const viewControls = document.querySelectorAll('.view-controls, .view-toggle');
+    viewControls.forEach(el => {
+        el.remove();
+    });
+
+    // Buscar cualquier botón o label que contenga "Tarjetas" o "Lista" relacionado con vista
+    const allButtons = document.querySelectorAll('button, label, .btn');
+    allButtons.forEach(btn => {
+        const text = (btn.textContent || btn.innerText || '').trim();
+        const parent = btn.closest('.view-controls') || btn.closest('.view-toggle') || btn.closest('.btn-group');
+        
+        if ((text.includes('Tarjetas') || text.includes('Lista')) && 
+            (parent || btn.id === 'view-cards' || btn.id === 'view-list' || 
+             btn.getAttribute('for') === 'view-cards' || btn.getAttribute('for') === 'view-list')) {
+            if (parent) {
+                parent.remove();
+            } else {
+                btn.remove();
+            }
+        }
+    });
+}
+
+/**
+ * Detecta si el dispositivo es móvil basándose en el ancho de pantalla
+ * @returns {boolean} true si es móvil (< 768px), false si es PC
+ */
+function isMobileDevice() {
+    return window.innerWidth < 768;
+}
+
+/**
+ * Maneja el cambio automático de vista según el tamaño de pantalla
+ * - Móvil (< 768px): Vista de tarjetas
+ * - PC (>= 768px): Vista de lista
+ */
+function handleViewMode() {
+    const newMode = isMobileDevice() ? 'cards' : 'list';
+    
     if (currentViewMode !== newMode) {
+        console.log(`[Vista Responsive] Cambiando de ${currentViewMode} a ${newMode} (ancho: ${window.innerWidth}px)`);
         currentViewMode = newMode;
         cambiarVista(currentViewMode);
     }
 }
 
-console.log('WayGPS Frontend cargado');
-
-
-
-// Auto-cambio de vista seg�n tama�o de pantalla
-window.addEventListener('resize', () => {
-    const newMode = window.innerWidth < 768 ? 'cards' : 'list';
-    if (typeof currentViewMode !== 'undefined' && currentViewMode !== newMode) {
-        currentViewMode = newMode;
-        if (typeof cambiarVista === 'function') cambiarVista(newMode);
+// Inicializar vista automáticamente al cargar
+(function initializeResponsiveView() {
+    function initView() {
+        // Primero eliminar cualquier botón de vista
+        if (typeof eliminarBotonesVista === 'function') {
+            eliminarBotonesVista();
+        }
+        
+        // Luego aplicar la vista responsive
+        if (typeof isMobileDevice === 'function' && typeof handleViewMode === 'function') {
+            handleViewMode();
+        }
     }
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initView, 150);
+        });
+    } else {
+        // Si el DOM ya está listo, ejecutar inmediatamente
+        setTimeout(initView, 150);
+    }
+    
+    // También ejecutar cuando la página esté completamente cargada (por si acaso)
+    window.addEventListener('load', function() {
+        setTimeout(initView, 300);
+    });
+    
+    // Ejecutar periódicamente para asegurar que los botones no aparezcan (por si se crean dinámicamente)
+    setInterval(function() {
+        if (typeof eliminarBotonesVista === 'function') {
+            eliminarBotonesVista();
+        }
+    }, 2000); // Cada 2 segundos
+})();
+
+// Manejar cambios de tamaño de ventana con debounce
+let resizeTimer;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(handleViewMode, 250);
 });
 
-// Ejecutar al cargar
-setTimeout(() => {
-    const newMode = window.innerWidth < 768 ? 'cards' : 'list';
-    if (typeof currentViewMode !== 'undefined' && currentViewMode !== newMode) {
-        currentViewMode = newMode;
-        if (typeof cambiarVista === 'function') cambiarVista(newMode);
-    }
-}, 1000);
+console.log('WayGPS Frontend cargado - Vista responsive automática activada');
+
+
