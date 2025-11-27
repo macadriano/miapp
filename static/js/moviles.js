@@ -154,13 +154,8 @@ async function loadMoviles() {
         console.log('Datos de móviles cargados:', movilesData);
         
         // Asegurar que los botones de vista estén ocultos/eliminados
-        eliminarBotonesVista();
-        
-        // Aplicar vista responsive automática después de cargar datos
-        if (typeof handleViewMode === 'function') {
-            setTimeout(() => {
-                handleViewMode();
-            }, 200);
+        if (typeof eliminarBotonesVista === 'function') {
+            eliminarBotonesVista();
         }
 
         // Si no hay datos, usar datos de prueba
@@ -208,15 +203,14 @@ async function loadMoviles() {
             ];
         }
 
-        aplicarFiltros();
+        // Renderizar móviles según el modo actual
+        renderizarMoviles();
 
         // Actualizar estadísticas del dashboard
         updateDashboardStats();
-
-        // Actualizar tabla si estamos en la sección de móviles
-        if (currentSection === 'moviles') {
-            updateMovilesTable();
-        }
+        
+        // Actualizar dashboard completo
+        updateDashboard();
 
         // Actualizar mapas si están inicializados
         if (mapaPrincipal) {
@@ -1190,6 +1184,9 @@ async function eliminarMovil(id) {
 
 // Actualizar dashboard
 function updateDashboard() {
+    // Actualizar estadísticas primero
+    updateDashboardStats();
+    
     // Mostrar móviles recientes
     const movilesRecientes = document.getElementById('moviles-recientes');
     if (!movilesRecientes) {
