@@ -29,3 +29,9 @@ yarn-error.log
 
 # Django REST / Models
 .cache/
+
+# Documentation and scripts (no subir al servidor)
+*.md
+*.MD
+*.sh
+*.SH
