@@ -922,11 +922,17 @@ function aplicarFiltros() {
 }
 
 // Cargar equipos GPS disponibles (sin asignar)
-async function cargarEquiposDisponibles(gpsIdActual = null) {
+async function cargarEquiposDisponibles({ gpsIdActual = null, movilId = null } = {}) {
     try {
         const headers = auth ? auth.getHeaders() : { 'Content-Type': 'application/json' };
-        const response = await fetch(`${API_BASE_URL}/equipos/sin_asignar/`, {
-            headers: headers
+        let url = `${API_BASE_URL}/api/equipos/sin_asignar/`;
+        if (movilId) {
+            const params = new URLSearchParams({ movil_id: movilId });
+            url += `?${params.toString()}`;
+        }
+        const response = await fetch(url, {
+            headers: headers,
+            credentials: 'same-origin'
         });
 
         if (!response.ok) {
@@ -975,7 +981,10 @@ async function mostrarFormularioMovil(movil = null) {
     form.reset();
 
     // Cargar equipos disponibles
-    await cargarEquiposDisponibles(movil ? movil.gps_id : null);
+    await cargarEquiposDisponibles({
+        gpsIdActual: movil ? movil.gps_id : null,
+        movilId: movil ? movil.id : null
+    });
 
     if (movil) {
         // Editar móvil existente

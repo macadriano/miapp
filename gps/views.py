@@ -59,8 +59,12 @@ class EquipoViewSet(viewsets.ModelViewSet):
         # Buscar equipos que no estén asignados a ningún móvil y estén activos
         equipos_sin_asignar = []
         
-        # Obtener todos los equipos activos
-        todos_equipos = Equipo.objects.filter(estado__iexact='activo')
+        # Obtener todos los equipos activos ordenados por IMEI
+        todos_equipos = (
+            Equipo.objects
+            .filter(estado__iexact='activo')
+            .order_by('imei')
+        )
         
         for equipo in todos_equipos:
             # Verificar si este IMEI está en uso en algún móvil
