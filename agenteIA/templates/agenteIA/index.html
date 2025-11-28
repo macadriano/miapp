@@ -1285,6 +1285,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
 
     <script>
         // Funcionalidad del chat
@@ -1416,7 +1417,7 @@
         // Función para activar/desactivar modo de voz
         function toggleVoiceMode() {
             if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-                alert('El reconocimiento de voz no está disponible en este navegador');
+                notify.warning('El reconocimiento de voz no está disponible en este navegador');
                 return;
             }
 
@@ -1470,7 +1471,7 @@
                             }, 500);
                         }
                     } else if (event.error === 'audio-capture') {
-                        alert('No se pudo acceder al micrófono. Verificá los permisos.');
+                        notify.error('No se pudo acceder al micrófono. Verificá los permisos.');
                         toggleVoiceMode(); // Desactivar modo de voz
                     }
                 };
@@ -1733,7 +1734,7 @@
 
             tempRecognition.onerror = (event) => {
                 console.error('Error en reconocimiento de voz:', event.error);
-                alert('Error en el reconocimiento de voz: ' + event.error);
+                notify.error('Error en el reconocimiento de voz: ' + event.error);
                 voiceButton.classList.remove('recording');
                 if (inputWrapper) inputWrapper.classList.remove('recording');
                 if (recordingStatus) recordingStatus.classList.remove('active');
@@ -2378,10 +2379,10 @@
                         }
                     }).catch(err => {
                         console.error('❌ Error al copiar:', err);
-                        alert('No se pudo copiar los mensajes. Por favor, copiá el texto manualmente.');
+                        notify.error('No se pudo copiar los mensajes. Por favor, copiá el texto manualmente.');
                     });
                 } else {
-                    alert('No se pudo copiar los mensajes. Por favor, copiá el texto manualmente.');
+                    notify.error('No se pudo copiar los mensajes. Por favor, copiá el texto manualmente.');
                 }
             } finally {
                 document.body.removeChild(tempTextarea);

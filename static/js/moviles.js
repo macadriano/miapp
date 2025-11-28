@@ -1152,8 +1152,15 @@ function verDetalleMovil(id) {
 
 // Eliminar móvil
 async function eliminarMovil(id) {
-    if (confirm('¿Está seguro de que desea eliminar este móvil?')) {
-        try {
+    const confirmed = await notify.confirm({
+        message: '¿Está seguro de que desea eliminar este móvil?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar'
+    });
+    if (!confirmed) {
+        return;
+    }
+    try {
             // Obtener headers con autenticación
             const headers = auth ? auth.getHeaders() : { 'Content-Type': 'application/json' };
 
@@ -1179,7 +1186,6 @@ async function eliminarMovil(id) {
             console.error('Error al eliminar móvil:', error);
             showAlert('Error al eliminar el móvil', 'danger');
         }
-    }
 }
 
 // Actualizar dashboard

@@ -520,7 +520,12 @@ function editZona(id) {
 }
 
 async function deleteZona(id) {
-    if (!confirm('¿Eliminar zona seleccionada?')) return;
+    const confirmed = await notify.confirm({
+        message: '¿Eliminar zona seleccionada?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar'
+    });
+    if (!confirmed) return;
     try {
         const headers = {
             ...buildAuthHeaders(),

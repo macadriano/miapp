@@ -314,7 +314,7 @@
                 
             } catch (error) {
                 console.error('Error cargando configuración:', error);
-                alert('Error cargando la configuración');
+                notify.error('Error cargando la configuración');
             }
         }
 
@@ -356,21 +356,27 @@
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('modalConfiguracion')).hide();
                     cargarConfiguraciones();
+                    notify.success('Configuración guardada correctamente');
                 } else {
                     const errorData = await response.json();
                     console.error('Error del servidor:', errorData);
-                    alert('Error guardando la configuración: ' + (errorData.detail || errorData.message || 'Error desconocido'));
+                    notify.error('Error guardando la configuración: ' + (errorData.detail || errorData.message || 'Error desconocido'));
                 }
                 
             } catch (error) {
                 console.error('Error guardando configuración:', error);
-                alert('Error guardando la configuración: ' + error.message);
+                notify.error('Error guardando la configuración: ' + error.message);
             }
         }
 
         // Eliminar configuración
         async function eliminarConfiguracion(id) {
-            if (!confirm('¿Está seguro de eliminar esta configuración?')) {
+            const confirmed = await notify.confirm({
+                message: '¿Está seguro de eliminar esta configuración?',
+                confirmText: 'Eliminar',
+                cancelText: 'Cancelar'
+            });
+            if (!confirmed) {
                 return;
             }
             
@@ -381,13 +387,14 @@
                 
                 if (response.ok) {
                     cargarConfiguraciones();
+                    notify.success('Configuración eliminada');
                 } else {
-                    alert('Error eliminando la configuración');
+                    notify.error('Error eliminando la configuración');
                 }
                 
             } catch (error) {
                 console.error('Error eliminando configuración:', error);
-                alert('Error eliminando la configuración');
+                notify.error('Error eliminando la configuración');
             }
         }
     </script>

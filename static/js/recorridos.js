@@ -2075,10 +2075,13 @@ function verDetalles(index) {
 }
 
 // Logout
-function logout() {
-    if (confirm('¿Está seguro que desea cerrar sesión?')) {
-        auth.logout();
-    }
+async function logout() {
+    const confirmed = await notify.confirm({
+        message: '¿Está seguro que desea cerrar sesión?',
+        confirmText: 'Cerrar sesión'
+    });
+    if (!confirmed) return;
+    auth.logout();
 }
 
 // Función para agregar botón de cancelar
@@ -2109,11 +2112,14 @@ function removerBotonCancelar() {
 }
 
 // Función para cancelar geocodificación
-function cancelarGeocodificacion() {
-    if (confirm('¿Está seguro que desea cancelar la geocodificación en progreso?')) {
-        geocodificacionCancelada = true;
-        showMessage('⏹️ Cancelando geocodificación...', 'warning');
-    }
+async function cancelarGeocodificacion() {
+    const confirmed = await notify.confirm({
+        message: '¿Cancelar la geocodificación en progreso?',
+        confirmText: 'Cancelar proceso'
+    });
+    if (!confirmed) return;
+    geocodificacionCancelada = true;
+    showMessage('⏹️ Cancelando geocodificación...', 'warning');
 }
 
 // Función para mostrar popup personalizado de confirmación
@@ -2714,7 +2720,7 @@ function esDispositivoMovil() {
 // Función para compartir a WhatsApp
 function compartirAWhatsApp(vista) {
     if (datosRecorrido.length === 0) {
-        alert('No hay datos de recorrido para compartir');
+        notify.info('No hay datos de recorrido para compartir');
         return;
     }
     

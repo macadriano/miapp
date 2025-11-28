@@ -426,32 +426,38 @@ function verDetalleEquipo(id) {
 
 // Eliminar equipo
 async function eliminarEquipo(id) {
-    if (confirm('¿Está seguro de que desea eliminar este equipo?')) {
-        try {
-            const headers = auth ? auth.getHeaders() : { 'Content-Type': 'application/json' };
+    const confirmed = await notify.confirm({
+        message: '¿Está seguro de que desea eliminar este equipo?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar'
+    });
+    if (!confirmed) {
+        return;
+    }
+    try {
+        const headers = auth ? auth.getHeaders() : { 'Content-Type': 'application/json' };
 
-            // Obtener CSRF token
-            const csrftoken = getCookie('csrftoken');
-            if (csrftoken) {
-                headers['X-CSRFToken'] = csrftoken;
-            }
-
-            const response = await fetch(`${EQUIPOS_API_URL}${id}/`, {
-                method: 'DELETE',
-                headers: headers
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-
-            await loadEquipos();
-            showAlert('Equipo eliminado correctamente', 'success');
-
-        } catch (error) {
-            console.error('Error al eliminar equipo:', error);
-            showAlert('Error al eliminar el equipo', 'danger');
+        // Obtener CSRF token
+        const csrftoken = getCookie('csrftoken');
+        if (csrftoken) {
+            headers['X-CSRFToken'] = csrftoken;
         }
+
+        const response = await fetch(`${EQUIPOS_API_URL}${id}/`, {
+            method: 'DELETE',
+            headers: headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        await loadEquipos();
+        showAlert('Equipo eliminado correctamente', 'success');
+
+    } catch (error) {
+        console.error('Error al eliminar equipo:', error);
+        showAlert('Error al eliminar el equipo', 'danger');
     }
 }
 

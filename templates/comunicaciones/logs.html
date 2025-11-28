@@ -432,22 +432,22 @@
         // Copiar log al portapapeles
         function copiarLog() {
             if (!selectedLogFile) {
-                alert('Selecciona un archivo de log primero');
+                notify.warning('Seleccioná un archivo de log primero');
                 return;
             }
             
             const content = document.getElementById('log-content').textContent;
             navigator.clipboard.writeText(content).then(() => {
-                alert('Log copiado al portapapeles');
+                notify.success('Log copiado al portapapeles');
             }).catch(() => {
-                alert('Error al copiar al portapapeles');
+                notify.error('No se pudo copiar el log al portapapeles');
             });
         }
 
         // Descargar archivo de log
         function descargarLog() {
             if (!selectedLogFile) {
-                alert('Selecciona un archivo de log primero');
+                notify.warning('Seleccioná un archivo de log primero');
                 return;
             }
             
