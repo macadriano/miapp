@@ -101,8 +101,12 @@ class ZonaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@method_decorator(login_required, name="dispatch")
 class ZonasTemplateView(TemplateView):
+    """
+    Plantilla frontend: la autenticación se maneja vía token (auth.js),
+    por lo que no forzamos login de sesión aquí para evitar redirecciones.
+    """
+
     template_name = "zonas/index.html"
 
 
