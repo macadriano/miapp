@@ -548,15 +548,6 @@
                 </div>
             </div>
             <div class="app-content">
-                <div
-                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
-                    {% if default_section == 'dashboard' %}
-                    <h2 class="h4" id="page-title">Dashboard</h2>
-                    {% else %}
-                    <h2 class="h4" id="page-title">Móviles</h2>
-                    {% endif %}
-                </div>
-
                 {% if default_section == 'dashboard' %}
                 <!-- Dashboard Section -->
                 <div id="dashboard-section" class="content-section" style="display: block;">
@@ -663,54 +654,52 @@
                 <div id="moviles-section" class="content-section" style="display: block;">
                     <!-- Los botones de vista NO deben aparecer aquí - se ocultan con CSS y JS -->
                     <!-- Filtros modernos -->
-                    <div class="filter-card">
+                    <div class="filter-section">
                         <div class="filter-header">
                             <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Búsqueda</h6>
                         </div>
-                        <div class="filter-body">
-                            <div class="row g-2">
-                                <div class="col-12 col-md-6 col-lg-3">
-                                    <label for="filtro-busqueda" class="form-label">Buscar</label>
-                                    <input type="text" class="form-control" id="filtro-busqueda"
-                                        placeholder="Patente, alias, código...">
-                                </div>
-                                <div class="col-6 col-md-3 col-lg-2">
-                                    <label for="filtro-estado" class="form-label">Estado</label>
-                                    <select class="form-select" id="filtro-estado">
-                                        <option value="">Todos</option>
-                                        <option value="conectado">En línea</option>
-                                        <option value="desconectado">Desconectado</option>
-                                        <option value="error">Error</option>
-                                    </select>
-                                </div>
-                                <div class="col-6 col-md-3 col-lg-2">
-                                    <label for="filtro-encendido" class="form-label">Encendido</label>
-                                    <select class="form-select" id="filtro-encendido">
-                                        <option value="">Todos</option>
-                                        <option value="true">Sí</option>
-                                        <option value="false">No</option>
-                                    </select>
-                                </div>
-                                <div class="col-6 col-md-3 col-lg-2">
-                                    <label for="filtro-tipo" class="form-label">Tipo</label>
-                                    <select class="form-select" id="filtro-tipo">
-                                        <option value="">Todos</option>
-                                        <option value="auto">Auto</option>
-                                        <option value="camion">Camión</option>
-                                        <option value="moto">Moto</option>
-                                        <option value="bus">Bus</option>
-                                        <option value="van">Van</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-6 col-lg-3 d-flex align-items-end gap-2">
-                                    <button class="btn btn-primary flex-fill" onclick="aplicarFiltros()">
-                                        <i class="bi bi-search"></i> <span class="d-none d-sm-inline">Filtrar</span>
-                                    </button>
-                                    <button class="btn btn-outline-secondary flex-fill" onclick="limpiarFiltros()">
-                                        <i class="bi bi-arrow-clockwise"></i> <span
-                                            class="d-none d-sm-inline">Limpiar</span>
-                                    </button>
-                                </div>
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6 col-lg-3">
+                                <label for="filtro-busqueda" class="form-label">Buscar</label>
+                                <input type="text" class="form-control" id="filtro-busqueda"
+                                    placeholder="Patente, alias, código...">
+                            </div>
+                            <div class="col-6 col-md-3 col-lg-2">
+                                <label for="filtro-estado" class="form-label">Estado</label>
+                                <select class="form-select" id="filtro-estado">
+                                    <option value="">Todos</option>
+                                    <option value="conectado">En línea</option>
+                                    <option value="desconectado">Desconectado</option>
+                                    <option value="error">Error</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3 col-lg-2">
+                                <label for="filtro-encendido" class="form-label">Encendido</label>
+                                <select class="form-select" id="filtro-encendido">
+                                    <option value="">Todos</option>
+                                    <option value="true">Sí</option>
+                                    <option value="false">No</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3 col-lg-2">
+                                <label for="filtro-tipo" class="form-label">Tipo</label>
+                                <select class="form-select" id="filtro-tipo">
+                                    <option value="">Todos</option>
+                                    <option value="auto">Auto</option>
+                                    <option value="camion">Camión</option>
+                                    <option value="moto">Moto</option>
+                                    <option value="bus">Bus</option>
+                                    <option value="van">Van</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3 d-flex align-items-end gap-2">
+                                <button class="btn btn-primary flex-fill" onclick="aplicarFiltros()">
+                                    <i class="bi bi-search"></i> <span class="d-none d-sm-inline">Filtrar</span>
+                                </button>
+                                <button class="btn btn-outline-secondary flex-fill" onclick="limpiarFiltros()">
+                                    <i class="bi bi-arrow-clockwise"></i> <span
+                                        class="d-none d-sm-inline">Limpiar</span>
+                                </button>
                             </div>
                         </div>
                     </div>

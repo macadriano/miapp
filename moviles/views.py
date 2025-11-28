@@ -113,16 +113,4 @@ def moviles_list_view(request):
 
 def moviles_dashboard_view(request):
     """Vista de dashboard específico de móviles"""
-    return render(request, 'moviles/index.html', {
-        'default_section': 'dashboard'
-    })
-
-
-def moviles2_list_view(request):
-    """Nueva vista para listado y gestión de móviles (versión limpia)"""
-    return render(request, 'moviles2/index.html')
-
-
-def dashboard2_view(request):
-    """Nueva vista de dashboard separada"""
-    return render(request, 'dashboard2/index.html')
+    return render(request, 'dashboard/index.html')
