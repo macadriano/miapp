@@ -139,15 +139,19 @@ class SimpleMatcher:
                 r'quienes?\s+est[aá]n?\s+en\s+linea',
             ],
             'SITUACION_FLOTA': [
-                r'situaci[oó]n\s+de\s+la\s+flota',
+                r'situaci[oó]n\s+(?:de\s+(?:la\s+)?)?flota',
                 r'situaci[oó]n\s+flota',
-                r'estado\s+de\s+la\s+flota',
-                r'resumen\s+de\s+flota',
+                r'estado\s+(?:de\s+(?:la\s+)?)?flota',
+                r'resumen\s+(?:de\s+)?flota',
                 r'cuantos?\s+est[aá]n?\s+circulando',
                 r'cuantos?\s+est[aá]n?\s+detenid[oa]s?',
                 r'm[oó]viles?\s+detenid[oa]s?',
                 r'm[oó]viles?\s+circulando',
                 r'estado\s+operativo',
+                r'decime\s+los\s+m[oó]viles?\s+detenid[oa]s?',
+                r'decime\s+los\s+m[oó]viles?\s+circulando',
+                r'cuales?\s+son\s+los?\s+m[oó]viles?\s+detenid[oa]s?',
+                r'cuales?\s+son\s+los?\s+m[oó]viles?\s+circulando',
             ],
             'MOVILES_EN_ZONA': [
                 r'm[oó]viles?\s+en\s+zona',
@@ -326,15 +330,35 @@ class ProcesadorSimple:
                 if destino:
                     variables['destino'] = destino
                     print(f"  ✅ Destino extraído: {destino}")
+            # Buscar vector en la BD
+            vector_encontrado = None
             for vector_db in vectores_db:
                 if vector_db.tipo_consulta == tipo_seleccionado and vector_db.activo:
-                    return {
-                        'vector': vector_db,
-                        'similitud': 0.85,
-                        'tipo': tipo_seleccionado,
-                        'categoria': vector_db.categoria,
-                        'variables': variables,
-                    }
+                    vector_encontrado = vector_db
+                    break
+            
+            # Si encontramos un vector, usarlo
+            if vector_encontrado:
+                return {
+                    'vector': vector_encontrado,
+                    'similitud': 0.85,
+                    'tipo': tipo_seleccionado,
+                    'categoria': vector_encontrado.categoria,
+                    'variables': variables,
+                }
+            # Si no hay vector en BD pero detectamos el tipo, devolver resultado sin vector
+            # (el código en views.py puede manejar esto creando un vector temporal o usando None)
+            elif tipo_seleccionado in ['AYUDA_GENERAL', 'LISTADO_ACTIVOS', 'SITUACION_FLOTA', 'MOVILES_EN_ZONA', 'VER_MAPA']:
+                # Para estos tipos nuevos, podemos devolver resultado sin vector si no existe en BD
+                # El código en views.py deberá manejar el caso de vector_usado = None
+                print(f"  ⚠️ Tipo '{tipo_seleccionado}' detectado pero no hay vector en BD, devolviendo resultado directo")
+                return {
+                    'vector': None,  # Sin vector en BD
+                    'similitud': 0.85,
+                    'tipo': tipo_seleccionado,
+                    'categoria': 'ayuda' if tipo_seleccionado == 'AYUDA_GENERAL' else 'actual',
+                    'variables': variables,
+                }
         # Heurística para móvil solo
         movil = self.matcher.extraer_movil(texto)
         tokens = texto.strip().split()
