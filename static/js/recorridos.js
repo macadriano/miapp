@@ -137,6 +137,8 @@ function renderMovilesSelect(moviles = []) {
 }
 
 // Inicializar mapa
+let mapInitialized = false;
+
 function initializeMap() {
     // Verificar que el elemento del mapa existe
     const mapElement = document.getElementById('map');
@@ -145,34 +147,31 @@ function initializeMap() {
         return;
     }
     
+    // Si el mapa ya está inicializado, no hacer nada
+    if (mapInitialized && map) {
+        return;
+    }
+    
     // Esperar un momento para que el DOM esté completamente renderizado
     setTimeout(() => {
         try {
-            map = L.map('map', {
-                preferCanvas: true
-            }).setView(MAP_CENTER, MAP_ZOOM);
-            
-            // Capas base
-            openstreetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
+            const mapResult = initializeNormalizedMap('map', {
+                lat: MAP_CENTER[0],
+                lon: MAP_CENTER[1],
+                zoom: MAP_ZOOM,
+                showZonesControl: true,
+                showLayerControl: true
             });
             
-            satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri'
-            });
+            map = mapResult.map;
+            window.mapResultRecorridos = mapResult; // Guardar referencia global para acceso desde otras funciones
+            mapInitialized = true;
             
-            // Capa híbrida (satelital con etiquetas de calles)
-            hybridLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri'
-            });
-            
-            // Agregar capa de etiquetas para la vista híbrida
-            hybridLabelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri'
-            });
-            
-            // Agregar capa por defecto
-            openstreetLayer.addTo(map);
+            // Mantener referencias a las capas para compatibilidad
+            openstreetLayer = mapResult.layers.street;
+            satelliteLayer = mapResult.layers.satellite;
+            hybridLayer = mapResult.layers.hybrid;
+            hybridLabelsLayer = mapResult.layers.labels;
             
             // Capas para el recorrido
             recorridoLayer = L.layerGroup().addTo(map);
@@ -181,45 +180,24 @@ function initializeMap() {
             
             console.log('Mapa inicializado correctamente');
             
-            // Forzar redimensionamiento del mapa
-            setTimeout(() => {
-                if (map) {
-                    map.invalidateSize();
-                    // Asegurar que el mapa ocupe todo el contenedor
-                    const mapContainer = map.getContainer();
-                    mapContainer.style.height = '540px';
-                    mapContainer.style.width = '100%';
-                    mapContainer.style.opacity = '1';
-                }
-            }, 200);
+            // Si el mapa está visible, invalidar el tamaño inmediatamente
+            const mapView = document.getElementById('recorridos-map-view');
+            if (mapView && mapView.style.display !== 'none') {
+                setTimeout(() => {
+                    if (map) {
+                        map.invalidateSize();
+                        // Asegurar que el mapa ocupe todo el contenedor
+                        const mapContainer = map.getContainer();
+                        mapContainer.style.height = '540px';
+                        mapContainer.style.width = '100%';
+                        mapContainer.style.opacity = '1';
+                    }
+                }, 100);
+            }
         } catch (error) {
             console.error('Error inicializando el mapa:', error);
         }
     }, 200);
-    
-    // Event listeners para cambio de capa
-    document.querySelectorAll('input[name="mapa-tipo"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Remover todas las capas base
-            if (map.hasLayer(openstreetLayer)) map.removeLayer(openstreetLayer);
-            if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
-            if (map.hasLayer(hybridLayer)) map.removeLayer(hybridLayer);
-            if (map.hasLayer(hybridLabelsLayer)) map.removeLayer(hybridLabelsLayer);
-            
-            // Agregar la capa seleccionada
-            if (this.value === 'openstreet') {
-                openstreetLayer.addTo(map);
-                console.log('Cambiado a vista de calles');
-            } else if (this.value === 'satelite') {
-                satelliteLayer.addTo(map);
-                console.log('Cambiado a vista satelital');
-            } else if (this.value === 'hibrido') {
-                hybridLayer.addTo(map);
-                hybridLabelsLayer.addTo(map);
-                console.log('Cambiado a vista híbrida');
-            }
-        });
-    });
 }
 
 // Monitor global para detectar NaN:NaN en la interfaz
@@ -1311,6 +1289,25 @@ function cambiarVista(mode) {
     } else {
         if (listView) listView.style.display = 'none';
         if (mapView) mapView.style.display = 'block';
+        
+        // Asegurar que el mapa esté inicializado
+        if (!mapInitialized) {
+            initializeMap();
+        }
+        
+        // Cuando se cambia a la vista de mapa, invalidar el tamaño para que los controles se muestren correctamente
+        if (map) {
+            // Esperar a que el elemento sea visible antes de invalidar
+            setTimeout(() => {
+                if (map) {
+                    map.invalidateSize();
+                    // Usar la función updateControls del mapa normalizado si está disponible
+                    if (window.mapResultRecorridos && window.mapResultRecorridos.updateControls) {
+                        window.mapResultRecorridos.updateControls();
+                    }
+                }
+            }, 300);
+        }
     }
     
     currentViewMode = mode;

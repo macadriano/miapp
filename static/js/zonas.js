@@ -26,15 +26,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initMap() {
-    map = L.map('zonasMap').setView([-34.6037, -58.3816], 11);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
+    // Usar función normalizada para inicializar el mapa con selector de tipo y control de zonas integrado
+    const mapResult = initializeNormalizedMap('zonasMap', {
+        lat: -34.6037,
+        lon: -58.3816,
+        zoom: 11,
+        showZonesControl: true, // Mostrar control de zonas integrado en el selector de tipo de mapa
+        showLayerControl: true
+    });
+    
+    map = mapResult.map;
+    
+    // Usar el zonesLayerGroup del mapa normalizado
+    zonesLayerGroup = mapResult.getZonesLayer();
+    
+    // Guardar referencia global para acceso desde otras funciones
+    window.mapResult = mapResult;
+    
+    // Sincronizar con nuestro sistema de renderizado de zonas
+    // Sobrescribir la función renderZones del mapa normalizado para usar nuestra lógica
+    const originalRenderZones = mapResult.renderZones;
+    mapResult.renderZones = function() {
+        // Primero ejecutar la lógica del mapa normalizado
+        originalRenderZones.call(this);
+        // Luego ejecutar nuestra lógica personalizada para agregar event handlers (click para editar)
+        renderZonasMap();
+    };
+    
+    // No cargar zonas automáticamente desde el mapa normalizado
+    // porque nosotros las cargamos con nuestra propia función loadZonas()
+    // que tiene más lógica (tabla, etc.)
+    // Las zonas se cargarán cuando se llame a loadZonas() en el DOMContentLoaded
+    
     drawnItems = new L.FeatureGroup().addTo(map);
-    zonesLayerGroup = new L.FeatureGroup().addTo(map);
 
     refreshDrawControl();
 
@@ -199,6 +223,12 @@ async function loadZonas() {
 
         renderZonasTable();
         renderZonasMap();
+        
+        // Sincronizar con el mapa normalizado si está disponible
+        if (window.mapResult && window.mapResult.setZonesData) {
+            // Actualizar los datos del mapa normalizado con nuestros datos
+            window.mapResult.setZonesData(zonasData);
+        }
     } catch (error) {
         console.error(error);
         showToast('Error cargando zonas', 'danger');

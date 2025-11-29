@@ -629,42 +629,16 @@ function initializeMaps() {
     // Mapa del dashboard
     if (document.getElementById('mapa-dashboard')) {
         const mapConfig = WAYGPS_CONFIG.MAP;
-        mapaDashboard = L.map('mapa-dashboard').setView([mapConfig.DEFAULT_LAT, mapConfig.DEFAULT_LON], mapConfig.DEFAULT_ZOOM);
-
-        // Capa de calles (OpenStreetMap)
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
+        const mapResult = initializeNormalizedMap('mapa-dashboard', {
+            lat: mapConfig.DEFAULT_LAT,
+            lon: mapConfig.DEFAULT_LON,
+            zoom: mapConfig.DEFAULT_ZOOM,
+            showZonesControl: true,
+            showLayerControl: true
         });
-
-        // Capa satelital (Esri World Imagery)
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri',
-            maxZoom: 19
-        });
-
-        // Capa híbrida (satélite + etiquetas)
-        const hybridLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri',
-            maxZoom: 19
-        });
-
-        const labelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-            attribution: '© CartoDB',
-            maxZoom: 19
-        });
-
-        // Agregar capa por defecto
-        streetLayer.addTo(mapaDashboard);
-
-        // Control de capas
-        baseLayers = {
-            "🗺️ Calles": streetLayer,
-            "🛰️ Satélite": satelliteLayer,
-            "🌍 Híbrido": L.layerGroup([hybridLayer, labelsLayer])
-        };
-
-        L.control.layers(baseLayers).addTo(mapaDashboard);
+        
+        mapaDashboard = mapResult.map;
+        baseLayers = mapResult.baseLayers;
     }
 }
 
@@ -672,42 +646,15 @@ function initializeMaps() {
 function initializeMapaPrincipal() {
     if (document.getElementById('mapa-principal')) {
         const mapConfig = WAYGPS_CONFIG.MAP;
-        mapaPrincipal = L.map('mapa-principal').setView([mapConfig.DEFAULT_LAT, mapConfig.DEFAULT_LON], mapConfig.DEFAULT_ZOOM);
-
-        // Capa de calles (OpenStreetMap)
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
+        const mapResult = initializeNormalizedMap('mapa-principal', {
+            lat: mapConfig.DEFAULT_LAT,
+            lon: mapConfig.DEFAULT_LON,
+            zoom: mapConfig.DEFAULT_ZOOM,
+            showZonesControl: true,
+            showLayerControl: true
         });
-
-        // Capa satelital (Esri World Imagery)
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri',
-            maxZoom: 19
-        });
-
-        // Capa híbrida (satélite + etiquetas)
-        const hybridLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '© Esri',
-            maxZoom: 19
-        });
-
-        const labelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-            attribution: '© CartoDB',
-            maxZoom: 19
-        });
-
-        // Agregar capa por defecto
-        streetLayer.addTo(mapaPrincipal);
-
-        // Control de capas
-        const baseLayersPrincipal = {
-            "🗺️ Calles": streetLayer,
-            "🛰️ Satélite": satelliteLayer,
-            "🌍 Híbrido": L.layerGroup([hybridLayer, labelsLayer])
-        };
-
-        L.control.layers(baseLayersPrincipal).addTo(mapaPrincipal);
+        
+        mapaPrincipal = mapResult.map;
     }
 }
 

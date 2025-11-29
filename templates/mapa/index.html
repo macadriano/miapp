@@ -152,6 +152,8 @@
     <script src="{% static 'js/auth.js' %}"></script>
     <!-- API Client -->
     <script src="{% static 'js/api-client.js' %}"></script>
+    <!-- Map Common -->
+    <script src="{% static 'js/map-common.js' %}"></script>
     
     <script>
         let mapaFlota = null;
@@ -163,42 +165,16 @@
         // Inicializar mapa
         function initializeMapa() {
             const mapConfig = WAYGPS_CONFIG.MAP;
-            mapaFlota = L.map('mapa-flota').setView([mapConfig.DEFAULT_LAT, mapConfig.DEFAULT_LON], mapConfig.DEFAULT_ZOOM);
-            
-            // Capa de calles (OpenStreetMap)
-            const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
+            const mapResult = initializeNormalizedMap('mapa-flota', {
+                lat: mapConfig.DEFAULT_LAT,
+                lon: mapConfig.DEFAULT_LON,
+                zoom: mapConfig.DEFAULT_ZOOM,
+                showZonesControl: true,
+                showLayerControl: true
             });
             
-            // Capa satelital (Esri World Imagery)
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri',
-                maxZoom: 19
-            });
-            
-            // Capa híbrida (satélite + etiquetas)
-            const hybridLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: '© Esri',
-                maxZoom: 19
-            });
-            
-            const labelsLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-                attribution: '© CartoDB',
-                maxZoom: 19
-            });
-            
-            // Agregar capa por defecto
-            streetLayer.addTo(mapaFlota);
-            
-            // Control de capas
-            baseLayers = {
-                "🗺️ Calles": streetLayer,
-                "🛰️ Satélite": satelliteLayer,
-                "🌍 Híbrido": L.layerGroup([hybridLayer, labelsLayer])
-            };
-            
-            L.control.layers(baseLayers).addTo(mapaFlota);
+            mapaFlota = mapResult.map;
+            baseLayers = mapResult.baseLayers;
         }
 
         // Verificar si un móvil está en línea

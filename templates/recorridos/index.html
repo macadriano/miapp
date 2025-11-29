@@ -323,22 +323,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="btn-group mt-2" role="group">
-                                <input type="radio" class="btn-check" name="mapa-tipo" id="mapa-openstreet" value="openstreet" checked>
-                                <label class="btn btn-outline-primary btn-sm" for="mapa-openstreet">
-                                    <i class="bi bi-geo-alt"></i> Calles
-                                </label>
-                                    
-                                    <input type="radio" class="btn-check" name="mapa-tipo" id="mapa-satelite" value="satelite">
-                                    <label class="btn btn-outline-primary btn-sm" for="mapa-satelite">
-                                        <i class="bi bi-satellite"></i> Satélite
-                                    </label>
-                                    
-                                    <input type="radio" class="btn-check" name="mapa-tipo" id="mapa-hibrido" value="hibrido">
-                                    <label class="btn btn-outline-primary btn-sm" for="mapa-hibrido">
-                                        <i class="bi bi-layers"></i> Híbrido
-                                    </label>
-                                </div>
+                            <!-- El selector de tipo de mapa ahora se muestra como control de Leaflet en el mapa -->
                             </div>
                         </div>
                         <div class="card-body p-0">
@@ -565,6 +550,7 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/map-common.js"></script>
     <script src="/static/js/recorridos.js"></script>
 </body>
 </html>

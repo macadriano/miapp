@@ -153,6 +153,18 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
     text-align: center;
 }
 
+/* Icono de Sofia en el menú */
+.sidebar-nav a.sofia-menu-item .sofia-menu-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    min-width: 1.1rem;
+    object-fit: cover;
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .sidebar-nav a:hover {
     background: rgba(255, 255, 255, 0.14);
 }
@@ -421,6 +433,14 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
         font-size: 1.4rem;
         display: block;
     }
+    
+    .sidebar-nav a.sofia-menu-item .sofia-menu-icon {
+        width: 1.4rem;
+        height: 1.4rem;
+        min-width: 1.4rem;
+        display: block;
+        margin: 0 auto;
+    }
 
     .sidebar-header {
         display: none;
@@ -536,19 +556,19 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 110px; /* 70% más grande que 64px (64 * 1.7 = 108.8) */
-    height: 110px;
+    width: 88px; /* Reducido 20% desde 110px (110 * 0.8 = 88) */
+    height: 88px;
     border-radius: 50%;
-    border: 5px solid white;
+    border: 4px solid white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 1001;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: none; /* Oculto por defecto, solo visible en móviles */
     cursor: grab;
     text-decoration: none;
-    overflow: hidden;
+    overflow: visible; /* Cambiado para que el botón de cerrar sea visible */
     background: white;
-    padding: 3px;
+    padding: 2px;
     touch-action: none; /* Permite arrastre en móviles */
     user-select: none; /* Evita selección de texto al arrastrar */
     -webkit-user-select: none;
@@ -587,6 +607,13 @@ html[data-page="agenteIA"] .fab-sofia {
     z-index: -1;
 }
 
+.fab-sofia-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+}
+
 .fab-sofia img {
     width: 100%;
     height: 100%;
@@ -599,15 +626,47 @@ html[data-page="agenteIA"] .fab-sofia {
 .fab-sofia::after {
     content: '';
     position: absolute;
-    bottom: 3px;
-    right: 3px;
-    width: 22px; /* Aumentado proporcionalmente */
-    height: 22px;
+    bottom: 2px;
+    right: 2px;
+    width: 18px; /* Reducido proporcionalmente (22 * 0.8 = 17.6) */
+    height: 18px;
     background: #25d366; /* Verde WhatsApp */
-    border: 4px solid white;
+    border: 3px solid white;
     border-radius: 50%;
     z-index: 1;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Botón de cerrar en el botón flotante */
+.fab-sofia .fab-close {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: #dc3545;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+.fab-sofia .fab-close:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.fab-sofia .fab-close::before {
+    content: '×';
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 1;
 }
 
 .fab-sofia:hover,
@@ -630,7 +689,7 @@ html[data-page="agenteIA"] .fab-sofia {
     
     /* Si hay otro botón flotante (como el de nuevo móvil), ajustar posición */
     .fab + .fab-sofia {
-        bottom: 100px; /* Ajustado para el botón más grande */
+        bottom: 90px; /* Ajustado para el nuevo tamaño reducido (88px) */
     }
 }
 
@@ -655,6 +714,12 @@ html[data-page="agenteIA"] .fab-sofia {
 
     .sidebar-nav a i {
         font-size: 1.3rem;
+    }
+    
+    .sidebar-nav a.sofia-menu-item .sofia-menu-icon {
+        width: 1.3rem;
+        height: 1.3rem;
+        min-width: 1.3rem;
     }
 
     .sidebar-nav a .nav-label {

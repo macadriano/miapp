@@ -34,8 +34,8 @@
             <i class="bi bi-broadcast"></i>
             <span class="nav-label">Comunicaciones</span>
         </a>
-        <a href="/agenteIA/" data-page="agenteia">
-            <i class="bi bi-robot"></i>
+        <a href="/agenteIA/" data-page="agenteia" class="sofia-menu-item">
+            <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia IA" class="sofia-menu-icon">
             <span class="nav-label">Sofia IA</span>
         </a>
         <a href="/mapa/" data-page="mapa">
@@ -70,9 +70,12 @@
 </aside>
 
 <!-- Botón flotante para Sofia estilo WhatsApp (solo visible en móviles, oculto en página de Sofia) -->
-<a href="/agenteIA/" class="fab-sofia" id="fabSofia" title="Abrir Sofia IA - Asistente Inteligente (Arrastra para mover)">
-    <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia IA">
-</a>
+<div class="fab-sofia" id="fabSofia" title="Abrir Sofia IA - Asistente Inteligente (Arrastra para mover)">
+    <a href="/agenteIA/" class="fab-sofia-link">
+        <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia IA">
+    </a>
+    <button class="fab-close" id="fabSofiaClose" title="Cerrar" aria-label="Cerrar botón de Sofia"></button>
+</div>
 <script>
     // Funcionalidad del botón flotante de Sofia (arrastrable y oculto en desktop/Sofia)
     (function() {
@@ -91,7 +94,9 @@
             if (window.innerWidth > 768) {
                 fabSofia.style.display = 'none';
             } else {
-                fabSofia.style.display = 'flex';
+                // Solo mostrar si no está oculto por el usuario
+                const isHidden = localStorage.getItem('fabSofiaHidden') === 'true';
+                fabSofia.style.display = isHidden ? 'none' : 'flex';
             }
         }
         
@@ -149,6 +154,11 @@
         // Eventos táctiles (móviles)
         let touchStartTime = 0;
         fabSofia.addEventListener('touchstart', function(e) {
+            // No iniciar arrastre si se toca el botón de cerrar
+            if (e.target.closest('.fab-close')) {
+                return;
+            }
+            
             hasDragged = false;
             isDragging = true;
             touchStartTime = Date.now();
@@ -217,18 +227,44 @@
         }, { passive: false });
         
         // Manejar click explícitamente para asegurar que funcione
-        fabSofia.addEventListener('click', function(e) {
-            // Si se arrastró recientemente, prevenir el click
-            if (hasDragged) {
+        const fabSofiaLink = fabSofia.querySelector('.fab-sofia-link');
+        if (fabSofiaLink) {
+            fabSofiaLink.addEventListener('click', function(e) {
+                // Si se arrastró recientemente, prevenir el click
+                if (hasDragged) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+                // Si no se arrastró, permitir el click normal (navegar a /agenteIA/)
+            });
+        }
+        
+        // Botón de cerrar
+        const fabSofiaClose = document.getElementById('fabSofiaClose');
+        if (fabSofiaClose) {
+            fabSofiaClose.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                return false;
-            }
-            // Si no se arrastró, permitir el click normal (navegar a /agenteIA/)
-        });
+                fabSofia.style.display = 'none';
+                // Guardar preferencia de ocultar
+                localStorage.setItem('fabSofiaHidden', 'true');
+            });
+        }
+        
+        // Verificar si el usuario había ocultado el botón
+        const isHidden = localStorage.getItem('fabSofiaHidden') === 'true';
+        if (isHidden) {
+            fabSofia.style.display = 'none';
+        }
         
         // Eventos de mouse (por si acaso)
         fabSofia.addEventListener('mousedown', function(e) {
+            // No iniciar arrastre si se hace click en el botón de cerrar
+            if (e.target.closest('.fab-close')) {
+                return;
+            }
+            
             hasDragged = false;
             isDragging = true;
             fabSofia.style.transition = 'none';
