@@ -70,34 +70,235 @@
 </aside>
 
 <!-- Botón flotante para Sofia estilo WhatsApp (solo visible en móviles, oculto en página de Sofia) -->
-<a href="/agenteIA/" class="fab-sofia" id="fabSofia" title="Abrir Sofia IA - Asistente Inteligente">
+<a href="/agenteIA/" class="fab-sofia" id="fabSofia" title="Abrir Sofia IA - Asistente Inteligente (Arrastra para mover)">
     <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia IA">
 </a>
 <script>
-    // Ocultar botón flotante de Sofia en la página de Sofia y en desktop
+    // Funcionalidad del botón flotante de Sofia (arrastrable y oculto en desktop/Sofia)
     (function() {
         const fabSofia = document.getElementById('fabSofia');
-        if (fabSofia) {
-            // Ocultar si estamos en la página de Sofia
-            const currentPath = window.location.pathname;
-            if (currentPath.includes('/agenteIA/') || currentPath === '/agenteIA/') {
+        if (!fabSofia) return;
+        
+        // Ocultar si estamos en la página de Sofia
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('/agenteIA/') || currentPath === '/agenteIA/') {
+            fabSofia.style.display = 'none';
+            return;
+        }
+        
+        // Ocultar en desktop (pantallas mayores a 768px)
+        function checkScreenSize() {
+            if (window.innerWidth > 768) {
                 fabSofia.style.display = 'none';
-                return;
+            } else {
+                fabSofia.style.display = 'flex';
             }
+        }
+        
+        // Verificar al cargar y al redimensionar
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        
+        // Funcionalidad de arrastre (drag)
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+        let hasDragged = false;
+        const DRAG_THRESHOLD = 10; // Píxeles mínimos para considerar que se arrastró
+        
+        // Cargar posición guardada
+        const savedPosition = localStorage.getItem('fabSofiaPosition');
+        if (savedPosition) {
+            try {
+                const pos = JSON.parse(savedPosition);
+                if (pos.left !== undefined && pos.top !== undefined) {
+                    fabSofia.style.right = 'auto';
+                    fabSofia.style.bottom = 'auto';
+                    fabSofia.style.left = pos.left + 'px';
+                    fabSofia.style.top = pos.top + 'px';
+                }
+            } catch (e) {
+                console.warn('Error cargando posición del botón Sofia:', e);
+            }
+        }
+        
+        // Función para guardar posición
+        function savePosition() {
+            const rect = fabSofia.getBoundingClientRect();
+            const pos = {
+                left: rect.left,
+                top: rect.top
+            };
+            localStorage.setItem('fabSofiaPosition', JSON.stringify(pos));
+        }
+        
+        // Función para actualizar posición durante el arrastre
+        function setPosition(x, y) {
+            // Limitar a los bordes de la pantalla
+            const maxX = window.innerWidth - fabSofia.offsetWidth;
+            const maxY = window.innerHeight - fabSofia.offsetHeight;
             
-            // Ocultar en desktop (pantallas mayores a 768px)
-            function checkScreenSize() {
-                if (window.innerWidth > 768) {
-                    fabSofia.style.display = 'none';
-                } else {
-                    fabSofia.style.display = 'flex';
+            const clampedX = Math.max(0, Math.min(x, maxX));
+            const clampedY = Math.max(0, Math.min(y, maxY));
+            
+            fabSofia.style.left = clampedX + 'px';
+            fabSofia.style.top = clampedY + 'px';
+            fabSofia.style.right = 'auto';
+            fabSofia.style.bottom = 'auto';
+        }
+        
+        // Eventos táctiles (móviles)
+        let touchStartTime = 0;
+        fabSofia.addEventListener('touchstart', function(e) {
+            hasDragged = false;
+            isDragging = true;
+            touchStartTime = Date.now();
+            
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            
+            const rect = fabSofia.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+            
+            // No prevenir el evento aquí, solo registrar la posición inicial
+        }, { passive: true });
+        
+        fabSofia.addEventListener('touchmove', function(e) {
+            if (!isDragging) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+            
+            // Solo marcar como arrastrado si se movió más del umbral
+            if (Math.abs(deltaX) > DRAG_THRESHOLD || Math.abs(deltaY) > DRAG_THRESHOLD) {
+                hasDragged = true;
+                // Solo cuando realmente se arrastra, desactivar transición y mover
+                if (!fabSofia.style.transition || fabSofia.style.transition !== 'none') {
+                    fabSofia.style.transition = 'none';
                 }
             }
             
-            // Verificar al cargar y al redimensionar
-            checkScreenSize();
-            window.addEventListener('resize', checkScreenSize);
-        }
+            // Solo mover si realmente se arrastró
+            if (hasDragged) {
+                const newX = initialX + deltaX;
+                const newY = initialY + deltaY;
+                setPosition(newX, newY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        fabSofia.addEventListener('touchend', function(e) {
+            if (isDragging) {
+                const wasDragging = hasDragged;
+                const touchDuration = Date.now() - touchStartTime;
+                isDragging = false;
+                fabSofia.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                
+                // Solo guardar posición y prevenir click si se arrastró
+                if (wasDragging) {
+                    savePosition();
+                    // Prevenir el click solo si se arrastró
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Prevenir el click por un breve momento
+                    fabSofia.style.pointerEvents = 'none';
+                    setTimeout(() => {
+                        fabSofia.style.pointerEvents = 'auto';
+                    }, 200);
+                    return false;
+                }
+                // Si no se arrastró Y fue un tap rápido, permitir el click
+                // Si fue un tap largo sin arrastre, también permitir click
+                hasDragged = false;
+                // No prevenir el evento - dejar que el click funcione normalmente
+            }
+        }, { passive: false });
+        
+        // Manejar click explícitamente para asegurar que funcione
+        fabSofia.addEventListener('click', function(e) {
+            // Si se arrastró recientemente, prevenir el click
+            if (hasDragged) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            // Si no se arrastró, permitir el click normal (navegar a /agenteIA/)
+        });
+        
+        // Eventos de mouse (por si acaso)
+        fabSofia.addEventListener('mousedown', function(e) {
+            hasDragged = false;
+            isDragging = true;
+            fabSofia.style.transition = 'none';
+            fabSofia.style.cursor = 'grabbing';
+            
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = fabSofia.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            // Solo marcar como arrastrado si se movió más del umbral
+            if (Math.abs(deltaX) > DRAG_THRESHOLD || Math.abs(deltaY) > DRAG_THRESHOLD) {
+                hasDragged = true;
+            }
+            
+            // Solo mover si realmente se arrastró
+            if (hasDragged) {
+                const newX = initialX + deltaX;
+                const newY = initialY + deltaY;
+                setPosition(newX, newY);
+            }
+        });
+        
+        document.addEventListener('mouseup', function(e) {
+            if (isDragging) {
+                isDragging = false;
+                fabSofia.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                fabSofia.style.cursor = 'grab';
+                
+                // Solo guardar posición si se arrastró
+                if (hasDragged) {
+                    savePosition();
+                    // Prevenir click solo si se arrastró
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                // Si no se arrastró, dejar que el click normal funcione
+            }
+        });
+        
+        // Ajustar posición al redimensionar la ventana
+        window.addEventListener('resize', function() {
+            if (!isDragging) {
+                const rect = fabSofia.getBoundingClientRect();
+                const maxX = window.innerWidth - fabSofia.offsetWidth;
+                const maxY = window.innerHeight - fabSofia.offsetHeight;
+                
+                let newX = rect.left;
+                let newY = rect.top;
+                
+                if (newX > maxX) newX = maxX;
+                if (newY > maxY) newY = maxY;
+                if (newX < 0) newX = 0;
+                if (newY < 0) newY = 0;
+                
+                if (newX !== rect.left || newY !== rect.top) {
+                    setPosition(newX, newY);
+                    savePosition();
+                }
+            }
+        });
     })();
 </script>
 

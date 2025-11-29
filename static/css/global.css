@@ -544,11 +544,20 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
     z-index: 1001;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: none; /* Oculto por defecto, solo visible en móviles */
-    cursor: pointer;
+    cursor: grab;
     text-decoration: none;
     overflow: hidden;
     background: white;
     padding: 3px;
+    touch-action: none; /* Permite arrastre en móviles */
+    user-select: none; /* Evita selección de texto al arrastrar */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.fab-sofia:active {
+    cursor: grabbing;
 }
 
 /* Ocultar en desktop siempre */
