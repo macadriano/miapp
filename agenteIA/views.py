@@ -88,15 +88,20 @@ def _obtener_contexto_conversacion(usuario=None, ultimas_n=10):
             # Obtener móvil
             movil = datos.get('movil', '').strip()
             if movil and movil.lower() not in ['donde', 'que', 'el', 'la', 'los', 'las', 'de', 'del', 'en', 'con']:
-                if not contexto['ultimo_movil']:
-                    contexto['ultimo_movil'] = movil
+                # SIEMPRE actualizar el último móvil si hay uno en la consulta (no solo si está vacío)
+                contexto['ultimo_movil'] = movil
                 if movil not in contexto['historial_moviles']:
                     contexto['historial_moviles'].append(movil)
             
             # Obtener destino (para LLEGADA)
             destino = datos.get('destino', '').strip()
             if destino:
-                if not contexto['ultimo_destino']:
+                # Solo actualizar último destino si la consulta es LLEGADA o CERCANIA
+                # No actualizar si es POSICION (para no sobrescribir con destinos antiguos)
+                if tipo_consulta in ['LLEGADA', 'CERCANIA']:
+                    contexto['ultimo_destino'] = destino
+                elif not contexto['ultimo_destino']:
+                    # Solo guardar si no hay uno previo (para no perder contexto de zonas)
                     contexto['ultimo_destino'] = destino
                 if destino not in contexto['historial_destinos']:
                     contexto['historial_destinos'].append(destino)
@@ -114,10 +119,9 @@ def _obtener_contexto_conversacion(usuario=None, ultimas_n=10):
                     contexto['historial_destinos'].append(zona)
                 print(f"📍 Contexto: Guardando zona '{zona}' como último destino (tipo: {tipo_consulta})")
             
-            # Guardar tipo de consulta
+            # Guardar tipo de consulta - SIEMPRE actualizar (no solo si está vacío)
             if tipo_consulta:
-                if not contexto['ultimo_tipo_consulta']:
-                    contexto['ultimo_tipo_consulta'] = tipo_consulta
+                contexto['ultimo_tipo_consulta'] = tipo_consulta  # Siempre actualizar
                 if tipo_consulta not in contexto['historial_tipos']:
                     contexto['historial_tipos'].append(tipo_consulta)
             
@@ -231,14 +235,46 @@ def procesar_consulta(request):
     import time
     start_time = time.time()
     
+    # Logging inmediato para verificar que la petición llega
+    print(f"\n{'='*80}")
+    print(f"📥 [PROCESAR_CONSULTA] Petición recibida - Método: {request.method}")
+    print(f"📥 [PROCESAR_CONSULTA] Path: {request.path}")
+    print(f"📥 [PROCESAR_CONSULTA] Content-Type: {request.content_type}")
+    print(f"{'='*80}\n")
+    
     # TODO: Reactivar autenticación en producción
     # if not request.user.is_authenticated:
     #     return JsonResponse({'error': 'No autenticado'}, status=401)
     
     try:
-        data = json.loads(request.body)
-        mensaje = data.get('mensaje', '')
-        modo = data.get('modo', 'texto')  # 'texto' o 'voz'
+        print(f"📥 [INICIO] Recibida petición")
+        try:
+            body_str = request.body.decode('utf-8')
+            print(f"📥 [INICIO] Body (primeros 200 chars): {body_str[:200]}")
+            data = json.loads(request.body)
+            mensaje = data.get('mensaje', '')
+            modo = data.get('modo', 'texto')  # 'texto' o 'voz'
+            print(f"📝 [INICIO] Mensaje recibido: '{mensaje}' | Modo: {modo}")
+        except json.JSONDecodeError as e:
+            print(f"❌ Error parseando JSON: {e}")
+            return JsonResponse({
+                'success': False,
+                'respuesta': f"Error en el formato de la petición: {str(e)}",
+                'respuesta_audio': "Error en el formato de la petición.",
+                'error': str(e),
+                'tiempo_procesamiento': round(time.time() - start_time, 2)
+            }, status=400)
+        except Exception as e:
+            print(f"❌ Error procesando petición: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'respuesta': f"Error procesando petición: {str(e)}",
+                'respuesta_audio': "Error procesando petición.",
+                'error': str(e),
+                'tiempo_procesamiento': round(time.time() - start_time, 2)
+            }, status=400)
         
         # WORKAROUND: El frontend a veces agrega el móvil anterior al inicio del mensaje
         # Ejemplo: "CAMION2 cuanto tarda el camion5..." → "cuanto tarda el camion5..."
@@ -255,18 +291,46 @@ def procesar_consulta(request):
                 mensaje = resto_mensaje
         
         # Inicializar procesadores
-        procesador = ProcesadorConsultas()
-        procesador_simple = ProcesadorSimple()
-        ejecutor = EjecutorAcciones()
+        try:
+            procesador = ProcesadorConsultas()
+            procesador_simple = ProcesadorSimple()
+            ejecutor = EjecutorAcciones()
+            print(f"✅ Procesadores inicializados correctamente")
+        except Exception as e:
+            print(f"❌ Error inicializando procesadores: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'respuesta': f"Error al inicializar procesadores: {str(e)}",
+                'respuesta_audio': "Ocurrió un error al inicializar el sistema.",
+                'error': str(e),
+                'tiempo_procesamiento': round(time.time() - start_time, 2)
+            }, status=500)
         
         # Obtener todos los vectores activos - con cache
-        cache_key = 'vectores_activos'
-        vectores = cache.get(cache_key)
-        if vectores is None:
-            vectores = list(VectorConsulta.objects.filter(activo=True).only('id', 'texto_original', 'tipo_consulta', 'vector_embedding', 'activo', 'threshold', 'variables', 'categoria'))
-            cache.set(cache_key, vectores, 300)  # Cache por 5 minutos
-        else:
-            vectores = list(vectores)
+        try:
+            cache_key = 'vectores_activos'
+            vectores = cache.get(cache_key)
+            if vectores is None:
+                print(f"📊 Cargando vectores desde BD...")
+                vectores = list(VectorConsulta.objects.filter(activo=True).only('id', 'texto_original', 'tipo_consulta', 'vector_embedding', 'activo', 'threshold', 'variables', 'categoria'))
+                cache.set(cache_key, vectores, 300)  # Cache por 5 minutos
+                print(f"✅ Cargados {len(vectores)} vectores desde BD")
+            else:
+                vectores = list(vectores)
+                print(f"✅ Usando {len(vectores)} vectores desde cache")
+        except Exception as e:
+            print(f"❌ Error obteniendo vectores: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'respuesta': f"Error al obtener vectores: {str(e)}",
+                'respuesta_audio': "Ocurrió un error al acceder a la base de datos.",
+                'error': str(e),
+                'tiempo_procesamiento': round(time.time() - start_time, 2)
+            }, status=500)
         
         # Debug: verificar que hay vectores
         print(f"Consulta recibida: '{mensaje}'")
@@ -502,42 +566,82 @@ def procesar_consulta(request):
                     
                     # Verificar primero si es una consulta de CERCANIA sin destino específico
                     patrones_cercania_sin_destino = [
-                        r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?$',
-                        r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca$',
-                        r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?$',
+                        r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',
+                        r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca\s*$',
+                        r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',
                     ]
                     es_cercania_sin_destino = any(re.search(patron, mensaje_lower, re.IGNORECASE) for patron in patrones_cercania_sin_destino)
                     
-                    # Si es CERCANIA sin destino pero hay una zona en el contexto (última consulta fue UBICACION_ZONA)
-                    # usar esa zona como destino
+                    # NUEVA LÓGICA: Si es CERCANIA sin destino, usar el contexto (zona o móvil)
+                    # PRIORIDAD: Si la última consulta fue de un móvil (POSICION), usar ese móvil
+                    # Si la última consulta fue de una zona (UBICACION_ZONA), usar esa zona
                     if es_cercania_sin_destino:
-                        if zona_disponible:
-                            # Usar la zona disponible (ya sea del contexto o de la sesión)
-                            print(f"📍 [PRIORIDAD 0] Detectada CERCANIA sin destino, pero hay zona disponible: '{zona_disponible}' (origen: {origen_zona_disponible})")
+                        ultimo_tipo = contexto.get('ultimo_tipo_consulta', '')
+                        ultimo_movil = contexto.get('ultimo_movil', '').strip()
+                        ultimo_destino = contexto.get('ultimo_destino', '').strip()
+                        
+                        # PRIORIDAD 1: Si la última consulta fue POSICION (móvil), usar ese móvil
+                        if ultimo_tipo == 'POSICION' and ultimo_movil:
+                            print(f"📍 [PRIORIDAD 0] CERCANIA sin destino - última consulta fue POSICION, usando móvil: '{ultimo_movil}'")
                             resultado = {
                                 'tipo': 'CERCANIA',
                                 'similitud': 0.9,
                                 'variables': {
-                                    'destino': zona_disponible,
-                                    # NO incluir móvil del contexto como destino
+                                    'movil_referencia': ultimo_movil,
                                 },
                                 'vector': None
                             }
-                            zona_contextual_usada = zona_disponible
-                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA con zona disponible: '{zona_disponible}'")
+                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA con móvil del contexto: '{ultimo_movil}'")
+                        # PRIORIDAD 2: Si la última consulta fue UBICACION_ZONA (zona), usar esa zona
+                        elif ultimo_tipo == 'UBICACION_ZONA' and ultimo_destino:
+                            print(f"📍 [PRIORIDAD 0] CERCANIA sin destino - última consulta fue UBICACION_ZONA, usando zona: '{ultimo_destino}'")
+                            resultado = {
+                                'tipo': 'CERCANIA',
+                                'similitud': 0.9,
+                                'variables': {
+                                    'destino': ultimo_destino,
+                                },
+                                'vector': None
+                            }
+                            zona_contextual_usada = ultimo_destino
+                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA con zona del contexto: '{ultimo_destino}'")
+                        # PRIORIDAD 3: Si hay móvil en contexto (aunque no sea la última consulta), usar ese móvil
+                        elif ultimo_movil:
+                            print(f"📍 [PRIORIDAD 0] CERCANIA sin destino - usando móvil del contexto: '{ultimo_movil}'")
+                            resultado = {
+                                'tipo': 'CERCANIA',
+                                'similitud': 0.9,
+                                'variables': {
+                                    'movil_referencia': ultimo_movil,
+                                },
+                                'vector': None
+                            }
+                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA con móvil del contexto: '{ultimo_movil}'")
+                        # PRIORIDAD 4: Si hay zona en contexto (aunque no sea la última consulta), usar esa zona
+                        elif ultimo_destino:
+                            print(f"📍 [PRIORIDAD 0] CERCANIA sin destino - usando zona del contexto: '{ultimo_destino}'")
+                            resultado = {
+                                'tipo': 'CERCANIA',
+                                'similitud': 0.9,
+                                'variables': {
+                                    'destino': ultimo_destino,
+                                },
+                                'vector': None
+                            }
+                            zona_contextual_usada = ultimo_destino
+                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA con zona del contexto: '{ultimo_destino}'")
                         else:
-                            # CERCANIA sin destino específico - mostrar móviles más cercanos entre sí
-                            print(f"📍 [PRIORIDAD 0] Detectada consulta de CERCANIA sin destino específico: '{mensaje}'")
+                            # Sin contexto - mostrar móviles más cercanos entre sí
+                            print(f"📍 [PRIORIDAD 0] CERCANIA sin destino y sin contexto - mostrando móviles más cercanos entre sí")
                             resultado = {
                                 'tipo': 'CERCANIA',
                                 'similitud': 0.9,
                                 'variables': {
-                                    # NO incluir móvil del contexto como destino
-                                    # CERCANIA sin destino mostrará los móviles más cercanos entre sí
+                                    # Sin destino - mostrará móviles más cercanos entre sí
                                 },
                                 'vector': None
                             }
-                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA sin destino")
+                            print(f"✅ [PRIORIDAD 0] Forzando tipo CERCANIA sin destino (móviles más cercanos entre sí)")
                     else:
                         palabras_pregunta = ['donde', 'cuando', 'cuanto', 'que', 'como', 'cual', 'cuales', 'cuáles', 'quien', 'por que', 'porque']
                         palabras_comando = ['whatsapp', 'wsp', 'enviar', 'compartir', 'mandar', 'enviame', 'mandame']
@@ -575,44 +679,66 @@ def procesar_consulta(request):
                                 'vector': None
                             }
         
-        # VERIFICACIÓN PRIORITARIA: Si hay contexto de zona y la consulta es "móviles más cercanos"
-        # Debe ejecutarse ANTES del SimpleMatcher para asegurar que se use la zona del contexto
-        # Esta es la PRIMERA verificación que debe hacerse después de las continuaciones de LLEGADA
-        if not resultado and zona_disponible:
-            # Verificar si el mensaje es una consulta de CERCANIA sin destino específico
-            # Patrones más flexibles que no requieren empezar al inicio de la línea
-            mensaje_normalizado = re.sub(r'\s+', ' ', mensaje_lower.strip())
+        # VERIFICACIÓN PRIORITARIA: Si hay contexto de zona y la consulta menciona explícitamente esa zona
+        # IMPORTANTE: Solo se ejecuta si NO es "móviles más cercanos" sin destino (ese caso ya fue manejado en PRIORIDAD 0)
+        if not resultado:
+            # Verificar si es "móviles más cercanos" sin destino - si es así, NO usar zona del contexto aquí
+            # (ya fue manejado en PRIORIDAD 0 con la lógica correcta de prioridad móvil/zona)
             patrones_cercania_sin_destino = [
                 r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',
                 r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca\s*$',
                 r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',
-                r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?',  # Sin $ para más flexibilidad
-                r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca',  # Sin $ para más flexibilidad
-                r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?',  # Sin $ para más flexibilidad
             ]
-            es_cercania_sin_destino = any(re.search(patron, mensaje_normalizado, re.IGNORECASE) for patron in patrones_cercania_sin_destino)
+            es_cercania_sin_destino_verificacion = any(re.search(patron, mensaje_lower, re.IGNORECASE) for patron in patrones_cercania_sin_destino)
             
-            if es_cercania_sin_destino:
-                print(f"🎯 [VERIFICACIÓN PRIORITARIA] Detectada CERCANIA sin destino, usando zona disponible: '{zona_disponible}' (origen: {origen_zona_disponible})")
-                resultado = {
-                    'tipo': 'CERCANIA',
-                    'similitud': 0.95,  # Alta similitud para indicar que es correcto
-                    'variables': {
-                        'destino': zona_disponible,  # Usar zona disponible (contexto o sesión)
-                    },
-                    'vector': None
-                }
-                zona_contextual_usada = zona_disponible
-                print(f"✅ [VERIFICACIÓN PRIORITARIA] Forzando CERCANIA con zona disponible: '{zona_disponible}'")
+            # Si es "móviles más cercanos" sin destino, NO usar zona del contexto aquí
+            # (debe usar la lógica de PRIORIDAD 0 que ya prioriza móvil sobre zona)
+            if es_cercania_sin_destino_verificacion:
+                print(f"ℹ️ [VERIFICACIÓN PRIORITARIA] Es 'móviles más cercanos' sin destino - NO usando zona del contexto (ya manejado en PRIORIDAD 0)")
+            else:
+                # Verificar si el mensaje menciona EXPLÍCITAMENTE la zona del contexto
+                # O si menciona palabras como "allí", "ese lugar", "ese destino", etc.
+                mensaje_normalizado = re.sub(r'\s+', ' ', mensaje_lower.strip())
+                
+                # Patrones que indican referencia explícita al destino del contexto
+                referencias_explicitas = [
+                    r'all[ií]',
+                    r'all[aá]',
+                    r'ese\s+(?:lugar|destino|sitio|punto)',
+                    r'ese\s+(?:zona|deposito|almacen)',
+                    r'a\s+(?:ese|aquel)\s+(?:lugar|destino|sitio)',
+                    r'(?:m[oó]viles?\s+)?m[aá]s\s+cercan[oa]s?\s+(?:a|de|del|de\s+la)\s*(?:ese|aquel)',
+                ]
+                
+                # Verificar si menciona la zona por nombre
+                menciona_zona_por_nombre = zona_disponible and zona_disponible.lower() in mensaje_normalizado
+                
+                # Verificar si hay referencia explícita
+                tiene_referencia_explicita = any(re.search(patron, mensaje_normalizado, re.IGNORECASE) for patron in referencias_explicitas)
+                
+                # Solo usar el destino del contexto si:
+                # 1. Menciona la zona por nombre, O
+                # 2. Tiene referencia explícita al destino del contexto
+                if (menciona_zona_por_nombre or tiene_referencia_explicita) and zona_disponible:
+                    print(f"🎯 [VERIFICACIÓN PRIORITARIA] Detectada referencia explícita a zona disponible: '{zona_disponible}'")
+                    resultado = {
+                        'tipo': 'CERCANIA',
+                        'similitud': 0.95,
+                        'variables': {
+                            'destino': zona_disponible,
+                        },
+                        'vector': None
+                    }
+                    zona_contextual_usada = zona_disponible
+                    print(f"✅ [VERIFICACIÓN PRIORITARIA] Forzando CERCANIA con zona disponible: '{zona_disponible}'")
         
         # Fallback: si no encontró resultado y la similitud máxima fue muy baja, usar matcher simple
         if not resultado:
             print("⚠️ No se encontró resultado con vectores, usando matcher simple...")
             resultado = procesador_simple.procesar_consulta(mensaje, vectores)
         
-        # VERIFICACIÓN POST-SIMPLEMATCHER: Si SimpleMatcher detectó CERCANIA sin destino pero hay zona en contexto
-        # Esta verificación debe ejecutarse DESPUÉS del SimpleMatcher pero ANTES de otras correcciones
-        # IMPORTANTE: Esta es una verificación de seguridad en caso de que la VERIFICACIÓN PRIORITARIA no se ejecutara
+        # VERIFICACIÓN POST-SIMPLEMATCHER: Si SimpleMatcher detectó CERCANIA sin destino
+        # NO usar automáticamente el destino del contexto - solo si el usuario lo menciona explícitamente
         if resultado and resultado.get('tipo') == 'CERCANIA':
             # Verificar si es una consulta sin destino específico (patrones más flexibles)
             mensaje_normalizado = re.sub(r'\s+', ' ', mensaje_lower.strip())
@@ -626,24 +752,37 @@ def procesar_consulta(request):
             ]
             es_cercania_sin_destino = any(re.search(patron, mensaje_normalizado, re.IGNORECASE) for patron in patrones_cercania_sin_destino)
             
-            # Si es CERCANIA sin destino pero hay zona en el contexto, usar esa zona
-            if es_cercania_sin_destino:
-                # Verificar si NO hay destino en variables
-                variables_resultado = resultado.get('variables', {})
-                tiene_destino_en_resultado = variables_resultado.get('destino', '').strip()
+            # Verificar si NO hay destino en variables
+            variables_resultado = resultado.get('variables', {})
+            tiene_destino_en_resultado = variables_resultado.get('destino', '').strip()
+            
+            # Si es CERCANIA sin destino, NO usar automáticamente la zona del contexto
+            # Solo usar si el usuario menciona explícitamente la zona o hace referencia explícita
+            if es_cercania_sin_destino and not tiene_destino_en_resultado:
+                # Verificar si menciona la zona por nombre o tiene referencia explícita
+                menciona_zona_por_nombre = zona_disponible and zona_disponible.lower() in mensaje_normalizado
+                referencias_explicitas = [
+                    r'all[ií]',
+                    r'all[aá]',
+                    r'ese\s+(?:lugar|destino|sitio|punto)',
+                    r'ese\s+(?:zona|deposito|almacen)',
+                    r'a\s+(?:ese|aquel)\s+(?:lugar|destino|sitio)',
+                ]
+                tiene_referencia_explicita = any(re.search(patron, mensaje_normalizado, re.IGNORECASE) for patron in referencias_explicitas)
                 
-                if not tiene_destino_en_resultado and zona_disponible:
-                    print(f"🎯 [POST-SIMPLEMATCHER] SimpleMatcher detectó CERCANIA sin destino, usando zona disponible: '{zona_disponible}' (origen: {origen_zona_disponible})")
+                # Solo usar el destino del contexto si hay referencia explícita
+                if (menciona_zona_por_nombre or tiene_referencia_explicita) and zona_disponible:
+                    print(f"🎯 [POST-SIMPLEMATCHER] Detectada referencia explícita a zona disponible: '{zona_disponible}'")
                     if 'variables' not in resultado:
                         resultado['variables'] = {}
                     resultado['variables']['destino'] = zona_disponible
-                    resultado['similitud'] = 0.95  # Aumentar similitud para indicar que es correcto
+                    resultado['similitud'] = 0.95
                     zona_contextual_usada = zona_disponible
                     print(f"✅ [POST-SIMPLEMATCHER] Asignando zona disponible como destino: '{zona_disponible}'")
-                elif tiene_destino_en_resultado:
-                    print(f"ℹ️ [POST-SIMPLEMATCHER] CERCANIA ya tiene destino en resultado: '{tiene_destino_en_resultado}'")
-                elif not zona_disponible:
-                    print(f"ℹ️ [POST-SIMPLEMATCHER] No hay zona disponible para usar como destino")
+                else:
+                    print(f"ℹ️ [POST-SIMPLEMATCHER] CERCANIA sin destino - NO usando zona del contexto automáticamente (mostrará móviles más cercanos entre sí)")
+            elif tiene_destino_en_resultado:
+                print(f"ℹ️ [POST-SIMPLEMATCHER] CERCANIA ya tiene destino en resultado: '{tiene_destino_en_resultado}'")
         
         # Corrección inteligente ANTES de procesar: detectar comandos y tiempos
         expresiones_pasado = ['hace', 'ayer', 'semana pasada', 'mes pasado', 'estaba', 'estuvo', 'donde estaba', 'donde estuvo']
@@ -733,16 +872,18 @@ def procesar_consulta(request):
         
         print(f"Resultado del procesamiento: {resultado is not None}")
         if resultado:
-            print(f"Tipo de consulta: {resultado['tipo']}")
-            print(f"Similitud: {resultado['similitud']}")
-            print(f"Variables extraídas: {resultado.get('variables', {})}")
+            print(f"✅ Resultado encontrado - Tipo de consulta: {resultado.get('tipo', 'N/A')}")
+            print(f"📊 Similitud: {resultado.get('similitud', 'N/A')}")
+            print(f"📝 Variables extraídas: {resultado.get('variables', {})}")
+        else:
+            print(f"⚠️ No se encontró resultado para el mensaje: '{mensaje}'")
         
         if resultado:
             # Se encontró una coincidencia
             vector_usado = resultado.get('vector')
             similitud = resultado['similitud']
             variables = resultado.get('variables', {})
-            historial_recorridos = []
+            historial_recorridos = []  # Inicializar lista vacía para historial
             
             # Obtener tipo ANTES de extraer móvil (importante para LLEGADA)
             tipo_consulta = resultado['tipo']
@@ -771,20 +912,47 @@ def procesar_consulta(request):
             elif tipo_consulta == 'CERCANIA' and zona_contextual_usada:
                 _guardar_zona_en_session(request.session, zona_contextual_usada)
             
-            # VERIFICACIÓN ESPECIAL: Si es CERCANIA sin destino en variables pero hay zona en contexto
+            # VERIFICACIÓN ESPECIAL: Si es CERCANIA sin destino en variables pero hay contexto
             # (puede venir del SimpleMatcher sin pasar por PRIORIDAD 0)
-            if tipo_consulta == 'CERCANIA' and not variables.get('destino') and not variables.get('destino_texto'):
-                # Verificar si hay zona en el contexto de una consulta previa de UBICACION_ZONA
-                if contexto['ultimo_tipo_consulta'] == 'UBICACION_ZONA' and contexto['ultimo_destino']:
-                    print(f"📍 [POST-MATCHING] CERCANIA sin destino, pero hay zona en contexto: '{contexto['ultimo_destino']}'")
-                    variables['destino'] = contexto['ultimo_destino']
-                    print(f"✅ [POST-MATCHING] Asignando zona del contexto como destino: '{contexto['ultimo_destino']}'")
+            # IMPORTANTE: Respetar la prioridad: móvil sobre zona
+            if tipo_consulta == 'CERCANIA' and not variables.get('destino') and not variables.get('destino_texto') and not variables.get('movil_referencia'):
+                ultimo_tipo = contexto.get('ultimo_tipo_consulta', '')
+                ultimo_movil = contexto.get('ultimo_movil', '').strip()
+                ultimo_destino = contexto.get('ultimo_destino', '').strip()
+                
+                # PRIORIDAD 1: Si la última consulta fue POSICION (móvil), usar ese móvil
+                if ultimo_tipo == 'POSICION' and ultimo_movil:
+                    print(f"📍 [POST-MATCHING] CERCANIA sin destino, última consulta fue POSICION, usando móvil: '{ultimo_movil}'")
+                    variables['movil_referencia'] = ultimo_movil
+                    print(f"✅ [POST-MATCHING] Asignando móvil del contexto como referencia: '{ultimo_movil}'")
+                # PRIORIDAD 2: Si la última consulta fue UBICACION_ZONA (zona), usar esa zona
+                elif ultimo_tipo == 'UBICACION_ZONA' and ultimo_destino:
+                    print(f"📍 [POST-MATCHING] CERCANIA sin destino, última consulta fue UBICACION_ZONA, usando zona: '{ultimo_destino}'")
+                    variables['destino'] = ultimo_destino
+                    print(f"✅ [POST-MATCHING] Asignando zona del contexto como destino: '{ultimo_destino}'")
+                # PRIORIDAD 3: Si hay móvil en contexto (aunque no sea la última consulta), usar ese móvil
+                elif ultimo_movil:
+                    print(f"📍 [POST-MATCHING] CERCANIA sin destino, usando móvil del contexto: '{ultimo_movil}'")
+                    variables['movil_referencia'] = ultimo_movil
+                    print(f"✅ [POST-MATCHING] Asignando móvil del contexto como referencia: '{ultimo_movil}'")
+                # PRIORIDAD 4: Si hay zona en contexto (aunque no sea la última consulta), usar esa zona
+                elif ultimo_destino:
+                    print(f"📍 [POST-MATCHING] CERCANIA sin destino, usando zona del contexto: '{ultimo_destino}'")
+                    variables['destino'] = ultimo_destino
+                    print(f"✅ [POST-MATCHING] Asignando zona del contexto como destino: '{ultimo_destino}'")
             
             # Si no hay móvil en variables pero hay en contexto, guardarlo para referencia
+            # Esto es importante para VER_MAPA y CERCANIA que pueden usar el contexto
             if not variables.get('movil') and contexto.get('ultimo_movil'):
                 variables['_contexto_movil_disponible'] = contexto['ultimo_movil']
                 variables['movil_referencia'] = contexto['ultimo_movil']
                 print(f"📍 Guardando móvil del contexto para referencia: '{contexto['ultimo_movil']}'")
+            
+            # Para VER_MAPA, SIEMPRE pasar el contexto del móvil si no hay móvil especificado
+            if tipo_consulta == 'VER_MAPA' and not variables.get('movil') and contexto.get('ultimo_movil'):
+                variables['_contexto_movil_disponible'] = contexto['ultimo_movil']
+                variables['movil'] = contexto['ultimo_movil']  # También ponerlo en movil para que _ver_en_mapa lo use
+                print(f"🗺️ [VER_MAPA] Usando móvil del contexto: '{contexto['ultimo_movil']}'")
             
             # Usuario ya obtenido arriba
             
@@ -875,39 +1043,48 @@ def procesar_consulta(request):
                 print(f"🔢 Texto después de convertir números: '{texto_normalizado}'")
 
                 movil_extraido = None
-                # Primero intentar patentes tipo "ASN773", "OVV799"
-                patron_patente = r'\b([a-z]{2,4})\s*(\d{2,4})\b'
-                match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
+                # Primero intentar patentes tipo "AA285TA", "JGI640" (letras-números-letras)
+                patron_patente_letras_num_letras = r'\b([a-z]{2,3})\s*(\d{2,4})\s*([a-z]{1,3})\b'
+                match = re.search(patron_patente_letras_num_letras, texto_normalizado, re.IGNORECASE)
                 if match:
-                    movil_extraido = (match.group(1) + match.group(2)).upper()
-                    print(f"✅ Móvil extraído del texto (patente): '{movil_extraido}'")
+                    movil_extraido = (match.group(1) + match.group(2) + match.group(3)).upper()
+                    print(f"✅ Móvil extraído del texto (patente letras-num-letras): '{movil_extraido}'")
                 else:
-                    # Buscar nombres tipo "camion3", "camion 3", "auto2", etc.
-                    # Patrón más flexible que busca palabras seguidas de números
-                    patron_nombre = r'\b(camion|auto|vehiculo|movil|unidad|truck|carro|moto)\s*(\d+)\b'
-                    match = re.search(patron_nombre, texto_normalizado, re.IGNORECASE)
+                    # Intentar patentes tipo "ASN773", "OVV799" (letras-números)
+                    patron_patente = r'\b([a-z]{2,4})\s*(\d{2,4})\b'
+                    match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
                     if match:
-                        # Normalizar: siempre usar la primera palabra del match (camion/auto/etc) + número
-                        prefijo = match.group(1).lower()
-                        numero = match.group(2)
-                        # Normalizar prefijos comunes
-                        if prefijo in ['camion', 'truck']:
-                            prefijo = 'CAMION'
-                        elif prefijo in ['auto', 'vehiculo', 'carro', 'movil', 'unidad']:
-                            prefijo = 'AUTO'  # O podría ser 'MOVIL', depende de tu convención
-                        elif prefijo == 'moto':
-                            prefijo = 'MOTO'
-                        movil_extraido = f"{prefijo}{numero}"
-                        print(f"✅ Móvil extraído del texto (nombre normalizado): '{movil_extraido}'")
+                        movil_extraido = (match.group(1) + match.group(2)).upper()
+                        print(f"✅ Móvil extraído del texto (patente): '{movil_extraido}'")
                     else:
-                        # Patrón genérico como fallback (palabra + número)
-                        patron_generico = r'\b([a-z]{3,})\s*(\d+)\b'
-                        match = re.search(patron_generico, texto_normalizado, re.IGNORECASE)
+                        # Buscar nombres tipo "camion3", "camion 3", "auto2", etc.
+                        # Patrón más flexible que busca palabras seguidas de números
+                        patron_nombre = r'\b(camion|auto|vehiculo|movil|unidad|truck|carro|moto)\s*(\d+)\b'
+                        match = re.search(patron_nombre, texto_normalizado, re.IGNORECASE)
                         if match:
-                            movil_extraido = (match.group(1) + match.group(2)).upper()
-                            print(f"⚠️ Móvil extraído del texto (genérico): '{movil_extraido}'")
+                            # Normalizar: siempre usar la primera palabra del match (camion/auto/etc) + número
+                            prefijo = match.group(1).lower()
+                            numero = match.group(2)
+                            # Normalizar prefijos comunes
+                            if prefijo in ['camion', 'truck']:
+                                prefijo = 'CAMION'
+                            elif prefijo == 'movil' or prefijo == 'móvil':
+                                prefijo = 'MOVIL'  # "movil" debe normalizarse a "MOVIL", no a "AUTO"
+                            elif prefijo in ['auto', 'vehiculo', 'carro', 'unidad']:
+                                prefijo = 'AUTO'
+                            elif prefijo == 'moto':
+                                prefijo = 'MOTO'
+                            movil_extraido = f"{prefijo}{numero}"
+                            print(f"✅ Móvil extraído del texto (nombre normalizado): '{movil_extraido}'")
                         else:
-                            print(f"⚠️ No se pudo extraer móvil del texto normalizado: '{texto_normalizado}'")
+                            # Patrón genérico como fallback (palabra + número)
+                            patron_generico = r'\b([a-z]{3,})\s*(\d+)\b'
+                            match = re.search(patron_generico, texto_normalizado, re.IGNORECASE)
+                            if match:
+                                movil_extraido = (match.group(1) + match.group(2)).upper()
+                                print(f"⚠️ Móvil extraído del texto (genérico): '{movil_extraido}'")
+                            else:
+                                print(f"⚠️ No se pudo extraer móvil del texto normalizado: '{texto_normalizado}'")
 
                 if movil_extraido:
                     if not movil_actual or movil_actual.upper() != movil_extraido:
@@ -1037,7 +1214,16 @@ def procesar_consulta(request):
                                     break
             
             # Ejecutar acción
-            respuesta_raw = ejecutor.ejecutar(tipo_consulta, variables)
+            try:
+                respuesta_raw = ejecutor.ejecutar(tipo_consulta, variables)
+            except Exception as e:
+                print(f"❌ Error ejecutando acción {tipo_consulta}: {e}")
+                import traceback
+                traceback.print_exc()
+                respuesta_raw = {
+                    'texto': f"Error al procesar la consulta: {str(e)}",
+                    'audio': "Ocurrió un error al procesar tu consulta."
+                }
             
             # Manejar respuesta con estructura nueva (texto/audio) o respuesta simple (string)
             if isinstance(respuesta_raw, dict):
@@ -1094,28 +1280,27 @@ def procesar_consulta(request):
             if duration > 1.0:
                 print(f"⚠️ Sofia tardó {duration:.2f}s en procesar consulta")
             
-            if respuesta_raw:
-                 response_data = {
-                     'success': True,
-                     'respuesta': respuesta,
-                     'respuesta_audio': respuesta_audio,
-                     'google_maps_link': google_maps_link,
-                     'tiempo_procesamiento': round(duration, 2),
-                     'whatsapp_data': whatsapp_data,
-                    'datos_consulta': variables_para_guardar,  # Usar variables limpias
-                     'historial_sugerencias': historial_recorridos,
-                     'usando_contexto': variables.get('_usando_contexto', False)
-                 }
+            # Construir respuesta JSON
+            response_data = {
+                'success': True,
+                'respuesta': respuesta,
+                'respuesta_audio': respuesta_audio,
+                'google_maps_link': google_maps_link,
+                'tiempo_procesamiento': round(duration, 2),
+                'whatsapp_data': whatsapp_data,
+                'datos_consulta': variables_para_guardar,  # Usar variables limpias
+                'historial_sugerencias': historial_recorridos,
+                'usando_contexto': variables.get('_usando_contexto', False)
+            }
 
-            # Agregar link de Google Maps si existe
+            # Agregar link de Google Maps si existe (ya está en el dict, pero por si acaso)
             if google_maps_link:
                 response_data['google_maps_link'] = google_maps_link
             
-            # Agregar datos de WhatsApp si existen
+            # Agregar datos de WhatsApp si existen (ya está en el dict, pero por si acaso)
             if whatsapp_data:
                 response_data['whatsapp_data'] = whatsapp_data
             
-            response_data['tiempo_procesamiento'] = round(time.time() - start_time, 2)
             return JsonResponse(response_data)
         else:
             # PRIORIDAD 0: Detectar frases comunes de cortesía/confirmación (solo si no se encontró consulta válida)
@@ -1227,11 +1412,15 @@ def procesar_consulta(request):
         
     except Exception as e:
         duration = time.time() - start_time
-        print(f"Error procesando consulta: {e} (tardó {duration:.2f}s)")
+        print(f"❌ Error procesando consulta: {e} (tardó {duration:.2f}s)")
         import traceback
         traceback.print_exc()
+        # Devolver respuesta de error más amigable
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'respuesta': f"Ocurrió un error al procesar tu consulta: {str(e)}",
+            'respuesta_audio': "Ocurrió un error. Por favor intenta nuevamente.",
+            'error': str(e),
+            'tiempo_procesamiento': round(duration, 2)
         }, status=500)
 

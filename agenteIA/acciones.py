@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from django.db.models import Q
 from django.core.cache import cache
+from django.utils import timezone
 from moviles.models import Movil, MovilStatus, MovilGeocode
 from zonas.models import Zona
 from django.contrib.auth.models import User
@@ -194,9 +195,21 @@ class EjecutorAcciones:
                 else:
                     # Si no tiene centro, usar el centroide de la geometría
                     if mejor_coincidencia.geom:
-                        centroide = mejor_coincidencia.geom.centroid
-                        latitud = float(centroide.y)
-                        longitud = float(centroide.x)
+                        try:
+                            centroide = mejor_coincidencia.geom.centroid
+                            latitud = float(centroide.y)
+                            longitud = float(centroide.x)
+                        except (OSError, AttributeError) as e:
+                            # GDAL no disponible o error al acceder a geom
+                            print(f"⚠️ Error al obtener centroide de zona '{mejor_coincidencia.nombre}': {e}")
+                            # Intentar usar dirección si está disponible
+                            if hasattr(mejor_coincidencia, 'direccion') and mejor_coincidencia.direccion:
+                                # Si tiene dirección, devolver None y que el llamador maneje
+                                print(f"⚠️ Zona '{mejor_coincidencia.nombre}' no tiene coordenadas válidas")
+                                return None
+                            else:
+                                print(f"⚠️ Zona '{mejor_coincidencia.nombre}' no tiene coordenadas")
+                                return None
                     else:
                         print(f"⚠️ Zona '{mejor_coincidencia.nombre}' no tiene coordenadas")
                         return None
@@ -244,6 +257,16 @@ class EjecutorAcciones:
                 return self._obtener_ubicacion_zona(variables)
             elif tipo_consulta == 'SALUDO':
                 return self._responder_saludo()
+            elif tipo_consulta == 'LISTADO_ACTIVOS':
+                return self._listar_activos(variables)
+            elif tipo_consulta == 'SITUACION_FLOTA':
+                return self._situacion_flota(variables)
+            elif tipo_consulta == 'MOVILES_EN_ZONA':
+                return self._moviles_en_zona(variables)
+            elif tipo_consulta == 'AYUDA_GENERAL':
+                return self._responder_ayuda(variables)
+            elif tipo_consulta == 'VER_MAPA':
+                return self._ver_en_mapa(variables)
             else:
                 return {
                     'texto': "Lo siento, no entiendo esa consulta.",
@@ -396,8 +419,8 @@ class EjecutorAcciones:
             
             respuesta_audio = f"{movil_nombre} está en {direccion_limpia}, {fecha_hora}."
             
-            # Crear link de Google Maps
-            google_maps_link = f"https://www.google.com/maps?q={status.ultimo_lat},{status.ultimo_lon}"
+            # NO incluir google_maps_link aquí - solo se incluye en VER_MAPA
+            # Si el usuario quiere ver en mapa, debe usar el comando explícito "ver en mapa" o "mostrar en mapa"
             
             # Guardar datos adicionales para WhatsApp
             whatsapp_data = {
@@ -409,11 +432,10 @@ class EjecutorAcciones:
                 'lon': status.ultimo_lon
             }
             
-            # Devolver ambas versiones + link de Google Maps + datos WhatsApp
+            # Devolver ambas versiones + datos WhatsApp (sin google_maps_link)
             return {
                 'texto': respuesta_texto,
                 'audio': respuesta_audio,
-                'google_maps_link': google_maps_link,
                 'lat': status.ultimo_lat,
                 'lon': status.ultimo_lon,
                 'whatsapp_data': whatsapp_data
@@ -591,19 +613,26 @@ class EjecutorAcciones:
                 if unicodedata.category(c) != 'Mn'
             )
             
-            # Primero intentar patente tipo "ASN 773" o "ASN773"
-            patron_patente = r'\b([A-Z]{2,4})\s*(\d{2,4})\b'
-            match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
+            # Primero intentar patente tipo "AA285TA", "JGI640" (letras-números-letras)
+            patron_patente_letras_num_letras = r'\b([A-Z]{2,3})\s*(\d{2,4})\s*([A-Z]{1,3})\b'
+            match = re.search(patron_patente_letras_num_letras, texto_normalizado, re.IGNORECASE)
             if match:
-                movil_nombre = (match.group(1) + match.group(2)).upper()
-                print(f"✅ Móvil extraído (patente): '{movil_nombre}'")
+                movil_nombre = (match.group(1) + match.group(2) + match.group(3)).upper()
+                print(f"✅ Móvil extraído (patente letras-num-letras): '{movil_nombre}'")
             else:
-                # Si no es patente, buscar nombres alfanuméricos como "camion2", "auto1", etc.
-                patron_nombre = r'\b([a-zA-Z]+)\s*(\d+)\b'
-                match = re.search(patron_nombre, texto_normalizado, re.IGNORECASE)
+                # Intentar patente tipo "ASN 773" o "ASN773" (letras-números)
+                patron_patente = r'\b([A-Z]{2,4})\s*(\d{2,4})\b'
+                match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
                 if match:
-                    movil_nombre = (match.group(1) + match.group(2)).lower()
-                    print(f"✅ Móvil extraído (nombre): '{movil_nombre}'")
+                    movil_nombre = (match.group(1) + match.group(2)).upper()
+                    print(f"✅ Móvil extraído (patente): '{movil_nombre}'")
+                else:
+                    # Si no es patente, buscar nombres alfanuméricos como "camion2", "auto1", etc.
+                    patron_nombre = r'\b([a-zA-Z]+)\s*(\d+)\b'
+                    match = re.search(patron_nombre, texto_normalizado, re.IGNORECASE)
+                    if match:
+                        movil_nombre = (match.group(1) + match.group(2)).lower()
+                        print(f"✅ Móvil extraído (nombre): '{movil_nombre}'")
         
         if not movil_nombre or len(movil_nombre) < 3:
             return {
@@ -1097,11 +1126,68 @@ class EjecutorAcciones:
             movil_referencia = movil_referencia.strip()
             movil_referencia_contexto = variables.get('movil', '').strip()
             
-            # VERIFICAR PRIMERO: Si hay destino en variables (puede venir del contexto de UBICACION_ZONA)
-            # En ese caso, NO intentar extraer del texto ni usar móvil del contexto
+            # NUEVA LÓGICA: Detectar consultas de distancia entre dos entidades
+            # Patrones: "que distancia hay/existe entre X y Y"
+            patrones_distancia_entre = [
+                r'que\s+distancia\s+(?:hay|existe|hay\s+entre|existe\s+entre)\s+entre\s+(.+?)\s+y\s+(.+)',
+                r'distancia\s+entre\s+(.+?)\s+y\s+(.+)',
+                r'cuanto\s+distancia\s+entre\s+(.+?)\s+y\s+(.+)',
+            ]
+            
+            entidad1 = None
+            entidad2 = None
+            es_consulta_distancia_entre = False
+            
+            for patron in patrones_distancia_entre:
+                match = re.search(patron, texto_lower, re.IGNORECASE)
+                if match:
+                    entidad1 = match.group(1).strip()
+                    entidad2 = match.group(2).strip()
+                    es_consulta_distancia_entre = True
+                    print(f"📍 [CERCANIA] Detectada consulta de distancia entre dos entidades: '{entidad1}' y '{entidad2}'")
+                    break
+            
+            # Verificar si es CERCANIA sin destino específico
+            texto_lower_check = texto_completo.lower()
+            patrones_sin_destino_check = [
+                r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',  # Sin nada después
+                r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca\s*$',  # Sin nada después
+                r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',  # Sin nada después
+            ]
+            es_cercania_sin_destino_check = any(re.search(patron, texto_lower_check, re.IGNORECASE) for patron in patrones_sin_destino_check)
+            
+            # Si es consulta de distancia entre dos entidades, procesarla según los prefijos
+            if es_consulta_distancia_entre and entidad1 and entidad2:
+                # Identificar prefijos "zona" en las entidades
+                tiene_prefijo_zona1 = re.search(r'\b(?:zona|deposito|almacen|base|sede|oficina|planta)\s+', entidad1, re.IGNORECASE)
+                tiene_prefijo_zona2 = re.search(r'\b(?:zona|deposito|almacen|base|sede|oficina|planta)\s+', entidad2, re.IGNORECASE)
+                
+                # Determinar tipo de consulta según prefijos
+                if tiene_prefijo_zona1 and tiene_prefijo_zona2:
+                    # Ambos tienen prefijo zona: distancia entre zonas
+                    print(f"📍 [CERCANIA] Distancia entre zonas: '{entidad1}' y '{entidad2}'")
+                    return self._calcular_distancia_zonas(entidad1, entidad2, variables)
+                elif tiene_prefijo_zona1 or tiene_prefijo_zona2:
+                    # Uno tiene prefijo zona: distancia entre móvil y zona
+                    print(f"📍 [CERCANIA] Distancia entre móvil y zona: '{entidad1}' y '{entidad2}'")
+                    if tiene_prefijo_zona1:
+                        return self._calcular_distancia_movil_zona(entidad2, entidad1, variables)
+                    else:
+                        return self._calcular_distancia_movil_zona(entidad1, entidad2, variables)
+                else:
+                    # Ninguno tiene prefijo zona: distancia entre móviles
+                    print(f"📍 [CERCANIA] Distancia entre móviles: '{entidad1}' y '{entidad2}'")
+                    return self._calcular_distancia_moviles(entidad1, entidad2, variables)
+            
+            # VERIFICAR PRIMERO: Si hay destino en variables (puede venir del contexto)
+            # Si es CERCANIA sin destino específico, USAR el contexto (zona o móvil)
             tiene_destino_de_variables = destino_texto and destino_texto.strip()
             if tiene_destino_de_variables:
-                print(f"✅ [CERCANIA] Hay destino en variables (del contexto): '{destino_texto}' - NO usando móvil del contexto")
+                if es_cercania_sin_destino_check:
+                    # CERCANIA sin destino específico - USAR destino del contexto
+                    print(f"✅ [CERCANIA] CERCANIA sin destino específico - usando destino del contexto: '{destino_texto}'")
+                else:
+                    print(f"✅ [CERCANIA] Hay destino en variables (del contexto): '{destino_texto}' - NO usando móvil del contexto")
             
             # PRIMERO: Extraer destino del texto si no está en variables
             # Esto debe hacerse ANTES de usar el móvil del contexto
@@ -1180,35 +1266,39 @@ class EjecutorAcciones:
                     destino_texto = destino_texto.strip(' ?!.')
                     print(f"📍 Destino extraído del texto: '{destino_texto}'")
             
-            # Verificar si es una consulta de CERCANIA sin destino específico
-            # IMPORTANTE: Solo considerar "sin destino" si NO hay palabras que indiquen un destino después
-            # PERO: Si hay un destino en el contexto (de una consulta previa de UBICACION_ZONA), usarlo
-            texto_lower_check = texto_completo.lower()
-            patrones_sin_destino_check = [
-                r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',  # Sin nada después
-                r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca\s*$',  # Sin nada después
-                r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',  # Sin nada después
-            ]
-            es_cercania_sin_destino_check = any(re.search(patron, texto_lower_check, re.IGNORECASE) for patron in patrones_sin_destino_check)
+            # es_cercania_sin_destino_check ya está definido arriba (línea ~1116)
+            # No es necesario redefinirlo aquí
             
             # Si es CERCANIA sin destino pero hay un destino en variables (del contexto de UBICACION_ZONA)
             # ese destino ya fue asignado en views.py, así que NO usar móvil del contexto
             tiene_destino_contexto = variables.get('destino', '').strip()
             
-            # NO usar el móvil del contexto como destino si:
-            # 1. Ya hay un destino en variables (viene del contexto), O
-            # 2. Es CERCANIA sin destino específico (a menos que haya destino del contexto), O
-            # 3. Hay un destino_texto extraído, O
-            # 4. Hay un destino en variables del contexto
-            if not destino_texto and not movil_referencia and movil_referencia_contexto:
+            # NUEVA LÓGICA: Si es CERCANIA sin destino específico, usar el contexto (zona o móvil)
+            # Si hay destino en variables (zona del contexto), ya está asignado arriba
+            # Si no hay destino pero hay móvil del contexto, usarlo como referencia
+            if es_cercania_sin_destino_check:
+                if tiene_destino_de_variables:
+                    # Ya hay destino del contexto (zona) - usar ese
+                    print(f"✅ CERCANIA sin destino - usando zona del contexto: '{destino_texto}'")
+                elif movil_referencia_contexto and not movil_referencia:
+                    # No hay destino pero hay móvil del contexto - usar ese móvil como referencia
+                    movil_referencia = movil_referencia_contexto
+                    variables['movil_referencia'] = movil_referencia_contexto
+                    print(f"✅ CERCANIA sin destino - usando móvil del contexto: '{movil_referencia_contexto}'")
+                else:
+                    # Sin contexto - se mostrarán móviles más cercanos entre sí
+                    print(f"ℹ️ CERCANIA sin destino y sin contexto - mostrando móviles más cercanos entre sí")
+            elif not destino_texto and not movil_referencia and movil_referencia_contexto:
+                # No es CERCANIA sin destino - usar móvil del contexto solo si no hay destino
                 if tiene_destino_de_variables:
                     print(f"✅ Ya hay destino en variables ({destino_texto}), NO usando móvil como destino")
-                elif not es_cercania_sin_destino_check and not tiene_destino_contexto:
+                elif tiene_destino_contexto:
+                    print(f"✅ Hay destino del contexto ({tiene_destino_contexto}), NO usando móvil como destino")
+                else:
+                    # Usar móvil del contexto como destino
                     movil_referencia = movil_referencia_contexto
                     variables['movil_referencia'] = movil_referencia_contexto
                     print(f"⚠️ Usando móvil del contexto como destino: '{movil_referencia_contexto}'")
-                elif tiene_destino_contexto:
-                    print(f"✅ Hay destino del contexto ({tiene_destino_contexto}), NO usando móvil como destino")
 
             # 1) Determinar destino: ubicación o móvil de referencia
             destino_lat = None
@@ -1250,8 +1340,10 @@ class EjecutorAcciones:
                     Q(codigo__iexact=movil_origen_codigo)
                 ).first()
 
-            # IMPORTANTE: NO usar móvil como destino si ya hay destino_texto (puede venir del contexto)
-            if movil_referencia and not destino_es_movil and not destino_texto and not consulta_directa_distancia and not tiene_destino_de_variables:
+            # IMPORTANTE: NO usar móvil como destino si:
+            # - Ya hay destino_texto (puede venir del contexto)
+            # - Es CERCANIA sin destino específico (mostrar móviles más cercanos entre sí)
+            if movil_referencia and not destino_es_movil and not destino_texto and not consulta_directa_distancia and not tiene_destino_de_variables and not es_cercania_sin_destino_check:
                 # Buscar móvil de referencia
                 movil_ref = Movil.objects.filter(
                     Q(patente__icontains=movil_referencia.upper()) |
@@ -1858,3 +1950,898 @@ class EjecutorAcciones:
                 'audio': "No pude consultar la ubicación de la zona. Intentá nuevamente."
             }
 
+    def _listar_activos(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Lista los móviles activos (reportando en las últimas 24hs).
+        """
+        try:
+            # Definir límite de tiempo (24 horas)
+            limite = timezone.now() - timedelta(hours=24)
+            
+            # Consultar móviles activos con reporte reciente
+            # Usamos select_related para optimizar queries
+            # Nota: movil__geocode es OneToOne, así que select_related funciona bien
+            moviles_activos = MovilStatus.objects.filter(
+                fecha_gps__gte=limite
+            ).select_related('movil', 'movil__geocode').order_by('-fecha_gps')
+            
+            cantidad = moviles_activos.count()
+            
+            if cantidad == 0:
+                return {
+                    'texto': "No hay móviles activos reportando en las últimas 24 horas.",
+                    'audio': "No detecto ningún móvil activo en las últimas 24 horas."
+                }
+            
+            # Construir respuesta
+            texto = f"📋 *Móviles Activos ({cantidad})*\n\n"
+            audio_parts = [f"Hay {cantidad} móviles activos."]
+            
+            # Listar detalles (limitado a 10 para no saturar)
+            for status in moviles_activos[:10]:
+                try:
+                    movil = status.movil
+                    nombre = movil.alias or movil.patente or "Sin nombre"
+                    
+                    # Formatear hora de forma segura
+                    if status.fecha_gps:
+                        hora = status.fecha_gps.strftime('%H:%M')
+                    else:
+                        hora = "N/A"
+                    
+                    # Intentar obtener ubicación breve
+                    ubicacion = ""
+                    try:
+                        # Usar prefetch_related o acceso directo más seguro
+                        if hasattr(movil, 'geocode'):
+                            try:
+                                geocode = movil.geocode
+                                if geocode:
+                                    # Priorizar: Localidad > Barrio > Partido > Provincia
+                                    loc = geocode.localidad
+                                    barrio = geocode.barrio
+                                    
+                                    if loc and barrio:
+                                        ubicacion = f"{barrio}, {loc}"
+                                    elif loc:
+                                        ubicacion = loc
+                                    elif barrio:
+                                        ubicacion = barrio
+                                    else:
+                                        ubicacion = geocode.provincia or ""
+                            except Exception as e:
+                                print(f"Error accediendo geocode para {nombre}: {e}")
+                                pass
+                    except Exception as e:
+                        print(f"Error procesando ubicación para {nombre}: {e}")
+                        pass
+                    
+                    if ubicacion:
+                        texto += f"• *{nombre}*: {hora} hs ({ubicacion})\n"
+                    else:
+                        texto += f"• *{nombre}*: {hora} hs\n"
+                except Exception as e:
+                    print(f"Error procesando móvil en listado: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    continue
+            
+            if cantidad > 10:
+                texto += f"\n... y {cantidad - 10} más."
+            
+            # Audio resumen detallado
+            audio = f"Hay {cantidad} móviles activos. "
+            
+            # Limitar audio a los primeros 5 para no hacerlo eterno
+            detalles_audio = []
+            for status in moviles_activos[:5]:
+                try:
+                    movil = status.movil
+                    nombre = movil.alias or movil.patente or "Sin nombre"
+                    
+                    # Obtener ubicación para audio
+                    ubic_audio = "ubicación desconocida"
+                    try:
+                        if hasattr(movil, 'geocode'):
+                            try:
+                                geocode = movil.geocode
+                                if geocode:
+                                    # Para audio solo localidad o barrio
+                                    ubic_audio = geocode.localidad or geocode.barrio or "zona desconocida"
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+                    
+                    detalles_audio.append(f"{nombre} en {ubic_audio}")
+                except Exception as e:
+                    print(f"Error procesando móvil para audio: {e}")
+                    continue
+            
+            audio += ", ".join(detalles_audio) + "."
+            
+            if cantidad > 5:
+                audio += f" y {cantidad - 5} más."
+                
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+            
+        except Exception as e:
+            print(f"Error listando activos: {e}")
+            return {
+                'texto': "Error al consultar móviles activos.",
+                'audio': "Tuve un problema consultando la lista de activos."
+            }
+
+    def _situacion_flota(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Reporte de situación de flota: Estado (Movimiento/Detenido) y Ubicación.
+        """
+        try:
+            from zonas.models import Zona  # Importar aquí para evitar problemas circulares
+            limite = timezone.now() - timedelta(hours=24)
+            moviles_status = MovilStatus.objects.filter(
+                fecha_gps__gte=limite
+            ).select_related('movil').order_by('movil__alias')
+            
+            if not moviles_status.exists():
+                return {
+                    'texto': "No hay información reciente de la flota (últimas 24hs).",
+                    'audio': "No tengo información reciente de la flota."
+                }
+            
+            texto = "🚦 *Situación de Flota*\n\n"
+            detenidos = 0
+            circulando = 0
+            detalles_audio = []
+            
+            # Intentar importar Posicion, si falla usar solo datos de status
+            Posicion = None
+            try:
+                from gps.models import Posicion
+            except ImportError:
+                print("⚠️ No se pudo importar modelo Posicion, usando estimación simple")
+            
+            for status in moviles_status:
+                movil = status.movil
+                nombre = movil.alias or movil.patente
+                
+                # 1. Determinar Estado (Circulando vs Detenido)
+                # Criterio estricto: Últimos 5 reportes con velocidad > 0
+                estado_str = "Detenido"
+                icono = "🛑"
+                
+                # Verificación rápida primero
+                if status.ultima_velocidad_kmh and status.ultima_velocidad_kmh > 5:
+                    # Si tenemos Posicion, hacer verificación histórica
+                    if Posicion:
+                        try:
+                            # Traer últimas 5 posiciones
+                            ultimas_pos = Posicion.objects.filter(movil=movil).order_by('-fecha_gps')[:5]
+                            if len(ultimas_pos) >= 3: # Al menos 3 para evaluar
+                                # Si la mayoría tiene velocidad > 0
+                                con_velocidad = sum(1 for p in ultimas_pos if (p.velocidad or 0) > 0)
+                                if con_velocidad >= 3:
+                                    estado_str = "Circulando"
+                                    icono = "🚗" # Icono de movimiento
+                                    circulando += 1
+                                else:
+                                    detenidos += 1
+                            else:
+                                # Pocos datos, confiar en el último
+                                estado_str = "En Movimiento"
+                                icono = "🚗"
+                                circulando += 1
+                        except Exception as e:
+                            print(f"Error consultando posiciones para {nombre}: {e}")
+                            # Fallback a dato simple
+                            estado_str = "En Movimiento"
+                            icono = "🚗"
+                            circulando += 1
+                    else:
+                        # Sin modelo Posicion, confiar en el último status
+                        estado_str = "En Movimiento"
+                        icono = "🚗"
+                        circulando += 1
+                else:
+                    detenidos += 1
+                
+                # 2. Determinar Ubicación (Zona > Localidad)
+                ubicacion_str = "Ubicación desconocida"
+                
+                # Chequear si está en zona (Geofence check simple)
+                # Esto puede ser costoso si hay muchas zonas. 
+                # Idealmente usaríamos PostGIS: Zona.objects.filter(geom__contains=punto)
+                zona_nombre = None
+                if status.ultimo_lat and status.ultimo_lon:
+                    try:
+                        from django.contrib.gis.geos import Point
+                        # Asegurar que lat/lon son float válidos
+                        lon = float(status.ultimo_lon)
+                        lat = float(status.ultimo_lat)
+                        p = Point(lon, lat, srid=4326)
+                        # Buscar zona que contenga el punto
+                        zona = Zona.objects.filter(geom__contains=p, visible=True).first()
+                        if zona:
+                            zona_nombre = zona.nombre
+                    except (ImportError, OSError):
+                        # Django GIS no disponible (GDAL no instalado), saltar verificación de zona
+                        pass
+                    except Exception as e:
+                        # Silenciar error de zona para no romper todo el reporte
+                        print(f"Error verificando zona para {nombre}: {e}")
+                        pass
+                
+                if zona_nombre:
+                    ubicacion_str = f"Zona {zona_nombre}"
+                elif hasattr(movil, 'geocode') and movil.geocode:
+                    geo = movil.geocode
+                    # Priorizar calle y altura si existen para evitar mostrar solo números
+                    if geo.calle:
+                        ubicacion_str = f"{geo.calle} {geo.numero or ''}".strip()
+                    elif geo.direccion_formateada:
+                        ubicacion_str = geo.direccion_formateada.split(',')[0]
+                    else:
+                        ubicacion_str = geo.localidad or "Sin dirección"
+                
+                texto += f"{icono} *{nombre}*: {estado_str} en {ubicacion_str}\n"
+                
+                # Preparar frase para audio (solo para pocos móviles o resumen)
+                if len(moviles_status) <= 5:
+                    detalles_audio.append(f"{nombre} {estado_str} en {ubicacion_str}")
+
+            # Resumen final
+            texto += f"\nTotal: {circulando} circulando, {detenidos} detenidos."
+            
+            audio = f"Reporte de flota: {circulando} circulando y {detenidos} detenidos."
+            if detalles_audio:
+                audio += " " + ". ".join(detalles_audio) + "."
+            
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+
+        except Exception as e:
+            print(f"Error en situación de flota: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'texto': "Error al generar reporte de flota.",
+                'audio': "No pude generar el reporte de situación de flota."
+            }
+
+    def _moviles_en_zona(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Lista móviles dentro de una zona específica.
+        """
+        try:
+            # 1. Identificar la zona
+            texto_completo = variables.get('_texto_completo', '')
+            nombre_zona = variables.get('zona', '')
+            
+            # Si no vino la variable 'zona' limpia, intentar extraerla del texto
+            if not nombre_zona:
+                # Intentar extraer con regex primero (más preciso)
+                import re
+                patrones = [
+                    r'(?:moviles?|móviles?|vehiculos?|autos?)\s+(?:en|dentro\s+de|de\s+la)\s+(?:zona\s+)?(.+)',
+                    r'zona\s+(.+)',
+                    r'(?:en|dentro\s+de)\s+(?:la\s+)?zona\s+(.+)',
+                ]
+                
+                texto_lower = texto_completo.lower()
+                for patron in patrones:
+                    match = re.search(patron, texto_lower, re.IGNORECASE)
+                    if match:
+                        nombre_zona = match.group(1).strip()
+                        # Limpiar puntuación final
+                        nombre_zona = re.sub(r'[?.,!;:]+$', '', nombre_zona).strip()
+                        if nombre_zona:
+                            break
+                
+                # Si no se extrajo con regex, usar método simple
+                if not nombre_zona:
+                    clean = texto_completo.lower()
+                    for w in ['moviles', 'móviles', 'en', 'zona', 'la', 'dentro', 'de', 'vehiculos', 'autos', 'quien', 'esta', 'está']:
+                        clean = clean.replace(w, '')
+                    nombre_zona = clean.strip()
+            
+            if not nombre_zona:
+                return {
+                    'texto': "Por favor indicame el nombre de la zona.",
+                    'audio': "¿De qué zona querés ver los móviles?"
+                }
+
+            # Obtener usuario si está disponible
+            usuario = variables.get('_usuario')
+            
+            # Buscar la zona
+            resultado_zona = self._buscar_zona_por_nombre(nombre_zona, usuario)
+            if not resultado_zona:
+                return {
+                    'texto': f"No encontré ninguna zona llamada '{nombre_zona}'.",
+                    'audio': f"No encontré la zona {nombre_zona}."
+                }
+            
+            zona_obj, _, _, nombre_real = resultado_zona
+            
+            # 2. Buscar móviles dentro de la zona (PostGIS)
+            # Asumimos que MovilStatus tiene lat/lon pero no necesariamente un campo Point indexado en todos los modelos legacy.
+            # Pero si usamos Django GIS, podemos construir el punto al vuelo o filtrar.
+            # Lo más eficiente si MovilStatus no tiene PointField es iterar (si son pocos) o usar raw SQL.
+            # Vamos a intentar usar __contains con Point construido si es posible, o iterar si falla.
+            
+            moviles_en_zona = []
+            
+            # Opción A: Iterar activos y chequear (más seguro si no hay índice espacial en status)
+            activos = MovilStatus.objects.filter(
+                fecha_gps__gte=timezone.now() - timedelta(hours=24)
+            ).select_related('movil')
+            
+            # Intentar usar Django GIS si está disponible
+            try:
+                from django.contrib.gis.geos import Point
+                usar_gis = True
+            except (ImportError, OSError) as e:
+                usar_gis = False
+                print(f"⚠️ Django GIS no disponible (error: {e}), usando verificación simple")
+            
+            for status in activos:
+                if status.ultimo_lat and status.ultimo_lon:
+                    try:
+                        encontrado = False
+                        if usar_gis:
+                            try:
+                                # Usar Point con SRID 4326 (WGS84)
+                                p = Point(float(status.ultimo_lon), float(status.ultimo_lat), srid=4326)
+                                if zona_obj.geom and zona_obj.geom.contains(p):
+                                    moviles_en_zona.append(status)
+                                    encontrado = True
+                                    continue  # Si se encontró con GIS, pasar al siguiente móvil
+                            except (OSError, AttributeError) as gis_error:
+                                # GDAL no disponible o error al acceder a geom
+                                print(f"⚠️ Error GIS al verificar posición para {status.movil} (usando fallback): {gis_error}")
+                                # Continuar con fallback simple para este móvil
+                                encontrado = False
+                        
+                        # Fallback: verificación simple por distancia (menos preciso)
+                        # Solo si no se encontró con GIS o GIS no está disponible
+                        if not encontrado:
+                            # Solo si la zona tiene un centro aproximado
+                            if hasattr(zona_obj, 'centro_lat') and hasattr(zona_obj, 'centro_lon'):
+                                # Calcular distancia simple (Haversine aproximado)
+                                lat_zona = float(zona_obj.centro_lat)
+                                lon_zona = float(zona_obj.centro_lon)
+                                lat_movil = float(status.ultimo_lat)
+                                lon_movil = float(status.ultimo_lon)
+                                
+                                # Distancia aproximada en grados (muy simplificado)
+                                dist_lat = abs(lat_movil - lat_zona)
+                                dist_lon = abs(lon_movil - lon_zona)
+                                # Aproximación: 1 grado ≈ 111 km
+                                # Si la zona tiene un radio, usar ese, sino usar 0.01 grados (~1km)
+                                radio_grados = getattr(zona_obj, 'radio_metros', 1000) / 111000.0
+                                
+                                if dist_lat < radio_grados and dist_lon < radio_grados:
+                                    moviles_en_zona.append(status)
+                    except Exception as e:
+                        print(f"Error verificando posición para {status.movil}: {e}")
+                        continue
+            
+            cantidad = len(moviles_en_zona)
+            
+            if cantidad == 0:
+                return {
+                    'texto': f"No hay móviles activos dentro de *{nombre_real}*.",
+                    'audio': f"No hay móviles en la zona {nombre_real}."
+                }
+            
+            texto = f"📍 *Móviles en {nombre_real}* ({cantidad})\n\n"
+            nombres = []
+            
+            for status in moviles_en_zona:
+                movil = status.movil
+                nombre = movil.alias or movil.patente
+                
+                # Calcular tiempo de permanencia (complejo, simplificamos a hora reporte)
+                hora = status.fecha_gps.strftime('%H:%M')
+                texto += f"• *{nombre}* (Reporte: {hora})\n"
+                nombres.append(nombre)
+            
+            audio = f"Hay {cantidad} móviles en {nombre_real}. "
+            if cantidad <= 5:
+                audio += "Son: " + ", ".join(nombres) + "."
+            
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+
+        except Exception as e:
+            print(f"Error buscando móviles en zona: {e}")
+            return {
+                'texto': "Ocurrió un error al buscar en la zona.",
+                'audio': "Tuve un problema buscando en esa zona."
+            }
+
+    def _calcular_distancia_moviles(self, movil1_nombre: str, movil2_nombre: str, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Calcula la distancia entre dos móviles.
+        """
+        try:
+            # Buscar ambos móviles
+            movil1 = Movil.objects.filter(
+                Q(patente__icontains=movil1_nombre) |
+                Q(alias__icontains=movil1_nombre) |
+                Q(codigo__icontains=movil1_nombre)
+            ).first()
+            
+            movil2 = Movil.objects.filter(
+                Q(patente__icontains=movil2_nombre) |
+                Q(alias__icontains=movil2_nombre) |
+                Q(codigo__icontains=movil2_nombre)
+            ).first()
+            
+            if not movil1:
+                return {
+                    'texto': f"No encontré el móvil '{movil1_nombre}'.",
+                    'audio': f"No encontré el móvil {movil1_nombre}."
+                }
+            
+            if not movil2:
+                return {
+                    'texto': f"No encontré el móvil '{movil2_nombre}'.",
+                    'audio': f"No encontré el móvil {movil2_nombre}."
+                }
+            
+            # Obtener posiciones actuales
+            status1 = MovilStatus.objects.filter(movil=movil1).only('ultimo_lat', 'ultimo_lon', 'ultima_velocidad_kmh').first()
+            status2 = MovilStatus.objects.filter(movil=movil2).only('ultimo_lat', 'ultimo_lon', 'ultima_velocidad_kmh').first()
+            
+            if not status1 or not status1.ultimo_lat or not status1.ultimo_lon:
+                return {
+                    'texto': f"El móvil '{movil1.alias or movil1.patente}' no tiene posición actual.",
+                    'audio': f"{movil1.alias or movil1.patente} no tiene posición actual."
+                }
+            
+            if not status2 or not status2.ultimo_lat or not status2.ultimo_lon:
+                return {
+                    'texto': f"El móvil '{movil2.alias or movil2.patente}' no tiene posición actual.",
+                    'audio': f"{movil2.alias or movil2.patente} no tiene posición actual."
+                }
+            
+            lat1 = float(status1.ultimo_lat)
+            lon1 = float(status1.ultimo_lon)
+            lat2 = float(status2.ultimo_lat)
+            lon2 = float(status2.ultimo_lon)
+            
+            # Calcular distancia usando OSRM
+            cache_key_osrm = f'osrm_{lat1}_{lon1}_{lat2}_{lon2}'
+            osrm = cache.get(cache_key_osrm)
+            if osrm is None:
+                try:
+                    osrm_url = (
+                        f"http://router.project-osrm.org/route/v1/driving/"
+                        f"{lon1},{lat1};{lon2},{lat2}?overview=false&alternatives=false"
+                    )
+                    osrm_resp = requests.get(osrm_url, timeout=3)
+                    osrm_resp.raise_for_status()
+                    osrm = osrm_resp.json()
+                    cache.set(cache_key_osrm, osrm, 3600)
+                except Exception:
+                    osrm = {}
+            
+            try:
+                routes = osrm.get("routes") or []
+                if routes:
+                    duration_sec = float(routes[0]["duration"])
+                    distance_m = float(routes[0]["distance"])
+                else:
+                    raise ValueError("Sin rutas")
+            except Exception:
+                # Fallback: distancia geodésica
+                def haversine(lon1, lat1, lon2, lat2):
+                    R = 6371.0
+                    dLat = radians(lat2 - lat1)
+                    dLon = radians(lon2 - lon1)
+                    a = sin(dLat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dLon/2)**2
+                    c = 2 * asin(sqrt(a))
+                    return R * c
+                dist_km = haversine(lon1, lat1, lon2, lat2)
+                est_vel_kmh = float(status1.ultima_velocidad_kmh or 50.0) or 50.0
+                duration_sec = (dist_km / max(est_vel_kmh, 5.0)) * 3600.0
+                distance_m = dist_km * 1000.0
+            
+            distancia_km = distance_m / 1000.0
+            duracion_min = duration_sec / 60.0
+            
+            nombre1 = movil1.alias or movil1.patente
+            nombre2 = movil2.alias or movil2.patente
+            
+            texto = (
+                f"📍 Distancia entre *{nombre1}* y *{nombre2}*:\n"
+                f"• Distancia: {distancia_km:.1f} km\n"
+                f"• Tiempo estimado: {int(duracion_min)} min"
+            )
+            audio = (
+                f"La distancia entre {nombre1} y {nombre2} es de {distancia_km:.1f} kilómetros, "
+                f"con un tiempo estimado de {int(duracion_min)} minutos."
+            )
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+        except Exception as e:
+            print(f"Error calculando distancia entre móviles: {e}")
+            return {
+                'texto': "Error al calcular la distancia entre los móviles.",
+                'audio': "No pude calcular la distancia."
+            }
+    
+    def _calcular_distancia_movil_zona(self, movil_nombre: str, zona_nombre: str, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Calcula la distancia entre un móvil y una zona.
+        """
+        try:
+            # Buscar móvil
+            movil = Movil.objects.filter(
+                Q(patente__icontains=movil_nombre) |
+                Q(alias__icontains=movil_nombre) |
+                Q(codigo__icontains=movil_nombre)
+            ).first()
+            
+            if not movil:
+                return {
+                    'texto': f"No encontré el móvil '{movil_nombre}'.",
+                    'audio': f"No encontré el móvil {movil_nombre}."
+                }
+            
+            # Obtener posición del móvil
+            status = MovilStatus.objects.filter(movil=movil).only('ultimo_lat', 'ultimo_lon', 'ultima_velocidad_kmh').first()
+            if not status or not status.ultimo_lat or not status.ultimo_lon:
+                return {
+                    'texto': f"El móvil '{movil.alias or movil.patente}' no tiene posición actual.",
+                    'audio': f"{movil.alias or movil.patente} no tiene posición actual."
+                }
+            
+            lat_movil = float(status.ultimo_lat)
+            lon_movil = float(status.ultimo_lon)
+            
+            # Buscar zona
+            usuario = variables.get('_usuario')
+            resultado_zona = self._buscar_zona_por_nombre(zona_nombre, usuario)
+            if not resultado_zona:
+                return {
+                    'texto': f"No encontré la zona '{zona_nombre}'.",
+                    'audio': f"No encontré la zona {zona_nombre}."
+                }
+            
+            zona_obj, lat_zona, lon_zona, nombre_zona = resultado_zona
+            
+            # Calcular distancia usando OSRM
+            cache_key_osrm = f'osrm_{lat_movil}_{lon_movil}_{lat_zona}_{lon_zona}'
+            osrm = cache.get(cache_key_osrm)
+            if osrm is None:
+                try:
+                    osrm_url = (
+                        f"http://router.project-osrm.org/route/v1/driving/"
+                        f"{lon_movil},{lat_movil};{lon_zona},{lat_zona}?overview=false&alternatives=false"
+                    )
+                    osrm_resp = requests.get(osrm_url, timeout=3)
+                    osrm_resp.raise_for_status()
+                    osrm = osrm_resp.json()
+                    cache.set(cache_key_osrm, osrm, 3600)
+                except Exception:
+                    osrm = {}
+            
+            try:
+                routes = osrm.get("routes") or []
+                if routes:
+                    duration_sec = float(routes[0]["duration"])
+                    distance_m = float(routes[0]["distance"])
+                else:
+                    raise ValueError("Sin rutas")
+            except Exception:
+                # Fallback: distancia geodésica
+                def haversine(lon1, lat1, lon2, lat2):
+                    R = 6371.0
+                    dLat = radians(lat2 - lat1)
+                    dLon = radians(lon2 - lon1)
+                    a = sin(dLat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dLon/2)**2
+                    c = 2 * asin(sqrt(a))
+                    return R * c
+                dist_km = haversine(lon_movil, lat_movil, lon_zona, lat_zona)
+                est_vel_kmh = float(status.ultima_velocidad_kmh or 50.0) or 50.0
+                duration_sec = (dist_km / max(est_vel_kmh, 5.0)) * 3600.0
+                distance_m = dist_km * 1000.0
+            
+            distancia_km = distance_m / 1000.0
+            duracion_min = duration_sec / 60.0
+            
+            nombre_movil = movil.alias or movil.patente
+            
+            texto = (
+                f"📍 Distancia entre *{nombre_movil}* y *{nombre_zona}*:\n"
+                f"• Distancia: {distancia_km:.1f} km\n"
+                f"• Tiempo estimado: {int(duracion_min)} min"
+            )
+            audio = (
+                f"La distancia entre {nombre_movil} y {nombre_zona} es de {distancia_km:.1f} kilómetros, "
+                f"con un tiempo estimado de {int(duracion_min)} minutos."
+            )
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+        except Exception as e:
+            print(f"Error calculando distancia entre móvil y zona: {e}")
+            return {
+                'texto': "Error al calcular la distancia.",
+                'audio': "No pude calcular la distancia."
+            }
+    
+    def _calcular_distancia_zonas(self, zona1_nombre: str, zona2_nombre: str, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Calcula la distancia entre dos zonas.
+        """
+        try:
+            usuario = variables.get('_usuario')
+            
+            # Buscar ambas zonas
+            resultado_zona1 = self._buscar_zona_por_nombre(zona1_nombre, usuario)
+            resultado_zona2 = self._buscar_zona_por_nombre(zona2_nombre, usuario)
+            
+            if not resultado_zona1:
+                return {
+                    'texto': f"No encontré la zona '{zona1_nombre}'.",
+                    'audio': f"No encontré la zona {zona1_nombre}."
+                }
+            
+            if not resultado_zona2:
+                return {
+                    'texto': f"No encontré la zona '{zona2_nombre}'.",
+                    'audio': f"No encontré la zona {zona2_nombre}."
+                }
+            
+            zona1_obj, lat1, lon1, nombre1 = resultado_zona1
+            zona2_obj, lat2, lon2, nombre2 = resultado_zona2
+            
+            # Calcular distancia usando OSRM
+            cache_key_osrm = f'osrm_{lat1}_{lon1}_{lat2}_{lon2}'
+            osrm = cache.get(cache_key_osrm)
+            if osrm is None:
+                try:
+                    osrm_url = (
+                        f"http://router.project-osrm.org/route/v1/driving/"
+                        f"{lon1},{lat1};{lon2},{lat2}?overview=false&alternatives=false"
+                    )
+                    osrm_resp = requests.get(osrm_url, timeout=3)
+                    osrm_resp.raise_for_status()
+                    osrm = osrm_resp.json()
+                    cache.set(cache_key_osrm, osrm, 3600)
+                except Exception:
+                    osrm = {}
+            
+            try:
+                routes = osrm.get("routes") or []
+                if routes:
+                    duration_sec = float(routes[0]["duration"])
+                    distance_m = float(routes[0]["distance"])
+                else:
+                    raise ValueError("Sin rutas")
+            except Exception:
+                # Fallback: distancia geodésica
+                def haversine(lon1, lat1, lon2, lat2):
+                    R = 6371.0
+                    dLat = radians(lat2 - lat1)
+                    dLon = radians(lon2 - lon1)
+                    a = sin(dLat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dLon/2)**2
+                    c = 2 * asin(sqrt(a))
+                    return R * c
+                dist_km = haversine(lon1, lat1, lon2, lat2)
+                duration_sec = (dist_km / 50.0) * 3600.0  # Velocidad promedio 50 km/h
+                distance_m = dist_km * 1000.0
+            
+            distancia_km = distance_m / 1000.0
+            duracion_min = duration_sec / 60.0
+            
+            texto = (
+                f"📍 Distancia entre *{nombre1}* y *{nombre2}*:\n"
+                f"• Distancia: {distancia_km:.1f} km\n"
+                f"• Tiempo estimado: {int(duracion_min)} min"
+            )
+            audio = (
+                f"La distancia entre {nombre1} y {nombre2} es de {distancia_km:.1f} kilómetros, "
+                f"con un tiempo estimado de {int(duracion_min)} minutos."
+            )
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+        except Exception as e:
+            print(f"Error calculando distancia entre zonas: {e}")
+            return {
+                'texto': "Error al calcular la distancia entre las zonas.",
+                'audio': "No pude calcular la distancia."
+            }
+    
+    def _ver_en_mapa(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Abre Google Maps con la posición de un móvil o el epicentro de una zona.
+        """
+        try:
+            texto_completo = variables.get('_texto_completo', '')
+            texto_lower = texto_completo.lower()
+            
+            # Extraer móvil o zona del texto
+            movil_nombre = variables.get('movil', '').strip()
+            zona_nombre = variables.get('zona', '').strip()
+            
+            # Si no hay móvil ni zona en variables, intentar extraer del texto
+            if not movil_nombre and not zona_nombre:
+                # Buscar palabras clave de zona
+                patron_zona = r'\b(?:zona|deposito|almacen|base|sede|oficina|planta)\s+(\w+(?:\s+\w+)?)'
+                match_zona = re.search(patron_zona, texto_lower, re.IGNORECASE)
+                if match_zona:
+                    zona_nombre = match_zona.group(1).strip()
+                else:
+                    # Intentar extraer móvil del texto
+                    # Patrón para patentes tipo "ASN773", "OVV799"
+                    patron_patente = r'\b([A-Z]{2,4})\s*(\d{2,4})\b'
+                    match_patente = re.search(patron_patente, texto_completo, re.IGNORECASE)
+                    if match_patente:
+                        movil_nombre = (match_patente.group(1) + match_patente.group(2)).upper()
+                    else:
+                        # Buscar nombres tipo "camion3", "auto2", etc.
+                        patron_nombre = r'\b(camion|auto|vehiculo|movil|móvil|unidad|truck|carro|moto)\s*(\d+)\b'
+                        match_nombre = re.search(patron_nombre, texto_lower, re.IGNORECASE)
+                        if match_nombre:
+                            prefijo = match_nombre.group(1).upper()
+                            numero = match_nombre.group(2)
+                            if prefijo in ['CAMION', 'TRUCK']:
+                                movil_nombre = f'CAMION{numero}'
+                            elif prefijo in ['MOVIL', 'MÓVIL']:
+                                movil_nombre = f'MOVIL{numero}'  # "movil" debe normalizarse a "MOVIL", no a "AUTO"
+                            elif prefijo in ['AUTO', 'VEHICULO', 'CARRO', 'UNIDAD']:
+                                movil_nombre = f'AUTO{numero}'
+                            elif prefijo == 'MOTO':
+                                movil_nombre = f'MOTO{numero}'
+            
+            # Si no hay móvil ni zona, usar el contexto
+            if not movil_nombre and not zona_nombre:
+                # PRIORIDAD 1: Intentar usar el último móvil consultado del contexto
+                # Primero verificar _contexto_movil_disponible (más confiable)
+                movil_contexto = variables.get('_contexto_movil_disponible', '').strip()
+                if not movil_contexto:
+                    # Fallback a movil_referencia
+                    movil_contexto = variables.get('movil_referencia', '').strip()
+                if not movil_contexto:
+                    # Fallback a movil en variables
+                    movil_contexto = variables.get('movil', '').strip()
+                
+                if movil_contexto:
+                    movil_nombre = movil_contexto
+                    print(f"🗺️ [VER_MAPA] Usando móvil del contexto: '{movil_nombre}'")
+                else:
+                    # Intentar usar la última zona consultada
+                    zona_contexto = variables.get('destino', '').strip()
+                    if zona_contexto:
+                        # Verificar si es una zona buscándola
+                        usuario = variables.get('_usuario')
+                        resultado_zona = self._buscar_zona_por_nombre(zona_contexto, usuario)
+                        if resultado_zona:
+                            zona_nombre = zona_contexto
+                            print(f"🗺️ [VER_MAPA] Usando zona del contexto: '{zona_nombre}'")
+            
+            # Procesar según si es móvil o zona
+            if zona_nombre:
+                # Buscar zona
+                usuario = variables.get('_usuario')
+                resultado_zona = self._buscar_zona_por_nombre(zona_nombre, usuario)
+                
+                if not resultado_zona:
+                    return {
+                        'texto': f"No encontré la zona '{zona_nombre}'.",
+                        'audio': f"No encontré la zona {zona_nombre}."
+                    }
+                
+                zona_obj, lat, lon, nombre_zona = resultado_zona
+                
+                # Crear link de Google Maps con el epicentro de la zona
+                google_maps_link = f"https://www.google.com/maps?q={lat},{lon}"
+                
+                texto = f"📍 Abriendo Google Maps con la ubicación de *{nombre_zona}*..."
+                audio = f"Abriendo el mapa con la ubicación de {nombre_zona}."
+                
+                return {
+                    'texto': texto,
+                    'audio': audio,
+                    'google_maps_link': google_maps_link
+                }
+            
+            elif movil_nombre:
+                # Buscar móvil
+                movil = Movil.objects.filter(
+                    Q(patente__icontains=movil_nombre) |
+                    Q(alias__icontains=movil_nombre) |
+                    Q(codigo__icontains=movil_nombre)
+                ).first()
+                
+                if not movil:
+                    return {
+                        'texto': f"No encontré el móvil '{movil_nombre}'.",
+                        'audio': f"No encontré el móvil {movil_nombre}."
+                    }
+                
+                # Obtener posición actual
+                status = MovilStatus.objects.filter(movil=movil).only('ultimo_lat', 'ultimo_lon').first()
+                
+                if not status or not status.ultimo_lat or not status.ultimo_lon:
+                    return {
+                        'texto': f"El móvil '{movil.alias or movil.patente}' no tiene posición actual.",
+                        'audio': f"{movil.alias or movil.patente} no tiene posición actual."
+                    }
+                
+                lat = float(status.ultimo_lat)
+                lon = float(status.ultimo_lon)
+                
+                # Crear link de Google Maps
+                google_maps_link = f"https://www.google.com/maps?q={lat},{lon}"
+                
+                nombre_movil = movil.alias or movil.patente
+                texto = f"📍 Abriendo Google Maps con la posición de *{nombre_movil}*..."
+                audio = f"Abriendo el mapa con la posición de {nombre_movil}."
+                
+                return {
+                    'texto': texto,
+                    'audio': audio,
+                    'google_maps_link': google_maps_link
+                }
+            else:
+                return {
+                    'texto': "No especificaste un móvil o zona para mostrar en el mapa.",
+                    'audio': "¿Qué móvil o zona querés ver en el mapa?"
+                }
+        
+        except Exception as e:
+            print(f"Error abriendo mapa: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'texto': "Ocurrió un error al abrir el mapa.",
+                'audio': "No pude abrir el mapa en este momento."
+            }
+    
+    def _responder_ayuda(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Responde con ayuda sobre los comandos disponibles.
+        """
+        texto = "🤖 *Comandos Disponibles de SOFIA*\n\n"
+        
+        texto += "📋 *Flota*\n"
+        texto += "• _'Listado de móviles activos'_: Ver quiénes reportaron hoy.\n"
+        texto += "• _'Situación de flota'_: Resumen de quiénes circulan y quiénes están detenidos.\n\n"
+        
+        texto += "📍 *Zonas*\n"
+        texto += "• _'Móviles en zona [Nombre]'_: Ver quiénes están en un lugar específico.\n"
+        texto += "• _'¿Dónde está el [Móvil]?'_: Ubicación actual.\n\n"
+        
+        texto += "🚗 *Histórico*\n"
+        texto += "• _'Recorrido de [Móvil] ayer'_: Resumen de actividad.\n\n"
+
+        texto += "⏱️ *Tiempos de Llegada*\n"
+        texto += "• _'Cuanto tarda [Móvil] en llegar a [Destino]'_: Estimación de tiempo.\n\n"
+        
+        texto += "🗺️ *Mapas*\n"
+        texto += "• _'Mostrar en mapa [Móvil]'_: Abre Google Maps con la posición del móvil.\n"
+        texto += "• _'Ver en mapa [Zona]'_: Abre Google Maps con el epicentro de la zona.\n"
+        
+        audio = "Puedo ayudarte con el estado de la flota, buscar móviles en zonas, calcular tiempos de llegada a destinos, mostrar ubicaciones en Google Maps, o darte la ubicación y recorrido de cualquier vehículo."
+        
+        return {
+            'texto': texto,
+            'audio': audio
+        }

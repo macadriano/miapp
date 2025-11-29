@@ -13,6 +13,7 @@ class VectorConsulta(models.Model):
         ('futuro', 'Consultas Futuras'),
         ('comando', 'Comandos'),
         ('cercania', 'Consultas de Cercanía'),
+        ('ayuda', 'Ayuda y Soporte'),  # Nueva categoría
     ]
     
     TIPO_CONSULTA_CHOICES = [
@@ -23,6 +24,12 @@ class VectorConsulta(models.Model):
         ('LLEGADA', 'Estimación de Llegada'),
         ('SALUDO', 'Saludo'),
         ('CERCANIA', 'Cercanía a un Punto'),
+        # Nuevos tipos
+        ('LISTADO_ACTIVOS', 'Listado de Móviles Activos'),
+        ('SITUACION_FLOTA', 'Situación de Flota'),
+        ('MOVILES_EN_ZONA', 'Móviles en Zona'),
+        ('AYUDA_GENERAL', 'Ayuda General'),
+        ('VER_MAPA', 'Ver en Mapa/Google Maps'),
     ]
     
     # Texto original de la consulta

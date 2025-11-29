@@ -781,12 +781,25 @@
             justify-content: center;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, background 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
         }
 
         .voice-button:hover {
             background: var(--whatsapp-dark-green);
             transform: translateY(-50%) scale(1.1);
+        }
+
+        .voice-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .voice-button.swiping {
+            transform: translateY(-50%) scale(1.15);
+            background: var(--whatsapp-dark-green);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .voice-button.recording {
@@ -1560,6 +1573,22 @@
                     })
                 });
 
+                // Verificar si la respuesta es exitosa
+                if (!response.ok) {
+                    // Intentar obtener el texto de la respuesta para ver qué error devolvió el servidor
+                    const errorText = await response.text();
+                    console.error(`❌ Error HTTP ${response.status}:`, errorText.substring(0, 500));
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText.substring(0, 200)}`);
+                }
+
+                // Verificar que la respuesta sea JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const errorText = await response.text();
+                    console.error(`❌ Respuesta no es JSON. Content-Type: ${contentType}`, errorText.substring(0, 500));
+                    throw new Error(`El servidor devolvió ${contentType} en lugar de JSON`);
+                }
+
                 const data = await response.json();
 
                 hideTyping();
@@ -1573,6 +1602,12 @@
 
                     if (data.usando_contexto && data.datos_consulta && data.datos_consulta.movil) {
                         ultimoMovilConsultado = data.datos_consulta.movil;
+                    }
+
+                    // Si hay un link de Google Maps, abrirlo automáticamente (solo para VER_MAPA, no para POSICION)
+                    // Verificar que el tipo de consulta sea VER_MAPA antes de abrir automáticamente
+                    if (googleMapsLink && data.datos_consulta && data.datos_consulta.tipo_consulta === 'VER_MAPA') {
+                        window.open(googleMapsLink, '_blank');
                     }
 
                     // Reproducir respuesta en audio automáticamente
@@ -1635,9 +1670,11 @@
                             }
                         }, 300);
                     }
-                } else {
-                    addMessage('Lo siento, ocurrió un error al procesar tu consulta.', 'received');
-                    // Reiniciar reconocimiento incluso si hay error
+                    } else {
+                        // Mostrar mensaje de error del servidor si está disponible
+                        const errorMsg = data.respuesta || data.error || 'Lo siento, ocurrió un error al procesar tu consulta.';
+                        addMessage(errorMsg, 'received');
+                        // Reiniciar reconocimiento incluso si hay error
                     setTimeout(() => {
                         if (voiceModeActive && voiceRecognition) {
                             try {
@@ -1650,8 +1687,15 @@
                 }
             } catch (error) {
                 hideTyping();
-                console.error('Error enviando mensaje:', error);
-                addMessage('Error de conexión. Por favor intenta nuevamente.', 'received');
+                console.error('❌ Error enviando mensaje:', error);
+                console.error('❌ Stack trace:', error.stack);
+                // Mostrar mensaje de error más informativo
+                let errorMessage = 'Error de conexión. Por favor intenta nuevamente.';
+                if (error.message) {
+                    console.error('❌ Detalles del error:', error.message);
+                    errorMessage = `Error de conexión: ${error.message}`;
+                }
+                addMessage(errorMessage, 'received');
                 // Reiniciar reconocimiento incluso si hay error de conexión
                 setTimeout(() => {
                     if (voiceModeActive && voiceRecognition) {
@@ -1795,14 +1839,127 @@
             }
         });
 
+        // Variables para el efecto de deslizamiento (swipe up)
+        let isPressing = false;
+        let startY = 0;
+        let startTime = 0;
+        let hasSwipedUp = false;
+        const SWIPE_THRESHOLD = 30; // Píxeles mínimos para considerar un swipe
+        const PRESS_THRESHOLD = 100; // Milisegundos mínimos de presión antes de permitir swipe
+
         if (voiceButton) {
-            voiceButton.addEventListener('click', () => {
+            // Función para iniciar grabación
+            const startRecording = () => {
                 if (recognition && typeof recognition.start === 'function') {
                     try {
                         recognition.start();
                     } catch (error) {
                         console.error('Error iniciando reconocimiento:', error);
                     }
+                }
+            };
+
+            // Click normal (mantener funcionalidad existente)
+            voiceButton.addEventListener('click', (e) => {
+                // Solo iniciar si no hubo un swipe (para evitar doble activación)
+                if (!hasSwipedUp) {
+                    startRecording();
+                }
+                hasSwipedUp = false;
+            });
+
+            // Touch events para el efecto de deslizamiento hacia arriba
+            voiceButton.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isPressing = true;
+                hasSwipedUp = false;
+                startY = e.touches[0].clientY;
+                startTime = Date.now();
+                voiceButton.classList.add('swiping');
+            }, { passive: false });
+
+            voiceButton.addEventListener('touchmove', (e) => {
+                if (!isPressing) return;
+                e.preventDefault();
+                
+                const currentY = e.touches[0].clientY;
+                const deltaY = startY - currentY; // Positivo si se desliza hacia arriba
+                const pressDuration = Date.now() - startTime;
+
+                // Si se presiona por suficiente tiempo y se desliza hacia arriba
+                if (pressDuration >= PRESS_THRESHOLD && deltaY > SWIPE_THRESHOLD && !hasSwipedUp) {
+                    hasSwipedUp = true;
+                    startRecording();
+                    // Feedback visual adicional
+                    voiceButton.style.transform = 'translateY(-50%) scale(1.2)';
+                }
+            }, { passive: false });
+
+            voiceButton.addEventListener('touchend', (e) => {
+                if (!isPressing) return;
+                e.preventDefault();
+                
+                isPressing = false;
+                voiceButton.classList.remove('swiping');
+                voiceButton.style.transform = '';
+                
+                // Si no hubo swipe pero hubo una presión larga, iniciar grabación
+                const pressDuration = Date.now() - startTime;
+                if (!hasSwipedUp && pressDuration >= PRESS_THRESHOLD) {
+                    startRecording();
+                }
+                
+                hasSwipedUp = false;
+            }, { passive: false });
+
+            // Mouse events para desktop (simular el efecto)
+            voiceButton.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return; // Solo botón izquierdo
+                isPressing = true;
+                hasSwipedUp = false;
+                startY = e.clientY;
+                startTime = Date.now();
+                voiceButton.classList.add('swiping');
+            });
+
+            voiceButton.addEventListener('mousemove', (e) => {
+                if (!isPressing) return;
+                
+                const currentY = e.clientY;
+                const deltaY = startY - currentY; // Positivo si se mueve hacia arriba
+                const pressDuration = Date.now() - startTime;
+
+                // Si se presiona por suficiente tiempo y se mueve hacia arriba
+                if (pressDuration >= PRESS_THRESHOLD && deltaY > SWIPE_THRESHOLD && !hasSwipedUp) {
+                    hasSwipedUp = true;
+                    startRecording();
+                    voiceButton.style.transform = 'translateY(-50%) scale(1.2)';
+                }
+            });
+
+            voiceButton.addEventListener('mouseup', (e) => {
+                if (!isPressing) return;
+                
+                isPressing = false;
+                voiceButton.classList.remove('swiping');
+                voiceButton.style.transform = '';
+                
+                // Si no hubo swipe pero hubo una presión larga, iniciar grabación
+                const pressDuration = Date.now() - startTime;
+                if (!hasSwipedUp && pressDuration >= PRESS_THRESHOLD) {
+                    startRecording();
+                }
+                
+                hasSwipedUp = false;
+            });
+
+            // Limpiar estado si el mouse sale del botón
+            voiceButton.addEventListener('mouseleave', () => {
+                if (isPressing) {
+                    isPressing = false;
+                    voiceButton.classList.remove('swiping');
+                    voiceButton.style.transform = '';
+                    hasSwipedUp = false;
                 }
             });
         }
@@ -1970,6 +2127,22 @@
                     })
                 });
 
+                // Verificar si la respuesta es exitosa
+                if (!response.ok) {
+                    // Intentar obtener el texto de la respuesta para ver qué error devolvió el servidor
+                    const errorText = await response.text();
+                    console.error(`❌ Error HTTP ${response.status}:`, errorText.substring(0, 500));
+                    throw new Error(`HTTP error! status: ${response.status} - ${errorText.substring(0, 200)}`);
+                }
+
+                // Verificar que la respuesta sea JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const errorText = await response.text();
+                    console.error(`❌ Respuesta no es JSON. Content-Type: ${contentType}`, errorText.substring(0, 500));
+                    throw new Error(`El servidor devolvió ${contentType} en lugar de JSON`);
+                }
+
                 const data = await response.json();
 
                 hideTyping();
@@ -1985,18 +2158,33 @@
                         ultimoMovilConsultado = data.datos_consulta.movil;
                     }
 
+                    // Si hay un link de Google Maps, abrirlo automáticamente (solo para VER_MAPA, no para POSICION)
+                    // Verificar que el tipo de consulta sea VER_MAPA antes de abrir automáticamente
+                    if (googleMapsLink && data.datos_consulta && data.datos_consulta.tipo_consulta === 'VER_MAPA') {
+                        window.open(googleMapsLink, '_blank');
+                    }
+
                     // Reproducir respuesta en audio automáticamente
                     if (!isAudioMuted && 'speechSynthesis' in window) {
                         const button = msgElement ? msgElement.querySelector('.message-audio-btn') : null;
                         speak(textoAudio, button);
                     }
                 } else {
-                    addMessage('Lo siento, ocurrió un error al procesar tu consulta.', 'received');
+                    // Mostrar mensaje de error del servidor si está disponible
+                    const errorMsg = data.respuesta || data.error || 'Lo siento, ocurrió un error al procesar tu consulta.';
+                    addMessage(errorMsg, 'received');
                 }
             } catch (error) {
                 hideTyping();
-                console.error('Error enviando mensaje:', error);
-                addMessage('Error de conexión. Por favor intenta nuevamente.', 'received');
+                console.error('❌ Error enviando mensaje:', error);
+                console.error('❌ Stack trace:', error.stack);
+                // Mostrar mensaje de error más informativo
+                let errorMessage = 'Error de conexión. Por favor intenta nuevamente.';
+                if (error.message) {
+                    console.error('❌ Detalles del error:', error.message);
+                    errorMessage = `Error de conexión: ${error.message}`;
+                }
+                addMessage(errorMessage, 'received');
             } finally {
                 setSofiaProcessing(false);
             }

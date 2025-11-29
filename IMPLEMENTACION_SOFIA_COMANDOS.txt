@@ -1,0 +1,94 @@
+IMPLEMENTACIÓN DE NUEVOS COMANDOS PARA SOFIA
+============================================
+
+Este documento detalla la implementación de las nuevas capacidades del agente IA Sofia y los pasos necesarios para su despliegue y activación en el servidor.
+
+1. RESUMEN DE NUEVAS CAPACIDADES
+--------------------------------
+
+Se han agregado 4 nuevas categorías de comandos principales:
+
+1.  **Listado de Activos**: Permite consultar qué móviles han reportado en las últimas 24 horas.
+    *   *Ejemplos*: "listado de móviles activos", "quienes están conectados".
+2.  **Situación de Flota**: Un reporte general del estado operativo (cuántos circulan, cuántos detenidos).
+    *   *Ejemplos*: "situación de la flota", "resumen de estado".
+3.  **Móviles en Zona**: Busca vehículos dentro de una zona geográfica específica (polígono).
+    *   *Ejemplos*: "móviles en zona Centro", "quien está en el depósito".
+4.  **Ayuda General**: Un comando para orientar al usuario sobre qué puede preguntar.
+    *   *Ejemplos*: "ayuda", "qué puedes hacer".
+
+2. CAMBIOS EN EL CÓDIGO
+-----------------------
+
+### Modelos (`agenteIA/models.py`)
+Se actualizaron las opciones del modelo `VectorConsulta` para soportar las nuevas intenciones:
+*   Nuevas Categorías: `AYUDA`
+*   Nuevos Tipos de Consulta: `LISTADO_ACTIVOS`, `SITUACION_FLOTA`, `MOVILES_EN_ZONA`, `AYUDA_GENERAL`.
+
+### Lógica de Negocio (`agenteIA/acciones.py`)
+Se implementaron los métodos correspondientes en la clase `EjecutorAcciones`:
+*   `_listar_activos`: Filtra `MovilStatus` por `fecha_gps` > 24hs.
+*   `_situacion_flota`: Analiza velocidad y posición para determinar estado (Circulando/Detenido).
+*   `_moviles_en_zona`: Utiliza lógica espacial (o iteración simple si no hay GIS) para detectar móviles dentro de polígonos de `Zona`.
+*   `_responder_ayuda`: Devuelve un texto explicativo predefinido.
+
+### Comandos de Gestión (`agenteIA/management/commands/`)
+*   `update_sofia_intents.py`: Script para poblar la base de datos con las frases de entrenamiento para los nuevos comandos.
+*   `generar_embeddings_reales.py`: Script para calcular los vectores semánticos usando `sentence-transformers`.
+
+--------------------------------------------------------------------------------
+
+3. INSTRUCCIONES DE DESPLIEGUE EN SERVIDOR
+------------------------------------------
+
+Siga estos pasos en orden para activar las nuevas funcionalidades en producción.
+
+### Paso 1: Actualizar Código
+Asegúrese de que los últimos cambios (modelos, acciones, comandos) estén desplegados en el servidor.
+
+### Paso 2: Instalar Dependencias (Opcional pero Recomendado)
+Para que Sofia "entienda" realmente el significado y no solo palabras clave, se recomienda instalar la librería de IA.
+   
+   pip install sentence-transformers
+
+*Nota: Si no se instala, el sistema usará un modo "placeholder" básico.*
+
+### Paso 3: Base de Datos y Migraciones
+Dado que se modificaron las opciones (`choices`) en `models.py`, Django necesita actualizar su estado interno.
+
+**Si su entorno local ya conecta a la BD de producción:**
+Puede correr las migraciones desde su máquina local:
+   
+   python manage.py makemigrations
+   python manage.py migrate
+
+**Si corre las migraciones en el servidor:**
+   
+   python manage.py makemigrations
+   python manage.py migrate
+
+### Paso 4: Cargar Nuevos Intents (Comandos)
+Este paso es **CRÍTICO**. Debe ejecutarse para crear los registros de los nuevos comandos en la base de datos.
+   
+   python manage.py update_sofia_intents
+
+*Salida esperada: Una lista de "✅ Creado: ..." para cada nuevo comando.*
+
+### Paso 5: Generar Vectores (Embeddings)
+Para que la IA reconozca las preguntas de los usuarios y las asocie con los comandos, se deben recalcular los vectores.
+   
+   python manage.py generar_embeddings_reales
+
+*Este proceso puede tardar unos minutos la primera vez mientras descarga el modelo de lenguaje.*
+
+### Paso 6: Reiniciar Servicio
+Reinicie el servidor de aplicaciones (Gunicorn/Uvicorn/Apache) para que tome los cambios en el código Python (`acciones.py` y `models.py`).
+   
+   sudo systemctl restart gunicorn  # O el comando que use su infraestructura
+
+4. VERIFICACIÓN
+---------------
+Para verificar que todo funciona:
+1.  Abra el chat de Sofia.
+2.  Escriba "ayuda". Debería responder con la lista de comandos nuevos.
+3.  Escriba "situación de flota". Debería darle un resumen de móviles circulando/detenidos.

@@ -153,9 +153,16 @@ class SimpleMatcher:
         """Extrae el identificador del móvil del texto"""
         exclude = set(exclude or [])
         patrones_movil = [
+            # Patente formato "letras-números-letras" (ej: AA285TA, JGI640)
+            (r'\b([A-Z]{2,3})\s*(\d{2,4})\s*([A-Z]{1,3})\b', lambda m: m.group(1) + m.group(2) + m.group(3)),
+            # Patente formato "letras-números" (ej: ASN773, OVV799)
             (r'\b([A-Z]{2,5}\d{2,4})\b', lambda m: m.group(1)),
             (r'\b([A-Z]{2,5})\s*(\d{2,4})\b', lambda m: m.group(1) + m.group(2)),
+            # Patente formato "números-letras-números" (menos común)
+            (r'\b(\d{1,3})\s*([A-Z]{2,3})\s*(\d{1,3})\b', lambda m: m.group(1) + m.group(2) + m.group(3)),
+            # Nombres específicos (CAMION5, MOVIL3, etc.)
             (r'\b(?:CAMION|CAMIÓN|MOVIL|MÓVIL|VEHICULO|VEHÍCULO)\s*(\d{1,4})\b', lambda m: re.sub(r'\s+', '', m.group(0))),
+            # Patrón genérico (fallback)
             (r'\b([A-Z]+)\s*(\d{1,4})\b', lambda m: m.group(1) + m.group(2)),
             (r'\b([A-Z]+\d{1,4})\b', lambda m: m.group(1)),
         ]
