@@ -1123,8 +1123,8 @@ class EjecutorAcciones:
             destino_es_movil = variables.get('destino_es_movil', False)
             movil_referencia = variables.get('movil_referencia', '')
             movil_referencia = movil_referencia or ''
-            movil_referencia = movil_referencia.strip()
-            movil_referencia_contexto = variables.get('movil', '').strip()
+            movil_referencia = movil_referencia.strip() if movil_referencia else ''
+            movil_referencia_contexto = (variables.get('movil') or '').strip()
             
             # NUEVA LÓGICA: Detectar consultas de distancia entre dos entidades
             # Patrones: "que distancia hay/existe entre X y Y"
@@ -1271,7 +1271,7 @@ class EjecutorAcciones:
             
             # Si es CERCANIA sin destino pero hay un destino en variables (del contexto de UBICACION_ZONA)
             # ese destino ya fue asignado en views.py, así que NO usar móvil del contexto
-            tiene_destino_contexto = variables.get('destino', '').strip()
+            tiene_destino_contexto = (variables.get('destino') or '').strip()
             
             # NUEVA LÓGICA: Si es CERCANIA sin destino específico, usar el contexto (zona o móvil)
             # Si hay destino en variables (zona del contexto), ya está asignado arriba
@@ -1332,7 +1332,7 @@ class EjecutorAcciones:
                         }
 
             # Determinar móvil de referencia (origen) independientemente del tipo
-            movil_origen_codigo = movil_referencia or variables.get('movil', '').strip()
+            movil_origen_codigo = movil_referencia or (variables.get('movil') or '').strip()
             if movil_origen_codigo:
                 movil_origen_obj = Movil.objects.filter(
                     Q(patente__iexact=movil_origen_codigo) |
@@ -2677,8 +2677,8 @@ class EjecutorAcciones:
             texto_lower = texto_completo.lower()
             
             # Extraer móvil o zona del texto
-            movil_nombre = variables.get('movil', '').strip()
-            zona_nombre = variables.get('zona', '').strip()
+            movil_nombre = (variables.get('movil') or '').strip()
+            zona_nombre = (variables.get('zona') or '').strip()
             
             # Si no hay móvil ni zona en variables, intentar extraer del texto
             if not movil_nombre and not zona_nombre:
@@ -2714,20 +2714,20 @@ class EjecutorAcciones:
             if not movil_nombre and not zona_nombre:
                 # PRIORIDAD 1: Intentar usar el último móvil consultado del contexto
                 # Primero verificar _contexto_movil_disponible (más confiable)
-                movil_contexto = variables.get('_contexto_movil_disponible', '').strip()
+                movil_contexto = (variables.get('_contexto_movil_disponible') or '').strip()
                 if not movil_contexto:
                     # Fallback a movil_referencia
-                    movil_contexto = variables.get('movil_referencia', '').strip()
+                    movil_contexto = (variables.get('movil_referencia') or '').strip()
                 if not movil_contexto:
                     # Fallback a movil en variables
-                    movil_contexto = variables.get('movil', '').strip()
+                    movil_contexto = (variables.get('movil') or '').strip()
                 
                 if movil_contexto:
                     movil_nombre = movil_contexto
                     print(f"🗺️ [VER_MAPA] Usando móvil del contexto: '{movil_nombre}'")
                 else:
                     # Intentar usar la última zona consultada
-                    zona_contexto = variables.get('destino', '').strip()
+                    zona_contexto = (variables.get('destino') or '').strip()
                     if zona_contexto:
                         # Verificar si es una zona buscándola
                         usuario = variables.get('_usuario')
