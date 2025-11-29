@@ -86,7 +86,7 @@ def _obtener_contexto_conversacion(usuario=None, ultimas_n=10):
                 tipo_consulta = datos.get('tipo_consulta')
             
             # Obtener móvil
-            movil = datos.get('movil', '').strip()
+            movil = (datos.get('movil') or '').strip()
             if movil and movil.lower() not in ['donde', 'que', 'el', 'la', 'los', 'las', 'de', 'del', 'en', 'con']:
                 # SIEMPRE actualizar el último móvil si hay uno en la consulta (no solo si está vacío)
                 contexto['ultimo_movil'] = movil
@@ -94,7 +94,7 @@ def _obtener_contexto_conversacion(usuario=None, ultimas_n=10):
                     contexto['historial_moviles'].append(movil)
             
             # Obtener destino (para LLEGADA)
-            destino = datos.get('destino', '').strip()
+            destino = (datos.get('destino') or '').strip()
             if destino:
                 # Solo actualizar último destino si la consulta es LLEGADA o CERCANIA
                 # No actualizar si es POSICION (para no sobrescribir con destinos antiguos)
@@ -107,11 +107,11 @@ def _obtener_contexto_conversacion(usuario=None, ultimas_n=10):
                     contexto['historial_destinos'].append(destino)
             
             # Obtener zona (para UBICACION_ZONA)
-            zona = datos.get('zona', '').strip()
+            zona = (datos.get('zona') or '').strip()
             # También verificar si el destino es en realidad una zona
             if not zona and tipo_consulta == 'UBICACION_ZONA':
                 # Si el tipo es UBICACION_ZONA pero no hay 'zona' en datos, intentar obtenerlo del destino
-                zona = datos.get('destino', '').strip()
+                zona = (datos.get('destino') or '').strip()
             if zona:
                 # Guardar zona como destino para futuras consultas de CERCANIA/LLEGADA
                 contexto['ultimo_destino'] = zona  # Siempre actualizar, no solo si está vacío
@@ -566,19 +566,20 @@ def procesar_consulta(request):
                     
                     # Verificar primero si es una consulta de CERCANIA sin destino específico
                     patrones_cercania_sin_destino = [
-                        r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',
-                        r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca\s*$',
-                        r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*$',
+                        r'cual(es)?\s+son\s+los?\s+m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*[?.,!;:]*\s*$',
+                        r'qu[eé]\s+m[oó]viles?\s+est[aá]n?\s+m[aá]s\s+cerca\s*[?.,!;:]*\s*$',
+                        r'm[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*[?.,!;:]*\s*$',
+                        r'^m[oó]viles?\s+m[aá]s\s+cercan[oa]s?\s*[?.,!;:]*\s*$',  # Patrón más flexible al inicio
                     ]
-                    es_cercania_sin_destino = any(re.search(patron, mensaje_lower, re.IGNORECASE) for patron in patrones_cercania_sin_destino)
+                    es_cercania_sin_destino = any(re.search(patron, mensaje_lower.strip(), re.IGNORECASE) for patron in patrones_cercania_sin_destino)
                     
                     # NUEVA LÓGICA: Si es CERCANIA sin destino, usar el contexto (zona o móvil)
                     # PRIORIDAD: Si la última consulta fue de un móvil (POSICION), usar ese móvil
                     # Si la última consulta fue de una zona (UBICACION_ZONA), usar esa zona
                     if es_cercania_sin_destino:
                         ultimo_tipo = contexto.get('ultimo_tipo_consulta', '')
-                        ultimo_movil = contexto.get('ultimo_movil', '').strip()
-                        ultimo_destino = contexto.get('ultimo_destino', '').strip()
+                        ultimo_movil = (contexto.get('ultimo_movil') or '').strip()
+                        ultimo_destino = (contexto.get('ultimo_destino') or '').strip()
                         
                         # PRIORIDAD 1: Si la última consulta fue POSICION (móvil), usar ese móvil
                         if ultimo_tipo == 'POSICION' and ultimo_movil:
@@ -754,7 +755,7 @@ def procesar_consulta(request):
             
             # Verificar si NO hay destino en variables
             variables_resultado = resultado.get('variables', {})
-            tiene_destino_en_resultado = variables_resultado.get('destino', '').strip()
+            tiene_destino_en_resultado = (variables_resultado.get('destino') or '').strip()
             
             # Si es CERCANIA sin destino, NO usar automáticamente la zona del contexto
             # Solo usar si el usuario menciona explícitamente la zona o hace referencia explícita
@@ -917,8 +918,8 @@ def procesar_consulta(request):
             # IMPORTANTE: Respetar la prioridad: móvil sobre zona
             if tipo_consulta == 'CERCANIA' and not variables.get('destino') and not variables.get('destino_texto') and not variables.get('movil_referencia'):
                 ultimo_tipo = contexto.get('ultimo_tipo_consulta', '')
-                ultimo_movil = contexto.get('ultimo_movil', '').strip()
-                ultimo_destino = contexto.get('ultimo_destino', '').strip()
+                ultimo_movil = (contexto.get('ultimo_movil') or '').strip()
+                ultimo_destino = (contexto.get('ultimo_destino') or '').strip()
                 
                 # PRIORIDAD 1: Si la última consulta fue POSICION (móvil), usar ese móvil
                 if ultimo_tipo == 'POSICION' and ultimo_movil:
@@ -1012,7 +1013,7 @@ def procesar_consulta(request):
             # SOLO usar el que viene del vector o el contexto
             if tipo_consulta != 'LLEGADA' and tipo_consulta != 'UBICACION_ZONA':
                 # Intentar extraer móvil del texto actual (siempre) para permitir reemplazar contexto
-                movil_actual = variables.get('movil', '').strip()
+                movil_actual = (variables.get('movil') or '').strip()
                 palabras_comunes = {'donde', 'que', 'el', 'la', 'los', 'las', 'de', 'del', 'en', 'con'}
 
                 import unicodedata
@@ -1093,7 +1094,7 @@ def procesar_consulta(request):
             
             # Para TODOS los tipos (incluyendo LLEGADA): si no hay móvil, usar contexto
             # Obtener valor actual de móvil (puede haber sido extraído arriba)
-            movil_actual = variables.get('movil', '').strip()
+            movil_actual = (variables.get('movil') or '').strip()
             palabras_comunes = {'donde', 'que', 'el', 'la', 'los', 'las', 'de', 'del', 'en', 'con'}
             
             # SOLO SI NO SE ENCONTRÓ MÓVIL EN EL TEXTO ACTUAL: usar contexto
@@ -1189,7 +1190,7 @@ def procesar_consulta(request):
             # VERIFICACIÓN FINAL: Si es POSICION y hay un móvil, verificar que exista
             # Si no existe, intentar buscar como zona antes de ejecutar la acción
             if tipo_consulta == 'POSICION' and variables.get('movil'):
-                movil_nombre = variables.get('movil', '').strip()
+                movil_nombre = (variables.get('movil') or '').strip()
                 if movil_nombre:
                     # Verificar si el móvil existe en la base de datos (usando los mismos campos que acciones.py)
                     movil_existe = Movil.objects.filter(
@@ -1241,6 +1242,12 @@ def procesar_consulta(request):
             
             # Limpiar variables antes de guardar y usar en respuesta (remover objetos no serializables)
             variables_para_guardar = variables.copy()
+            # Asegurar que el tipo de consulta se guarde para el contexto
+            if tipo_consulta:
+                variables_para_guardar['tipo_consulta'] = tipo_consulta
+            # Asegurar que el móvil se guarde si existe
+            if variables.get('movil'):
+                variables_para_guardar['movil'] = variables.get('movil')
             # Remover el objeto User si existe (no es serializable a JSON)
             if '_usuario' in variables_para_guardar:
                 # Guardar solo el ID del usuario si existe
