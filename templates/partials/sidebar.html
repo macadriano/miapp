@@ -69,5 +69,37 @@
     </div>
 </aside>
 
+<!-- Botón flotante para Sofia estilo WhatsApp (solo visible en móviles, oculto en página de Sofia) -->
+<a href="/agenteIA/" class="fab-sofia" id="fabSofia" title="Abrir Sofia IA - Asistente Inteligente">
+    <img src="{% static 'avatarSOFIA.jpeg' %}" alt="Sofia IA">
+</a>
+<script>
+    // Ocultar botón flotante de Sofia en la página de Sofia y en desktop
+    (function() {
+        const fabSofia = document.getElementById('fabSofia');
+        if (fabSofia) {
+            // Ocultar si estamos en la página de Sofia
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/agenteIA/') || currentPath === '/agenteIA/') {
+                fabSofia.style.display = 'none';
+                return;
+            }
+            
+            // Ocultar en desktop (pantallas mayores a 768px)
+            function checkScreenSize() {
+                if (window.innerWidth > 768) {
+                    fabSofia.style.display = 'none';
+                } else {
+                    fabSofia.style.display = 'flex';
+                }
+            }
+            
+            // Verificar al cargar y al redimensionar
+            checkScreenSize();
+            window.addEventListener('resize', checkScreenSize);
+        }
+    })();
+</script>
+
 <script defer src="{% static 'js/notifications.js' %}"></script>
 

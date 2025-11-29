@@ -361,27 +361,73 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
 /* Media queries para móviles pequeños */
 @media (max-width: 768px) {
     .sidebar {
-        max-height: 55px;
-        height: 55px;
-        padding: 0.4rem 0.2rem;
+        max-height: 70px;
+        height: 70px;
+        padding: 0.5rem 0.3rem;
         top: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sidebar::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
     }
 
     .sidebar-nav {
-        gap: 0.2rem;
+        gap: 0.4rem;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        height: 100%;
+        min-width: max-content;
     }
 
     .sidebar-nav a {
-        padding: 0.35rem 0.5rem;
-        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        min-width: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a.active {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
     }
 
     .sidebar-nav a .nav-label {
-        display: none;
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1;
+        margin-top: 2px;
     }
 
     .sidebar-nav a i {
-        font-size: 1rem;
+        font-size: 1.4rem;
+        display: block;
+    }
+
+    .sidebar-header {
+        display: none;
+    }
+
+    .sidebar-footer {
+        display: none;
     }
 
     .main-area {
@@ -478,28 +524,133 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
     .modal-footer .btn {
         width: 100%;
     }
+
+    /* Botón flotante para Sofia (solo móviles) */
+    .fab-sofia {
+        display: flex;
+    }
+}
+
+/* Botón flotante para Sofia estilo WhatsApp - solo visible en móviles */
+.fab-sofia {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 110px; /* 70% más grande que 64px (64 * 1.7 = 108.8) */
+    height: 110px;
+    border-radius: 50%;
+    border: 5px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: none; /* Oculto por defecto, solo visible en móviles */
+    cursor: pointer;
+    text-decoration: none;
+    overflow: hidden;
+    background: white;
+    padding: 3px;
+}
+
+/* Ocultar en desktop siempre */
+@media (min-width: 769px) {
+    .fab-sofia {
+        display: none !important;
+    }
+}
+
+/* Ocultar en la página de Sofia (por URL o data-page) */
+body[data-page="agenteia"] .fab-sofia,
+body[data-page="agenteIA"] .fab-sofia,
+html[data-page="agenteia"] .fab-sofia,
+html[data-page="agenteIA"] .fab-sofia {
+    display: none !important;
+}
+
+.fab-sofia::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: -1;
+}
+
+.fab-sofia img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+/* Indicador de estado "online" estilo WhatsApp */
+.fab-sofia::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    width: 22px; /* Aumentado proporcionalmente */
+    height: 22px;
+    background: #25d366; /* Verde WhatsApp */
+    border: 4px solid white;
+    border-radius: 50%;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.fab-sofia:hover,
+.fab-sofia:active {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.fab-sofia:active {
+    transform: scale(1.05);
+}
+
+/* Mostrar botón flotante de Sofia solo en móviles */
+@media (max-width: 768px) {
+    .fab-sofia {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Si hay otro botón flotante (como el de nuevo móvil), ajustar posición */
+    .fab + .fab-sofia {
+        bottom: 100px; /* Ajustado para el botón más grande */
+    }
 }
 
 /* Media queries para móviles muy pequeños */
 @media (max-width: 576px) {
     .sidebar {
-        max-height: 50px;
-        height: 50px;
-        padding: 0.3rem 0.15rem;
+        max-height: 65px;
+        height: 65px;
+        padding: 0.4rem 0.25rem;
         top: 0;
     }
 
     .sidebar-nav {
-        gap: 0.15rem;
+        gap: 0.3rem;
     }
 
     .sidebar-nav a {
-        padding: 0.3rem 0.4rem;
-        font-size: 0.7rem;
+        padding: 0.45rem 0.65rem;
+        font-size: 0.75rem;
+        min-width: 55px;
     }
 
     .sidebar-nav a i {
-        font-size: 0.9rem;
+        font-size: 1.3rem;
+    }
+
+    .sidebar-nav a .nav-label {
+        font-size: 0.6rem;
+        display: block;
     }
 
     .main-area {
@@ -508,7 +659,7 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
 
     .topbar {
         padding: 0.5rem;
-        top: 50px;
+        top: 65px;
         min-height: 40px;
     }
 
@@ -521,7 +672,7 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
-        margin-top: 90px; /* 50px sidebar + ~40px topbar */
+        margin-top: 110px; /* 65px sidebar + ~45px topbar */
         padding-top: 0;
     }
 
