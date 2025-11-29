@@ -129,6 +129,54 @@ class SimpleMatcher:
                 r'cu[aá]nt[oa]?\s+est[aá]\s+el\s+(camion|vehiculo|movil)\s+\w+\s+(?:de|del|de\s+el)\s+(camion|vehiculo|movil)\s+\w+',
                 r'a\s+qu[eé]\s+distancia\s+est[aá]\s+el\s+(camion|vehiculo|movil)\s+\w+\s+(?:de|del|de\s+el)\s+(camion|vehiculo|movil)\s+\w+',
             ],
+            'LISTADO_ACTIVOS': [
+                r'listado',
+                r'lista\s+de\s+m[oó]viles?\s+activ[oa]s?',
+                r'quienes?\s+est[aá]n?\s+conectad[oa]s?',
+                r'quienes?\s+reportaron',
+                r'm[oó]viles?\s+activ[oa]s?',
+                r'quienes?\s+est[aá]n?\s+activ[oa]s?',
+                r'quienes?\s+est[aá]n?\s+en\s+linea',
+            ],
+            'SITUACION_FLOTA': [
+                r'situaci[oó]n\s+de\s+la\s+flota',
+                r'situaci[oó]n\s+flota',
+                r'estado\s+de\s+la\s+flota',
+                r'resumen\s+de\s+flota',
+                r'cuantos?\s+est[aá]n?\s+circulando',
+                r'cuantos?\s+est[aá]n?\s+detenid[oa]s?',
+                r'm[oó]viles?\s+detenid[oa]s?',
+                r'm[oó]viles?\s+circulando',
+                r'estado\s+operativo',
+            ],
+            'MOVILES_EN_ZONA': [
+                r'm[oó]viles?\s+en\s+zona',
+                r'quienes?\s+est[aá]n?\s+en\s+(?:la\s+)?zona',
+                r'quien\s+est[aá]\s+en\s+(?:la\s+)?zona',
+                r'm[oó]viles?\s+dentro\s+de\s+(?:la\s+)?zona',
+                r'quienes?\s+est[aá]n?\s+en\s+el\s+dep[oó]sito',
+                r'quienes?\s+est[aá]n?\s+en\s+el\s+almac[eé]n',
+            ],
+            'AYUDA_GENERAL': [
+                r'ayuda',
+                r'que\s+puedes?\s+hacer',
+                r'que\s+sabes?\s+hacer',
+                r'lista\s+de\s+comandos',
+                r'ayuda\s+con\s+comandos',
+                r'comandos\s+disponibles',
+                r'que\s+comandos\s+hay',
+                r'como\s+te\s+uso',
+                r'que\s+haces',
+            ],
+            'VER_MAPA': [
+                r'mostrar\s+en\s+mapa',
+                r'ver\s+en\s+mapa',
+                r'mostrar\s+en\s+google',
+                r'ver\s+en\s+google',
+                r'abrir\s+mapa',
+                r'abrir\s+google\s+map',
+                r'mapa\s+de',
+            ],
         }
 
     def buscar_patron(self, texto: str, tipo: str) -> bool:
@@ -211,7 +259,8 @@ class ProcesadorSimple:
         texto_lower = texto.lower()
         # Detectar tipos posibles
         tipos_detectados = []
-        for tipo in ['POSICION', 'RECORRIDO', 'COMANDO_WHATSAPP', 'LLEGADA', 'CERCANIA', 'UBICACION_ZONA', 'SALUDO']:
+        for tipo in ['POSICION', 'RECORRIDO', 'COMANDO_WHATSAPP', 'LLEGADA', 'CERCANIA', 'UBICACION_ZONA', 'SALUDO', 
+                     'LISTADO_ACTIVOS', 'SITUACION_FLOTA', 'MOVILES_EN_ZONA', 'AYUDA_GENERAL', 'VER_MAPA']:
             if self.matcher.buscar_patron(texto, tipo):
                 tipos_detectados.append(tipo)
         # Variables auxiliares
@@ -223,7 +272,23 @@ class ProcesadorSimple:
         print(f"  tiene_movil={tiene_movil}, tiene_zona={bool(tiene_palabra_zona)}, tiene_whatsapp={bool(tiene_palabra_whatsapp)}, tiene_cercania={bool(tiene_palabra_cercania)}")
         # Priorizar según reglas
         tipo_seleccionado = None
-        if 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
+        # Prioridad alta: comandos específicos y ayuda
+        if 'AYUDA_GENERAL' in tipos_detectados:
+            tipo_seleccionado = 'AYUDA_GENERAL'
+            print("  → Seleccionado: AYUDA_GENERAL")
+        elif 'LISTADO_ACTIVOS' in tipos_detectados:
+            tipo_seleccionado = 'LISTADO_ACTIVOS'
+            print("  → Seleccionado: LISTADO_ACTIVOS")
+        elif 'SITUACION_FLOTA' in tipos_detectados:
+            tipo_seleccionado = 'SITUACION_FLOTA'
+            print("  → Seleccionado: SITUACION_FLOTA")
+        elif 'MOVILES_EN_ZONA' in tipos_detectados and tiene_palabra_zona:
+            tipo_seleccionado = 'MOVILES_EN_ZONA'
+            print("  → Seleccionado: MOVILES_EN_ZONA (tiene palabra zona)")
+        elif 'VER_MAPA' in tipos_detectados:
+            tipo_seleccionado = 'VER_MAPA'
+            print("  → Seleccionado: VER_MAPA")
+        elif 'UBICACION_ZONA' in tipos_detectados and tiene_palabra_zona:
             tipo_seleccionado = 'UBICACION_ZONA'
             print("  → Seleccionado: UBICACION_ZONA (tiene palabra zona)")
         elif 'POSICION' in tipos_detectados and tiene_movil and not tiene_palabra_cercania:
