@@ -108,6 +108,7 @@ class TCPReceiver:
         
         Este método bloquea hasta que el servidor sea detenido.
         """
+        error_occurred = False
         try:
             # Crear socket TCP
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -146,24 +147,51 @@ class TCPReceiver:
                 except socket.error as e:
                     if self.running:
                         logger.error(f"Error aceptando conexión: {e}")
+                        # Si el socket fue cerrado, salir del loop
+                        if "Bad file descriptor" in str(e) or "Socket operation on non-socket" in str(e):
+                            break
                         
         except Exception as e:
+            error_occurred = True
             logger.error(f"Error iniciando servidor TCP: {e}")
             print(f"❌ Error iniciando servidor TCP: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
         finally:
-            self.stop()
+            # Solo actualizar BD si hubo un error, no si se detuvo normalmente
+            self.stop(update_db_on_error=error_occurred)
     
-    def stop(self):
-        """Detener el servidor TCP"""
+    def stop(self, update_db_on_error=False):
+        """
+        Detener el servidor TCP
+        
+        Args:
+            update_db_on_error: Si es True, actualiza la BD para marcar el receptor como inactivo
+        """
         self.running = False
         if self.server_socket:
-            self.server_socket.close()
+            try:
+                self.server_socket.close()
+            except Exception as e:
+                logger.warning(f"Error cerrando socket: {e}")
         
         # Log de detención
         self.receptor_logger.log_receptor_status("DETENIDO", f"Puerto {self.port} cerrado")
         
         logger.info("Servidor TCP detenido")
         print("🛑 Servidor TCP detenido")
+        
+        # Si se detuvo por un error, actualizar la BD para evitar auto-reinicio
+        if update_db_on_error:
+            try:
+                from gps.models import ConfiguracionReceptor
+                config = ConfiguracionReceptor.objects.get(puerto=self.port)
+                if config.activo:
+                    config.activo = False
+                    config.save()
+                    logger.info(f"Receptor en puerto {self.port} marcado como inactivo en BD debido a error")
+            except Exception as e:
+                logger.warning(f"No se pudo actualizar estado en BD para puerto {self.port}: {e}")
     
     def handle_client(self, client_socket: socket.socket, client_address):
         """

@@ -131,9 +131,29 @@ def start_receiver(host: str = '0.0.0.0', port: int = 5003) -> dict:
         # Crear nueva instancia del receptor
         receiver = TCPReceiver(host=host, port=port)
         
-        # Iniciar en un hilo separado
-        thread = threading.Thread(target=receiver.start)
-        thread.daemon = True
+        # Iniciar en un hilo separado con manejo de errores mejorado
+        def run_receiver():
+            try:
+                receiver.start()
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error crítico en receptor {port}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                # Actualizar BD para evitar auto-reinicio
+                try:
+                    from gps.models import ConfiguracionReceptor
+                    config = ConfiguracionReceptor.objects.get(puerto=port)
+                    if config.activo:
+                        config.activo = False
+                        config.save()
+                        logger.info(f"Receptor en puerto {port} marcado como inactivo debido a error crítico")
+                except Exception as db_error:
+                    logger.warning(f"No se pudo actualizar BD: {db_error}")
+        
+        thread = threading.Thread(target=run_receiver)
+        thread.daemon = False  # Cambiar a False para que el hilo no termine con el proceso principal
         thread.start()
         
         # Guardar en el diccionario de receptores activos
@@ -143,9 +163,20 @@ def start_receiver(host: str = '0.0.0.0', port: int = 5003) -> dict:
             'host': host
         }
         
-        # Dar tiempo para que inicie
+        # Dar tiempo para que inicie y verificar que realmente está corriendo
         import time
-        time.sleep(0.5)
+        time.sleep(1)
+        
+        # Verificar que el receptor realmente está corriendo
+        if not receiver.running:
+            # Si no está corriendo, remover del diccionario y retornar error
+            if port in _active_receivers:
+                del _active_receivers[port]
+            return {
+                'success': False,
+                'message': f'El receptor no pudo iniciar correctamente en {host}:{port}',
+                'stats': None
+            }
         
         return {
             'success': True,
