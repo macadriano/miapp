@@ -109,14 +109,21 @@ class TCPReceiver:
         Este método bloquea hasta que el servidor sea detenido.
         """
         error_occurred = False
+        logger.info(f"🔵 [RECEPTOR {self.port}] Iniciando método start() - Thread ID: {threading.current_thread().ident}")
+        print(f"🔵 [RECEPTOR {self.port}] Iniciando método start() - Thread ID: {threading.current_thread().ident}")
+        
         try:
+            logger.info(f"🔵 [RECEPTOR {self.port}] Creando socket TCP...")
             # Crear socket TCP
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            
+            logger.info(f"🔵 [RECEPTOR {self.port}] Haciendo bind a {self.host}:{self.port}...")
             self.server_socket.bind((self.host, self.port))
             self.server_socket.listen(5)
             
             self.running = True
+            logger.info(f"🔵 [RECEPTOR {self.port}] Socket creado y escuchando. running={self.running}")
             
             # Log de inicio
             self.receptor_logger.log_receptor_status(
@@ -124,14 +131,21 @@ class TCPReceiver:
                 f"Escuchando en {self.host}:{self.port} - Protocolo: {self.protocolo}"
             )
             
-            logger.info(f"✅ Receptor TCP iniciado en {self.host}:{self.port}")
+            logger.info(f"✅ [RECEPTOR {self.port}] Receptor TCP iniciado correctamente en {self.host}:{self.port}")
             print(f"✅ Receptor TCP iniciado en {self.host}:{self.port}")
             print(f"📡 Esperando conexiones de equipos GPS...")
             
+            loop_count = 0
             while self.running:
                 try:
+                    loop_count += 1
+                    if loop_count % 100 == 0:
+                        logger.debug(f"🔵 [RECEPTOR {self.port}] Loop activo, iteración {loop_count}, running={self.running}")
+                    
                     # Aceptar nueva conexión
+                    logger.debug(f"🔵 [RECEPTOR {self.port}] Esperando conexión en accept()...")
                     client_socket, client_address = self.server_socket.accept()
+                    logger.info(f"🔵 [RECEPTOR {self.port}] Nueva conexión recibida desde {client_address}")
                     
                     # Log de nueva conexión
                     self.receptor_logger.log_connection(client_address, "CONECTADO")
@@ -143,23 +157,43 @@ class TCPReceiver:
                     )
                     client_thread.daemon = True
                     client_thread.start()
+                    logger.debug(f"🔵 [RECEPTOR {self.port}] Hilo de cliente iniciado para {client_address}")
                     
                 except socket.error as e:
                     if self.running:
-                        logger.error(f"Error aceptando conexión: {e}")
+                        logger.error(f"❌ [RECEPTOR {self.port}] Error aceptando conexión: {e} (running={self.running})")
                         # Si el socket fue cerrado, salir del loop
                         if "Bad file descriptor" in str(e) or "Socket operation on non-socket" in str(e):
+                            logger.warning(f"⚠️ [RECEPTOR {self.port}] Socket cerrado, saliendo del loop")
                             break
+                    else:
+                        logger.info(f"🔵 [RECEPTOR {self.port}] Socket error pero running=False, saliendo normalmente")
+                        break
+                except Exception as e:
+                    logger.error(f"❌ [RECEPTOR {self.port}] Excepción inesperada en loop principal: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
+                    if self.running:
+                        error_occurred = True
+                        break
                         
+        except OSError as e:
+            error_occurred = True
+            logger.error(f"❌ [RECEPTOR {self.port}] OSError iniciando servidor TCP: {e}")
+            print(f"❌ Error iniciando servidor TCP: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
         except Exception as e:
             error_occurred = True
-            logger.error(f"Error iniciando servidor TCP: {e}")
+            logger.error(f"❌ [RECEPTOR {self.port}] Error iniciando servidor TCP: {e}")
             print(f"❌ Error iniciando servidor TCP: {e}")
             import traceback
             logger.error(traceback.format_exc())
         finally:
+            logger.info(f"🔵 [RECEPTOR {self.port}] Entrando en bloque finally. running={self.running}, error_occurred={error_occurred}")
             # Solo actualizar BD si hubo un error, no si se detuvo normalmente
             self.stop(update_db_on_error=error_occurred)
+            logger.info(f"🔵 [RECEPTOR {self.port}] Método start() finalizado")
     
     def stop(self, update_db_on_error=False):
         """
@@ -168,30 +202,46 @@ class TCPReceiver:
         Args:
             update_db_on_error: Si es True, actualiza la BD para marcar el receptor como inactivo
         """
+        logger.info(f"🛑 [RECEPTOR {self.port}] Método stop() llamado. running={self.running}, update_db_on_error={update_db_on_error}")
+        print(f"🛑 [RECEPTOR {self.port}] Deteniendo receptor...")
+        
+        old_running = self.running
         self.running = False
+        logger.info(f"🛑 [RECEPTOR {self.port}] running cambiado de {old_running} a {self.running}")
+        
         if self.server_socket:
             try:
+                logger.info(f"🛑 [RECEPTOR {self.port}] Cerrando socket...")
                 self.server_socket.close()
+                logger.info(f"🛑 [RECEPTOR {self.port}] Socket cerrado")
             except Exception as e:
-                logger.warning(f"Error cerrando socket: {e}")
+                logger.warning(f"⚠️ [RECEPTOR {self.port}] Error cerrando socket: {e}")
         
         # Log de detención
         self.receptor_logger.log_receptor_status("DETENIDO", f"Puerto {self.port} cerrado")
         
-        logger.info("Servidor TCP detenido")
+        logger.info(f"🛑 [RECEPTOR {self.port}] Servidor TCP detenido")
         print("🛑 Servidor TCP detenido")
         
         # Si se detuvo por un error, actualizar la BD para evitar auto-reinicio
         if update_db_on_error:
+            logger.info(f"🛑 [RECEPTOR {self.port}] Actualizando BD porque hubo un error...")
             try:
                 from gps.models import ConfiguracionReceptor
                 config = ConfiguracionReceptor.objects.get(puerto=self.port)
+                logger.info(f"🛑 [RECEPTOR {self.port}] Config encontrada. activo actual: {config.activo}")
                 if config.activo:
                     config.activo = False
                     config.save()
-                    logger.info(f"Receptor en puerto {self.port} marcado como inactivo en BD debido a error")
+                    logger.info(f"✅ [RECEPTOR {self.port}] Receptor marcado como inactivo en BD debido a error")
+                else:
+                    logger.info(f"ℹ️ [RECEPTOR {self.port}] Receptor ya estaba inactivo en BD")
             except Exception as e:
-                logger.warning(f"No se pudo actualizar estado en BD para puerto {self.port}: {e}")
+                logger.warning(f"⚠️ [RECEPTOR {self.port}] No se pudo actualizar estado en BD: {e}")
+                import traceback
+                logger.warning(traceback.format_exc())
+        else:
+            logger.info(f"ℹ️ [RECEPTOR {self.port}] No se actualiza BD (detención normal)")
     
     def handle_client(self, client_socket: socket.socket, client_address):
         """
