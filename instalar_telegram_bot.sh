@@ -1,4 +1,4 @@
-#!/bin/bash xx
+#!/bin/bash
 
 echo "===== Instalación del Bot de Telegram para Sofia ====="
 

@@ -33,5 +33,5 @@ yarn-error.log
 # Documentation and scripts (no subir al servidor)
 *.md
 *.MD
-#.sh
-#*.SH
+.sh
+*.SH
