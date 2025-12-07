@@ -155,14 +155,17 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
 
 /* Icono de Sofia en el menú */
 .sidebar-nav a.sofia-menu-item .sofia-menu-icon {
-    width: 1.1rem;
-    height: 1.1rem;
-    min-width: 1.1rem;
+    width: 1.1rem !important;
+    height: 1.1rem !important;
+    min-width: 1.1rem !important;
+    max-width: 1.1rem !important;
+    max-height: 1.1rem !important;
     object-fit: cover;
     border-radius: 50%;
     display: inline-block;
     vertical-align: middle;
     border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
 }
 
 .sidebar-nav a:hover {
@@ -435,11 +438,15 @@ button, a, input, select, textarea, .btn, .card, .sidebar-nav a {
     }
     
     .sidebar-nav a.sofia-menu-item .sofia-menu-icon {
-        width: 1.4rem;
-        height: 1.4rem;
-        min-width: 1.4rem;
+        width: 1.4rem !important;
+        height: 1.4rem !important;
+        min-width: 1.4rem !important;
+        max-width: 1.4rem !important;
+        max-height: 1.4rem !important;
         display: block;
         margin: 0 auto;
+        object-fit: cover;
+        flex-shrink: 0;
     }
 
     .sidebar-header {
@@ -717,9 +724,13 @@ html[data-page="agenteIA"] .fab-sofia {
     }
     
     .sidebar-nav a.sofia-menu-item .sofia-menu-icon {
-        width: 1.3rem;
-        height: 1.3rem;
-        min-width: 1.3rem;
+        width: 1.3rem !important;
+        height: 1.3rem !important;
+        min-width: 1.3rem !important;
+        max-width: 1.3rem !important;
+        max-height: 1.3rem !important;
+        object-fit: cover;
+        flex-shrink: 0;
     }
 
     .sidebar-nav a .nav-label {

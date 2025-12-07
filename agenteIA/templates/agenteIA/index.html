@@ -380,12 +380,105 @@
             width: 100%;
             height: 100%;
             background: rgba(103, 126, 234, 0.1);
-            z-index: 999;
-            pointer-events: none;
+            z-index: 9999;
+            pointer-events: auto;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
         }
 
         .voice-listening-overlay.active {
-            display: block;
+            display: flex !important;
+        }
+
+        .voice-listening-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .voice-listening-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--whatsapp-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            animation: pulse-voice 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-voice {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(37, 211, 102, 0);
+            }
+        }
+
+        .voice-listening-text {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .voice-listening-hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin: 0;
+        }
+
+        .voice-cancel-button {
+            background: #ff4d4f;
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+        }
+
+        .voice-cancel-button:hover {
+            background: #ff3336;
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(255, 77, 79, 0.4);
+        }
+
+        .voice-cancel-button:active {
+            transform: scale(0.95);
+        }
+
+        .voice-listening-overlay.swiping-down {
+            background: rgba(255, 77, 79, 0.15);
+        }
+
+        .voice-listening-overlay.swiping-down .voice-listening-icon {
+            background: #ff4d4f;
+            transform: scale(0.9);
+        }
+
+        .voice-listening-overlay.swiping-down .voice-listening-text {
+            color: #ff4d4f;
         }
 
         .btn-link:hover {
@@ -1214,7 +1307,18 @@
         </div>
 
         <!-- Overlay de modo de voz -->
-        <div class="voice-listening-overlay" id="voiceListeningOverlay"></div>
+        <div class="voice-listening-overlay" id="voiceListeningOverlay">
+            <div class="voice-listening-content">
+                <div class="voice-listening-icon">
+                    <i class="bi bi-mic-fill"></i>
+                </div>
+                <p class="voice-listening-text" id="voiceListeningText">Escuchando...</p>
+                <p class="voice-listening-hint">Deslizá hacia abajo para cancelar</p>
+                <button class="voice-cancel-button" id="voiceCancelButton" title="Cancelar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
 
         <!-- Globo flotante de modo de voz -->
         <div class="voice-mode-indicator" id="voiceModeIndicator" title="Modo de voz activo - Clic para desactivar">
@@ -1315,6 +1419,34 @@
         const voiceListeningOverlay = document.getElementById('voiceListeningOverlay');
         const cancelVoiceButton = document.getElementById('cancelVoiceButton');
         const recordingStatus = document.getElementById('recordingStatus');
+        
+        // Verificar que el overlay existe
+        if (!voiceListeningOverlay) {
+            console.error('❌ ERROR: voiceListeningOverlay no encontrado en el DOM');
+        } else {
+            console.log('✅ voiceListeningOverlay encontrado:', voiceListeningOverlay);
+            console.log('✅ Overlay ID:', voiceListeningOverlay.id);
+            console.log('✅ Overlay clases iniciales:', voiceListeningOverlay.classList.toString());
+            console.log('✅ Overlay display inicial:', window.getComputedStyle(voiceListeningOverlay).display);
+            // Test: intentar mostrar el overlay manualmente
+            setTimeout(() => {
+                console.log('🧪 TEST: Intentando mostrar overlay manualmente...');
+                voiceListeningOverlay.style.display = 'flex';
+                voiceListeningOverlay.style.zIndex = '99999';
+                voiceListeningOverlay.style.position = 'fixed';
+                voiceListeningOverlay.style.top = '0';
+                voiceListeningOverlay.style.left = '0';
+                voiceListeningOverlay.style.width = '100%';
+                voiceListeningOverlay.style.height = '100%';
+                voiceListeningOverlay.style.backgroundColor = 'rgba(103, 126, 234, 0.3)';
+                console.log('🧪 TEST: Overlay display después del test:', window.getComputedStyle(voiceListeningOverlay).display);
+                // Ocultar después de 2 segundos
+                setTimeout(() => {
+                    voiceListeningOverlay.style.display = 'none';
+                    console.log('🧪 TEST: Overlay ocultado');
+                }, 2000);
+            }, 1000);
+        }
         const recordingStatusText = document.getElementById('recordingStatusText');
         const inputWrapper = document.getElementById('inputWrapper');
         const avatarElement = document.querySelector('.avatar');
@@ -1429,6 +1561,7 @@
 
         // Función para activar/desactivar modo de voz
         function toggleVoiceMode() {
+            console.log('🔄 toggleVoiceMode() llamado');
             if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
                 notify.warning('El reconocimiento de voz no está disponible en este navegador');
                 return;
@@ -1438,6 +1571,7 @@
 
             if (voiceModeActive) {
                 // Activar modo de voz
+                console.log('🔄 Activando modo de voz, llamando startVoiceMode()...');
                 startVoiceMode();
                 voiceModeButton.classList.add('voice-mode-on');
                 voiceModeButton.innerHTML = '<i class="bi bi-headphones" style="filter: drop-shadow(0 0 5px #ffd700);"></i>';
@@ -1453,8 +1587,52 @@
             }
         }
 
+        // Función helper para iniciar reconocimiento de forma segura
+        function safeStartRecognition() {
+            if (!voiceRecognition || !voiceModeActive) {
+                return false;
+            }
+            try {
+                // Verificar el estado antes de iniciar
+                const state = voiceRecognition.state;
+                if (state === 'idle' || state === 'stopped' || !state) {
+                    voiceRecognition.start();
+                    return true;
+                } else {
+                    console.log('⚠️ Reconocimiento ya está activo, estado:', state);
+                    return false;
+                }
+            } catch (e) {
+                console.warn('⚠️ Error iniciando reconocimiento:', e);
+                return false;
+            }
+        }
+
         // Función para iniciar modo de voz continuo
         function startVoiceMode() {
+            console.log('========== START VOICE MODE ==========');
+            console.log('🎤 startVoiceMode() llamado');
+            console.log('🎤 voiceListeningOverlay:', voiceListeningOverlay);
+            console.log('🎤 voiceListeningOverlay existe?', !!voiceListeningOverlay);
+            
+            // MOSTRAR OVERLAY INMEDIATAMENTE
+            if (voiceListeningOverlay) {
+                console.log('🎤 ACTIVANDO OVERLAY AHORA...');
+                voiceListeningOverlay.classList.add('active');
+                voiceListeningOverlay.style.display = 'flex';
+                voiceListeningOverlay.style.zIndex = '99999';
+                voiceListeningOverlay.style.position = 'fixed';
+                voiceListeningOverlay.style.top = '0';
+                voiceListeningOverlay.style.left = '0';
+                voiceListeningOverlay.style.width = '100%';
+                voiceListeningOverlay.style.height = '100%';
+                console.log('✅ Overlay activado con estilos inline');
+                console.log('✅ Display:', window.getComputedStyle(voiceListeningOverlay).display);
+                console.log('✅ Z-index:', window.getComputedStyle(voiceListeningOverlay).zIndex);
+            } else {
+                console.error('❌❌❌ ERROR CRÍTICO: voiceListeningOverlay NO EXISTE');
+            }
+            
             if (!voiceRecognition) {
                 voiceRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
                 voiceRecognition.lang = 'es-AR';
@@ -1478,9 +1656,13 @@
                         // Si no hay habla por un tiempo, reiniciar
                         console.log('No se detectó habla, reiniciando...');
                         if (voiceModeActive && voiceRecognition) {
-                            voiceRecognition.stop();
+                            try {
+                                voiceRecognition.stop();
+                            } catch (e) {
+                                console.warn('Error deteniendo reconocimiento:', e);
+                            }
                             setTimeout(() => {
-                                if (voiceModeActive) voiceRecognition.start();
+                                safeStartRecognition();
                             }, 500);
                         }
                     } else if (event.error === 'audio-capture') {
@@ -1498,28 +1680,37 @@
                         console.log('Reiniciando reconocimiento...');
                         setTimeout(() => {
                             if (voiceModeActive && !isProcessing) {
-                                try {
-                                    voiceRecognition.start();
-                                } catch (e) {
-                                    console.warn('Error reiniciando reconocimiento en onend:', e);
-                                }
+                                safeStartRecognition();
                             }
                         }, 500);
                     }
                 };
             }
-
-            voiceRecognition.start();
-            voiceListeningOverlay.classList.add('active');
+            
+            // Iniciar reconocimiento de forma segura
+            console.log('🎤 Iniciando reconocimiento...');
+            safeStartRecognition();
+            console.log('========== END START VOICE MODE ==========');
         }
 
         // Función para detener modo de voz
         function stopVoiceMode() {
             if (voiceRecognition) {
-                voiceRecognition.stop();
+                try {
+                    voiceRecognition.stop();
+                } catch (e) {
+                    console.warn('Error deteniendo reconocimiento:', e);
+                }
             }
             voiceListeningOverlay.classList.remove('active');
+            voiceListeningOverlay.classList.remove('swiping-down');
+            // Limpiar cualquier texto de cancelación
+            const voiceListeningText = document.getElementById('voiceListeningText');
+            if (voiceListeningText) {
+                voiceListeningText.textContent = 'Escuchando...';
+            }
         }
+
 
         // Función para procesar consulta de voz
         async function processVoiceQuery(message) {
@@ -1622,23 +1813,12 @@
                                 setSofiaSpeaking(false);
                                 // Reiniciar reconocimiento de voz después de un breve delay
                                 setTimeout(() => {
-                                    if (voiceModeActive && voiceRecognition) {
-                                        try {
-                                            console.log('🔄 Reiniciando reconocimiento de voz después del audio');
-                                            voiceRecognition.start();
-                                        } catch (e) {
-                                            console.warn('Error reiniciando reconocimiento:', e);
-                                            // Intentar de nuevo después de un delay más largo
-                                            setTimeout(() => {
-                                                if (voiceModeActive && voiceRecognition) {
-                                                    try {
-                                                        voiceRecognition.start();
-                                                    } catch (e2) {
-                                                        console.error('Error crítico reiniciando reconocimiento:', e2);
-                                                    }
-                                                }
-                                            }, 1000);
-                                        }
+                                    console.log('🔄 Reiniciando reconocimiento de voz después del audio');
+                                    if (!safeStartRecognition()) {
+                                        // Intentar de nuevo después de un delay más largo
+                                        setTimeout(() => {
+                                            safeStartRecognition();
+                                        }, 1000);
                                     }
                                 }, 300);
                             };
@@ -1648,26 +1828,14 @@
                                 setSofiaSpeaking(false);
                                 // Reiniciar reconocimiento incluso si hay error en el audio
                                 setTimeout(() => {
-                                    if (voiceModeActive && voiceRecognition) {
-                                        try {
-                                            voiceRecognition.start();
-                                        } catch (e) {
-                                            console.warn('Error reiniciando reconocimiento después de error de audio:', e);
-                                        }
-                                    }
+                                    safeStartRecognition();
                                 }, 300);
                             };
                         }
                     } else {
                         // Si no hay audio, reiniciar reconocimiento inmediatamente
                         setTimeout(() => {
-                            if (voiceModeActive && voiceRecognition) {
-                                try {
-                                    voiceRecognition.start();
-                                } catch (e) {
-                                    console.warn('Error reiniciando reconocimiento:', e);
-                                }
-                            }
+                            safeStartRecognition();
                         }, 300);
                     }
                     } else {
@@ -1676,13 +1844,7 @@
                         addMessage(errorMsg, 'received');
                         // Reiniciar reconocimiento incluso si hay error
                     setTimeout(() => {
-                        if (voiceModeActive && voiceRecognition) {
-                            try {
-                                voiceRecognition.start();
-                            } catch (e) {
-                                console.warn('Error reiniciando reconocimiento después de error:', e);
-                            }
-                        }
+                        safeStartRecognition();
                     }, 300);
                 }
             } catch (error) {
@@ -1698,13 +1860,7 @@
                 addMessage(errorMessage, 'received');
                 // Reiniciar reconocimiento incluso si hay error de conexión
                 setTimeout(() => {
-                    if (voiceModeActive && voiceRecognition) {
-                        try {
-                            voiceRecognition.start();
-                        } catch (e) {
-                            console.warn('Error reiniciando reconocimiento después de error de conexión:', e);
-                        }
-                    }
+                    safeStartRecognition();
                 }, 300);
             } finally {
                 setSofiaProcessing(false);
@@ -1966,6 +2122,7 @@
 
         if (cancelVoiceButton) {
             cancelVoiceButton.addEventListener('click', () => {
+                // Cancelar grabación manual
                 if (recognition && typeof recognition.stop === 'function' && isManualRecording) {
                     recognition.stop();
                 }
@@ -1973,6 +2130,155 @@
                 if (recordingStatus) recordingStatus.classList.remove('active');
                 voiceButton.classList.remove('recording');
                 messageInput.removeAttribute('disabled');
+                isManualRecording = false;
+            });
+        }
+
+        // Función para cancelar modo de voz continuo (similar a ChatGPT)
+        function cancelVoiceMode() {
+            console.log('🚫 Cancelando modo de voz...');
+            voiceModeActive = false;
+            if (voiceRecognition) {
+                try {
+                    voiceRecognition.stop();
+                } catch (e) {
+                    console.warn('Error deteniendo reconocimiento:', e);
+                }
+            }
+            voiceListeningOverlay.classList.remove('active');
+            voiceListeningOverlay.classList.remove('swiping-down');
+            voiceModeButton.classList.remove('voice-mode-on');
+            if (voiceModeButton) {
+                voiceModeButton.innerHTML = '<i class="bi bi-headphones"></i>';
+            }
+            voiceModeIndicator.classList.remove('active');
+            // Limpiar cualquier texto de cancelación
+            const voiceListeningText = document.getElementById('voiceListeningText');
+            if (voiceListeningText) {
+                voiceListeningText.textContent = 'Escuchando...';
+            }
+            notify.toast('Modo de voz cancelado', 'info');
+        }
+
+        // Botón de cancelar en el overlay de modo de voz continuo
+        const voiceCancelButton = document.getElementById('voiceCancelButton');
+        if (voiceCancelButton) {
+            voiceCancelButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                cancelVoiceMode();
+            });
+        }
+
+        // Funcionalidad de swipe down para cancelar (similar a ChatGPT)
+        let voiceOverlayStartY = 0;
+        let voiceOverlayIsSwiping = false;
+        const VOICE_SWIPE_DOWN_THRESHOLD = 50; // Píxeles mínimos para cancelar
+
+        if (voiceListeningOverlay) {
+            // Touch events para swipe down
+            voiceListeningOverlay.addEventListener('touchstart', (e) => {
+                if (!voiceModeActive) return;
+                voiceOverlayStartY = e.touches[0].clientY;
+                voiceOverlayIsSwiping = false;
+            }, { passive: true });
+
+            voiceListeningOverlay.addEventListener('touchmove', (e) => {
+                if (!voiceModeActive) return;
+                const currentY = e.touches[0].clientY;
+                const deltaY = currentY - voiceOverlayStartY; // Positivo si se desliza hacia abajo
+
+                if (deltaY > 20) {
+                    voiceOverlayIsSwiping = true;
+                    voiceListeningOverlay.classList.add('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Soltá para cancelar';
+                    }
+                } else {
+                    voiceListeningOverlay.classList.remove('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Escuchando...';
+                    }
+                }
+            }, { passive: true });
+
+            voiceListeningOverlay.addEventListener('touchend', (e) => {
+                if (!voiceModeActive) return;
+                const currentY = e.changedTouches[0].clientY;
+                const deltaY = currentY - voiceOverlayStartY;
+
+                if (voiceOverlayIsSwiping && deltaY > VOICE_SWIPE_DOWN_THRESHOLD) {
+                    // Cancelar modo de voz
+                    cancelVoiceMode();
+                } else {
+                    // Restaurar estado normal
+                    voiceListeningOverlay.classList.remove('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Escuchando...';
+                    }
+                }
+                voiceOverlayIsSwiping = false;
+            }, { passive: true });
+
+            // Mouse events para desktop (simular swipe down)
+            voiceListeningOverlay.addEventListener('mousedown', (e) => {
+                if (!voiceModeActive) return;
+                voiceOverlayStartY = e.clientY;
+                voiceOverlayIsSwiping = false;
+            });
+
+            voiceListeningOverlay.addEventListener('mousemove', (e) => {
+                if (!voiceModeActive) return;
+                const currentY = e.clientY;
+                const deltaY = currentY - voiceOverlayStartY;
+
+                if (deltaY > 20) {
+                    voiceOverlayIsSwiping = true;
+                    voiceListeningOverlay.classList.add('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Soltá para cancelar';
+                    }
+                } else {
+                    voiceListeningOverlay.classList.remove('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Escuchando...';
+                    }
+                }
+            });
+
+            voiceListeningOverlay.addEventListener('mouseup', (e) => {
+                if (!voiceModeActive) return;
+                const currentY = e.clientY;
+                const deltaY = currentY - voiceOverlayStartY;
+
+                if (voiceOverlayIsSwiping && deltaY > VOICE_SWIPE_DOWN_THRESHOLD) {
+                    // Cancelar modo de voz
+                    cancelVoiceMode();
+                } else {
+                    // Restaurar estado normal
+                    voiceListeningOverlay.classList.remove('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Escuchando...';
+                    }
+                }
+                voiceOverlayIsSwiping = false;
+            });
+
+            // Limpiar estado si el mouse sale del overlay
+            voiceListeningOverlay.addEventListener('mouseleave', () => {
+                if (voiceOverlayIsSwiping) {
+                    voiceListeningOverlay.classList.remove('swiping-down');
+                    const voiceListeningText = document.getElementById('voiceListeningText');
+                    if (voiceListeningText) {
+                        voiceListeningText.textContent = 'Escuchando...';
+                    }
+                    voiceOverlayIsSwiping = false;
+                }
             });
         }
 

@@ -188,6 +188,11 @@ STATICFILES_DIRS = [
 # Directorio donde collectstatic recopilará todos los archivos estáticos
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Configuración de almacenamiento de archivos estáticos con versionado
+# Esto agrega hashes a los nombres de archivos para cache busting
+# Ejemplo: moviles.js -> moviles.a1b2c3d4.js
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
 # Media files (archivos subidos por usuarios)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
