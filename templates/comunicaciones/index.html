@@ -161,7 +161,7 @@
             <div class="topbar">
                 <div class="d-flex align-items-center gap-3">
                     <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
-                        <i class="bi bi-list"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </button>
                     <h1 class="topbar-title mb-0">
                         <i class="bi bi-broadcast me-2"></i> Comunicaciones
@@ -284,14 +284,30 @@
             const toggle = document.getElementById('sidebarToggle');
             const storedState = localStorage.getItem('sidebarCollapsed');
 
+            // Función para actualizar el icono según el estado del sidebar
+            function updateSidebarIcon() {
+                const icon = toggle ? toggle.querySelector('i') : null;
+                if (icon) {
+                    if (wrapper && wrapper.classList.contains('collapsed')) {
+                        icon.className = 'bi bi-chevron-right';
+                    } else {
+                        icon.className = 'bi bi-chevron-left';
+                    }
+                }
+            }
+            
             if (storedState === 'true') {
                 wrapper.classList.add('collapsed');
             }
+            
+            // Actualizar icono al cargar
+            updateSidebarIcon();
 
             if (toggle) {
                 toggle.addEventListener('click', function () {
                     wrapper.classList.toggle('collapsed');
                     localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                    updateSidebarIcon();
                 });
             }
 

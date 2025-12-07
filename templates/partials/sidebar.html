@@ -89,14 +89,27 @@
             return;
         }
         
+        // Variable para controlar si el usuario cerró el botón manualmente
+        let userClosed = false;
+        
+        // Verificar si el usuario había ocultado el botón al cargar
+        const isHiddenOnLoad = localStorage.getItem('fabSofiaHidden') === 'true';
+        if (isHiddenOnLoad) {
+            userClosed = true;
+        }
+        
         // Ocultar en desktop (pantallas mayores a 768px)
         function checkScreenSize() {
+            // Si el usuario cerró el botón manualmente, siempre ocultarlo
+            if (userClosed || localStorage.getItem('fabSofiaHidden') === 'true') {
+                fabSofia.style.display = 'none';
+                return;
+            }
+            
             if (window.innerWidth > 768) {
                 fabSofia.style.display = 'none';
             } else {
-                // Solo mostrar si no está oculto por el usuario
-                const isHidden = localStorage.getItem('fabSofiaHidden') === 'true';
-                fabSofia.style.display = isHidden ? 'none' : 'flex';
+                fabSofia.style.display = 'flex';
             }
         }
         
@@ -243,19 +256,41 @@
         // Botón de cerrar
         const fabSofiaClose = document.getElementById('fabSofiaClose');
         if (fabSofiaClose) {
-            fabSofiaClose.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            // Función para cerrar el botón flotante
+            function closeFabSofia(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }
+                // Marcar que el usuario cerró el botón
+                userClosed = true;
                 fabSofia.style.display = 'none';
+                fabSofia.style.visibility = 'hidden';
+                fabSofia.style.opacity = '0';
                 // Guardar preferencia de ocultar
                 localStorage.setItem('fabSofiaHidden', 'true');
-            });
-        }
-        
-        // Verificar si el usuario había ocultado el botón
-        const isHidden = localStorage.getItem('fabSofiaHidden') === 'true';
-        if (isHidden) {
-            fabSofia.style.display = 'none';
+                console.log('✅ Botón flotante de Sofía cerrado correctamente');
+            }
+            
+            // Event listener para click (desktop)
+            fabSofiaClose.addEventListener('click', closeFabSofia, true); // Usar capture phase
+            
+            // Event listener para touchstart (móviles) - capturar antes que otros eventos
+            fabSofiaClose.addEventListener('touchstart', function(e) {
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                // Cerrar inmediatamente en touchstart para móviles
+                closeFabSofia(e);
+            }, { passive: false, capture: true });
+            
+            // También en touchend por si acaso
+            fabSofiaClose.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                closeFabSofia(e);
+            }, { passive: false, capture: true });
         }
         
         // Eventos de mouse (por si acaso)

@@ -90,7 +90,7 @@
             <div class="topbar">
                 <div class="d-flex align-items-center gap-3">
                     <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
-                        <i class="bi bi-list"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </button>
                     <h1 class="topbar-title mb-0">
                         <i class="bi bi-signpost me-2"></i> Recorridos
@@ -156,7 +156,17 @@
                             <!-- Selección de móvil -->
                             <div class="mb-3">
                                 <label for="movil-select" class="form-label">Móvil</label>
-                                <select class="form-select" id="movil-select" name="movil-select" required>
+                                <div class="position-relative mb-2">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="movil-search" 
+                                           placeholder="🔍 Buscar móvil..." 
+                                           autocomplete="off"
+                                           style="padding-right: 35px;">
+                                    <i class="bi bi-search position-absolute" 
+                                       style="right: 12px; top: 50%; transform: translateY(-50%); color: #6c757d; pointer-events: none;"></i>
+                                </div>
+                                <select class="form-select" id="movil-select" name="movil-select" required size="8" style="max-height: 200px;">
                                     <option value="">Seleccionar móvil...</option>
                                 </select>
                             </div>
@@ -530,9 +540,28 @@
             }
 
             if (toggle) {
+                // Función para actualizar el icono según el estado del sidebar
+                function updateSidebarIcon() {
+                    const icon = toggle.querySelector('i');
+                    if (icon) {
+                        if (wrapper.classList.contains('collapsed')) {
+                            // Sidebar colapsado: mostrar chevron-right para expandir
+                            icon.className = 'bi bi-chevron-right';
+                        } else {
+                            // Sidebar expandido: mostrar chevron-left para colapsar
+                            icon.className = 'bi bi-chevron-left';
+                        }
+                    }
+                }
+                
+                // Actualizar icono al cargar según el estado guardado
+                updateSidebarIcon();
+                
                 toggle.addEventListener('click', function () {
                     wrapper.classList.toggle('collapsed');
                     localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                    // Actualizar icono después del toggle
+                    updateSidebarIcon();
                 });
             }
 

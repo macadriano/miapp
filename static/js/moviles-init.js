@@ -13,9 +13,28 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     if (toggle && wrapper) {
+        // Función para actualizar el icono según el estado del sidebar
+        function updateSidebarIcon() {
+            const icon = toggle.querySelector('i');
+            if (icon) {
+                if (wrapper.classList.contains('collapsed')) {
+                    // Sidebar colapsado: mostrar chevron-right para expandir
+                    icon.className = 'bi bi-chevron-right';
+                } else {
+                    // Sidebar expandido: mostrar chevron-left para colapsar
+                    icon.className = 'bi bi-chevron-left';
+                }
+            }
+        }
+        
+        // Actualizar icono al cargar según el estado guardado
+        updateSidebarIcon();
+        
         toggle.addEventListener('click', function () {
             wrapper.classList.toggle('collapsed');
             localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+            // Actualizar icono después del toggle
+            updateSidebarIcon();
         });
     }
 

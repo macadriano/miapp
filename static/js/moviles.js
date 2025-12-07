@@ -149,8 +149,17 @@ async function loadMoviles() {
             console.error('Formato de respuesta desconocido:', data);
             movilesData = [];
         }
+        
+        // Ordenar móviles alfabéticamente por nombre (alias, patente o código)
+        movilesData.sort((a, b) => {
+            // Obtener nombre para comparar (prioridad: alias > patente > código)
+            const nombreA = (a.alias || a.patente || a.codigo || '').toLowerCase().trim();
+            const nombreB = (b.alias || b.patente || b.codigo || '').toLowerCase().trim();
+            return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
+        });
+        
         filteredMovilesData = [...movilesData];
-        console.log(`Cargados ${movilesData.length} móviles`);
+        console.log(`Cargados ${movilesData.length} móviles (ordenados alfabéticamente)`);
         console.log('Datos de móviles cargados:', movilesData);
         
         // Asegurar que los botones de vista estén ocultos/eliminados
@@ -245,13 +254,33 @@ function showLoading(show) {
 // Actualizar estadísticas del dashboard
 function updateDashboardStats() {
     const totalMoviles = movilesData.length;
-    const movilesOnline = movilesData.filter(m => isOnline(m)).length;
-    const movilesConIgnicion = movilesData.filter(m => m.ignicion === true).length;
+    
+    // Filtrar móviles que reportaron en los últimos 15 minutos (en línea)
+    const movilesOnline = movilesData.filter(m => isOnline(m));
+    const movilesOnlineCount = movilesOnline.length;
+    
+    // Filtrar móviles desconectados (no reportaron en los últimos 15 minutos)
+    const movilesDesconectados = movilesData.filter(m => !isOnline(m));
+    const movilesDesconectadosCount = movilesDesconectados.length;
+    
+    // Contar móviles con ignición encendida (usando status_info)
+    const movilesConIgnicion = movilesData.filter(m => {
+        const status = m.status_info || {};
+        return status.ignicion === true;
+    }).length;
 
-    // Calcular velocidad promedio de móviles en movimiento
-    const velocidades = movilesData
-        .filter(m => m.ultima_velocidad_kmh && m.ultima_velocidad_kmh > 0)
-        .map(m => parseFloat(m.ultima_velocidad_kmh));
+    // Calcular velocidad promedio SOLO de móviles que están en línea (reportando)
+    // Usar velocidad de status_info si está disponible
+    const velocidades = movilesOnline
+        .filter(m => {
+            const status = m.status_info || {};
+            const velocidad = status.ultima_velocidad_kmh || m.ultima_velocidad_kmh;
+            return velocidad && parseFloat(velocidad) > 0;
+        })
+        .map(m => {
+            const status = m.status_info || {};
+            return parseFloat(status.ultima_velocidad_kmh || m.ultima_velocidad_kmh || 0);
+        });
 
     const velocidadPromedio = velocidades.length > 0
         ? (velocidades.reduce((a, b) => a + b, 0) / velocidades.length).toFixed(1)
@@ -259,24 +288,31 @@ function updateDashboardStats() {
 
     const totalMovilesEl = document.getElementById('total-moviles');
     const movilesOnlineEl = document.getElementById('moviles-online');
+    const movilesDesconectadosEl = document.getElementById('moviles-desconectados');
     const movilesIgnicionEl = document.getElementById('moviles-ignicion');
     const velocidadPromedioEl = document.getElementById('velocidad-promedio');
 
     if (totalMovilesEl) totalMovilesEl.textContent = totalMoviles;
-    if (movilesOnlineEl) movilesOnlineEl.textContent = movilesOnline;
+    if (movilesOnlineEl) movilesOnlineEl.textContent = movilesOnlineCount;
+    if (movilesDesconectadosEl) movilesDesconectadosEl.textContent = movilesDesconectadosCount;
     if (movilesIgnicionEl) movilesIgnicionEl.textContent = movilesConIgnicion;
     if (velocidadPromedioEl) velocidadPromedioEl.textContent = `${velocidadPromedio} km/h`;
 }
 
-// Verificar si un móvil está en línea
+// Verificar si un móvil está en línea (reportó en los últimos 15 minutos)
 function isOnline(movil) {
-    if (!movil.fecha_recepcion) return false;
+    // Priorizar fecha_recepcion de status_info, luego fecha_recepcion directa, luego ultima_actualizacion
+    const status = movil.status_info || {};
+    const fechaRecepcion = status.fecha_recepcion || movil.fecha_recepcion || status.ultima_actualizacion;
+    
+    if (!fechaRecepcion) return false;
 
-    const ultimaRecepcion = new Date(movil.fecha_recepcion);
+    const ultimaRecepcion = new Date(fechaRecepcion);
     const ahora = new Date();
     const diferenciaMinutos = (ahora - ultimaRecepcion) / (1000 * 60);
 
-    return diferenciaMinutos <= WAYGPS_CONFIG.STATUS.ONLINE_THRESHOLD_MINUTES;
+    // Usar 15 minutos como umbral (ya está configurado en WAYGPS_CONFIG.STATUS.ONLINE_THRESHOLD_MINUTES)
+    return diferenciaMinutos <= 15;
 }
 
 // Mostrar secciones del menú
@@ -830,6 +866,12 @@ function aplicarFiltros() {
 
     if (!filtroBusqueda || !filtroEstado || !filtroEncendido || !filtroTipo) {
         filteredMovilesData = [...movilesData];
+        // Asegurar que estén ordenados alfabéticamente
+        filteredMovilesData.sort((a, b) => {
+            const nombreA = (a.alias || a.patente || a.codigo || '').toLowerCase().trim();
+            const nombreB = (b.alias || b.patente || b.codigo || '').toLowerCase().trim();
+            return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
+        });
         renderizarMoviles();
         return;
     }
@@ -863,6 +905,14 @@ function aplicarFiltros() {
         const coincideTipo = !tipo || movil.tipo_vehiculo === tipo;
 
         return coincideBusqueda && coincideEstado && coincideEncendido && coincideTipo;
+    });
+    
+    // Ordenar los móviles filtrados alfabéticamente
+    filteredMovilesData.sort((a, b) => {
+        // Obtener nombre para comparar (prioridad: alias > patente > código)
+        const nombreA = (a.alias || a.patente || a.codigo || '').toLowerCase().trim();
+        const nombreB = (b.alias || b.patente || b.codigo || '').toLowerCase().trim();
+        return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
     });
 
     renderizarMoviles();
@@ -1154,8 +1204,16 @@ function updateDashboard() {
     if (!movilesRecientes) {
         return;
     }
+    
+    // Ordenar por fecha_recepcion de status_info o fecha_recepcion directa
     const movilesOrdenados = movilesData
-        .sort((a, b) => new Date(b.fecha_recepcion || 0) - new Date(a.fecha_recepcion || 0))
+        .sort((a, b) => {
+            const statusA = a.status_info || {};
+            const statusB = b.status_info || {};
+            const fechaA = new Date(statusA.fecha_recepcion || a.fecha_recepcion || statusA.ultima_actualizacion || 0);
+            const fechaB = new Date(statusB.fecha_recepcion || b.fecha_recepcion || statusB.ultima_actualizacion || 0);
+            return fechaB - fechaA;
+        })
         .slice(0, 5);
 
     movilesRecientes.innerHTML = '';
@@ -1168,10 +1226,15 @@ function updateDashboard() {
             '<i class="bi bi-wifi text-success"></i>' :
             '<i class="bi bi-wifi-off text-danger"></i>';
 
+        // Usar fecha_recepcion de status_info si está disponible
+        const status = movil.status_info || {};
+        const fechaRecepcion = status.fecha_recepcion || movil.fecha_recepcion || status.ultima_actualizacion;
+        const fechaFormateada = fechaRecepcion ? new Date(fechaRecepcion).toLocaleString('es-ES') : 'Sin datos';
+
         div.innerHTML = `
             <div>
                 <strong>${movil.alias || movil.patente || 'Sin identificar'}</strong><br>
-                <small class="text-muted">${movil.fecha_recepcion ? new Date(movil.fecha_recepcion).toLocaleString('es-ES') : 'Sin datos'}</small>
+                <small class="text-muted">${fechaFormateada}</small>
             </div>
             <div>${estadoIcon}</div>
         `;
@@ -1859,13 +1922,34 @@ function handleViewMode() {
 // Inicializar vista automáticamente al cargar
 (function initializeResponsiveView() {
     function initView() {
+        console.log('[initView] Inicializando vista responsive...');
+        console.log('[initView] window.innerWidth:', window.innerWidth);
+        console.log('[initView] currentViewMode actual:', currentViewMode);
+        
         // Primero eliminar cualquier botón de vista
         if (typeof eliminarBotonesVista === 'function') {
             eliminarBotonesVista();
         }
         
-        // Luego aplicar la vista responsive
-        if (typeof isMobileDevice === 'function' && typeof handleViewMode === 'function') {
+        // Forzar detección de móvil y aplicar vista
+        const isMobile = window.innerWidth < 768;
+        const newMode = isMobile ? 'cards' : 'list';
+        
+        console.log('[initView] isMobile:', isMobile, 'newMode:', newMode);
+        
+        // Actualizar currentViewMode
+        currentViewMode = newMode;
+        
+        // Aplicar la vista inmediatamente
+        if (typeof cambiarVista === 'function') {
+            console.log('[initView] Llamando a cambiarVista con modo:', newMode);
+            cambiarVista(newMode);
+        } else {
+            console.warn('[initView] cambiarVista no está disponible');
+        }
+        
+        // También usar handleViewMode como respaldo
+        if (typeof handleViewMode === 'function') {
             handleViewMode();
         }
     }
@@ -1873,19 +1957,35 @@ function handleViewMode() {
     // Ejecutar cuando el DOM esté listo
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initView, 150);
+            setTimeout(initView, 100);
+            // También después de un delay mayor para asegurar que todo esté cargado
+            setTimeout(initView, 500);
         });
     } else {
         // Si el DOM ya está listo, ejecutar inmediatamente
-        setTimeout(initView, 150);
+        setTimeout(initView, 100);
+        setTimeout(initView, 500);
     }
     
-    // También ejecutar cuando la página esté completamente cargada (por si acaso)
+    // También ejecutar cuando la página esté completamente cargada
     window.addEventListener('load', function() {
         setTimeout(initView, 300);
     });
     
-    // Ejecutar periódicamente para asegurar que los botones no aparezcan (por si se crean dinámicamente)
+    // Ejecutar después de cargar los datos de móviles
+    const checkAfterLoad = setInterval(function() {
+        const cardsView = document.getElementById('moviles-cards-view');
+        const listView = document.getElementById('moviles-list-view');
+        if (cardsView && listView && movilesData.length > 0) {
+            clearInterval(checkAfterLoad);
+            setTimeout(initView, 200);
+        }
+    }, 100);
+    
+    // Limpiar el intervalo después de 10 segundos
+    setTimeout(() => clearInterval(checkAfterLoad), 10000);
+    
+    // Ejecutar periódicamente para asegurar que los botones no aparezcan
     setInterval(function() {
         if (typeof eliminarBotonesVista === 'function') {
             eliminarBotonesVista();

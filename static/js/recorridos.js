@@ -83,6 +83,7 @@ async function initializeApp() {
         await loadMoviles();
         initializeMap();
         setupEventListeners();
+        setupMovilSearch(); // Configurar búsqueda de móviles
         setupNaNMonitor(); // Activar monitor NaN
         setDefaultDates();
         
@@ -126,13 +127,70 @@ function renderMovilesSelect(moviles = []) {
     const select = document.getElementById('movil-select');
     if (!select) return;
 
+    // Ordenar móviles alfabéticamente
+    const movilesOrdenados = [...moviles].sort((a, b) => {
+        // Obtener nombre para comparar (prioridad: display > alias > patente)
+        const nombreA = (a.display || a.alias || a.patente || '').toLowerCase().trim();
+        const nombreB = (b.display || b.alias || b.patente || '').toLowerCase().trim();
+        return nombreA.localeCompare(nombreB, 'es', { sensitivity: 'base' });
+    });
+
+    // Guardar todos los móviles para el filtrado
+    select.dataset.allMoviles = JSON.stringify(movilesOrdenados);
+
     select.innerHTML = '<option value="">Seleccionar móvil...</option>';
 
-    moviles.forEach(movil => {
+    movilesOrdenados.forEach(movil => {
         const option = document.createElement('option');
         option.value = movil.id;
         option.textContent = movil.display || `${movil.patente || movil.alias || 'Sin identificación'}`;
+        const displayText = movil.display || `${movil.patente || movil.alias || 'Sin identificación'}`;
+        option.dataset.searchText = displayText.toLowerCase();
         select.appendChild(option);
+    });
+}
+
+// Configurar búsqueda de móviles
+function setupMovilSearch() {
+    const searchInput = document.getElementById('movil-search');
+    const select = document.getElementById('movil-select');
+    
+    if (!searchInput || !select) return;
+    
+    // Función para filtrar opciones
+    function filterMoviles(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        const options = select.querySelectorAll('option');
+        
+        options.forEach((option, index) => {
+            // Siempre mostrar la opción por defecto
+            if (index === 0 || option.value === '') {
+                option.style.display = '';
+                return;
+            }
+            
+            const searchText = option.dataset.searchText || option.textContent.toLowerCase();
+            
+            if (term === '' || searchText.includes(term)) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+    
+    // Event listener para el campo de búsqueda
+    searchInput.addEventListener('input', function(e) {
+        filterMoviles(e.target.value);
+    });
+    
+    // Limpiar búsqueda con Escape
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            filterMoviles('');
+            searchInput.blur();
+        }
     });
 }
 

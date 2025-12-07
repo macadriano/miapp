@@ -649,8 +649,10 @@ html[data-page="agenteIA"] .fab-sofia {
     position: absolute;
     top: -8px;
     right: -8px;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
     background: #dc3545;
     border: 2px solid white;
     border-radius: 50%;
@@ -658,9 +660,12 @@ html[data-page="agenteIA"] .fab-sofia {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1000;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     transition: all 0.2s ease;
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .fab-sofia .fab-close:hover {

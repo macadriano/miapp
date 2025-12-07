@@ -14,6 +14,10 @@ let searchDebounce = null;
 let lastSearchResults = [];
 let selectFirstResultPending = false;
 let currentTipoSeleccionado = null;
+let currentZonasViewMode = window.innerWidth < 768 ? 'cards' : 'list'; // 'cards', 'list', o 'map'
+let movilesData = [];
+let movilesLayerGroup = null;
+let movilesMarkers = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     await auth.verificar();
@@ -23,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupViewToggle();
     setupModalHandlers();
     await loadZonas();
+    // Los móviles se cargarán cuando se active el overlay en el control de capas
 });
 
 function initMap() {
@@ -39,6 +44,54 @@ function initMap() {
     
     // Usar el zonesLayerGroup del mapa normalizado
     zonesLayerGroup = mapResult.getZonesLayer();
+    
+    // Crear capa de grupo para móviles
+    movilesLayerGroup = L.layerGroup();
+    
+    // Agregar móviles como overlay en el control de capas
+    if (mapResult.layerControl) {
+        const movilesOverlayName = '🚗 Móviles';
+        mapResult.layerControl.addOverlay(movilesLayerGroup, movilesOverlayName);
+        
+        // Escuchar cambios en el control de capas para mostrar/ocultar móviles
+        map.on('overlayadd', function(e) {
+            console.log('[Zonas] Overlay agregado:', e.name);
+            if (e.name === movilesOverlayName || e.layer === movilesLayerGroup) {
+                console.log('[Zonas] Activando carga de móviles...');
+                loadMoviles();
+            }
+        });
+        
+        map.on('overlayremove', function(e) {
+            console.log('[Zonas] Overlay removido:', e.name);
+            if (e.name === movilesOverlayName || e.layer === movilesLayerGroup) {
+                console.log('[Zonas] Ocultando móviles...');
+                clearMovilesMarkers();
+            }
+        });
+        
+        // También escuchar directamente cambios en el control
+        setTimeout(() => {
+            const controlContainer = mapResult.layerControl.getContainer();
+            if (controlContainer) {
+                const checkboxes = controlContainer.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    const label = checkbox.closest('label');
+                    if (label && label.textContent.includes('Móviles')) {
+                        checkbox.addEventListener('change', function() {
+                            if (this.checked) {
+                                console.log('[Zonas] Checkbox de móviles activado');
+                                loadMoviles();
+                            } else {
+                                console.log('[Zonas] Checkbox de móviles desactivado');
+                                clearMovilesMarkers();
+                            }
+                        });
+                    }
+                });
+            }
+        }, 500);
+    }
     
     // Guardar referencia global para acceso desde otras funciones
     window.mapResult = mapResult;
@@ -224,6 +277,29 @@ async function loadZonas() {
         renderZonasTable();
         renderZonasMap();
         
+        // Aplicar la vista actual según el modo seleccionado
+        const mapViewRadio = document.querySelector('input[name="view-mode"][value="map"]');
+        const listViewRadio = document.querySelector('input[name="view-mode"][value="list"]');
+        const cardsViewRadio = document.querySelector('input[name="view-mode"][value="cards"]');
+        
+        // Determinar qué vista está seleccionada
+        let selectedView = 'map'; // Por defecto
+        if (mapViewRadio && mapViewRadio.checked) selectedView = 'map';
+        else if (listViewRadio && listViewRadio.checked) selectedView = 'list';
+        else if (cardsViewRadio && cardsViewRadio.checked) selectedView = 'cards';
+        
+        // En móviles, si no está en mapa, usar tarjetas
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && selectedView !== 'map') {
+            if (cardsViewRadio) {
+                cardsViewRadio.checked = true;
+                cambiarVistaZonas('cards');
+            }
+        } else {
+            // En desktop, respetar la selección del usuario
+            cambiarVistaZonas(selectedView);
+        }
+        
         // Sincronizar con el mapa normalizado si está disponible
         if (window.mapResult && window.mapResult.setZonesData) {
             // Actualizar los datos del mapa normalizado con nuestros datos
@@ -237,6 +313,7 @@ async function loadZonas() {
 
 function renderZonasTable() {
     const tbody = document.getElementById('zonasTableBody');
+    const cardsContainer = document.getElementById('zonasCardsContainer');
     const countBadge = document.getElementById('zonasCount');
     const countBadgeList = document.getElementById('zonasCountList');
 
@@ -252,10 +329,83 @@ function renderZonasTable() {
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No hay zonas registradas.</td></tr>`;
         }
+        if (cardsContainer) {
+            cardsContainer.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-bounding-box-circles fs-1 text-muted"></i>
+                    <h5 class="text-muted mt-3">No hay zonas registradas</h5>
+                </div>
+            `;
+        }
         return;
     }
 
-    if (tbody) {
+    // Renderizar según el modo de vista actual
+    // En desktop, si está en modo 'list', mostrar lista; si está en 'cards', mostrar tarjetas
+    // En móviles, si está en modo 'cards', mostrar tarjetas; si está en 'list', mostrar lista
+    const isMobile = window.innerWidth < 768;
+    console.log('[renderZonasTable] currentZonasViewMode:', currentZonasViewMode, 'isMobile:', isMobile);
+    
+    if (currentZonasViewMode === 'cards' && cardsContainer) {
+        console.log('[renderZonasTable] Renderizando tarjetas');
+        renderZonasCards(cardsContainer);
+    } else if (currentZonasViewMode === 'list' && tbody) {
+        console.log('[renderZonasTable] Renderizando lista');
+        renderZonasList(tbody);
+    } else if (cardsContainer && isMobile) {
+        // Fallback: si es móvil y no hay modo definido, usar tarjetas
+        console.log('[renderZonasTable] Fallback: renderizando tarjetas (móvil)');
+        renderZonasCards(cardsContainer);
+    } else if (tbody) {
+        // Fallback: si es desktop, usar lista
+        console.log('[renderZonasTable] Fallback: renderizando lista (desktop)');
+        renderZonasList(tbody);
+    }
+}
+
+function renderZonasCards(container) {
+    container.innerHTML = zonasData.map(zona => {
+        const tipoBadge = zona.tipo === 'punto' ? 'bg-primary' : 
+                         zona.tipo === 'circulo' ? 'bg-info' : 
+                         zona.tipo === 'poligono' ? 'bg-success' : 'bg-secondary';
+        
+        return `
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-truncate" title="${zona.nombre}">${zona.nombre}</h6>
+                        <span class="badge ${tipoBadge} text-uppercase">${zona.tipo}</span>
+                    </div>
+                    <div class="card-body">
+                        ${zona.descripcion ? `<p class="card-text text-muted small">${zona.descripcion}</p>` : ''}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Visible:</small>
+                            <span class="badge ${zona.visible ? 'bg-success' : 'bg-secondary'}">
+                                ${zona.visible ? 'Sí' : 'No'}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Actualizado:</small>
+                            <small class="text-muted">${new Date(zona.actualizado_en).toLocaleDateString()}</small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editZona(${zona.id})" title="Editar">
+                                <i class="bi bi-pencil-square"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteZona(${zona.id})" title="Eliminar">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderZonasList(tbody) {
         tbody.innerHTML = zonasData.map(zona => `
             <tr>
                 <td>
@@ -275,7 +425,6 @@ function renderZonasTable() {
                 </td>
             </tr>
         `).join('');
-    }
 }
 
 function renderZonasMap() {
@@ -804,18 +953,81 @@ function handleVoiceSearch() {
     showToast('Escuchando... hablá cerca del micrófono.', 'info');
 }
 
-// Configurar toggle Mapa/Lista
+// Configurar toggle Mapa/Lista/Tarjetas
 function setupViewToggle() {
     const viewModeRadios = document.querySelectorAll('input[name="view-mode"]');
     viewModeRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             const viewMode = this.value;
+            cambiarVistaZonas(viewMode);
+        });
+    });
+    
+    // Inicializar vista responsive
+    function initResponsiveView() {
+        const isMobile = window.innerWidth < 768;
+        const mapViewRadio = document.querySelector('input[name="view-mode"][value="map"]');
+        const listViewRadio = document.querySelector('input[name="view-mode"][value="list"]');
+        const cardsViewRadio = document.querySelector('input[name="view-mode"][value="cards"]');
+        
+        if (isMobile) {
+            // En móviles, cambiar automáticamente a modo tarjetas si no está en mapa
+            if (mapViewRadio && !mapViewRadio.checked && currentZonasViewMode !== 'cards') {
+                // Si no está en mapa, cambiar a tarjetas
+                if (cardsViewRadio) {
+                    cardsViewRadio.checked = true;
+                    cambiarVistaZonas('cards');
+                }
+            }
+        } else {
+            // En desktop, asegurar que si está en modo tarjetas, cambie a lista
+            if (currentZonasViewMode === 'cards' && listViewRadio) {
+                listViewRadio.checked = true;
+                cambiarVistaZonas('list');
+            } else if (mapViewRadio && mapViewRadio.checked) {
+                // Si está en mapa, mantenerlo
+                cambiarVistaZonas('map');
+            } else if (listViewRadio && listViewRadio.checked) {
+                // Si está en lista, asegurar que se muestre
+                cambiarVistaZonas('list');
+            }
+        }
+    }
+    
+    // Ejecutar al cargar y al redimensionar
+    setTimeout(initResponsiveView, 100);
+    window.addEventListener('resize', function() {
+        clearTimeout(window.zonasResizeTimer);
+        window.zonasResizeTimer = setTimeout(initResponsiveView, 250);
+    });
+    
+    // Cargar preferencia guardada (solo si no es móvil)
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) {
+        const savedViewMode = localStorage.getItem('zonas-view-mode') || 'map';
+        const savedRadio = document.querySelector(`input[name="view-mode"][value="${savedViewMode}"]`);
+        if (savedRadio) {
+            savedRadio.checked = true;
+            savedRadio.dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+function cambiarVistaZonas(viewMode) {
+    console.log('[cambiarVistaZonas] Cambiando a modo:', viewMode, 'ancho:', window.innerWidth);
+    currentZonasViewMode = viewMode;
             const mapView = document.getElementById('zonas-map-view');
             const listView = document.getElementById('zonas-list-view');
-            
+    const cardsView = document.getElementById('zonas-cards-view');
+    
+    // Ocultar todas las vistas
+    if (mapView) mapView.style.display = 'none';
+    if (listView) listView.style.display = 'none';
+    if (cardsView) cardsView.style.display = 'none';
+    
+    // Mostrar la vista seleccionada
             if (viewMode === 'map') {
                 if (mapView) mapView.style.display = 'block';
-                if (listView) listView.style.display = 'none';
                 // Asegurar que el mapa se redibuje correctamente
                 if (map) {
                     setTimeout(() => {
@@ -823,21 +1035,233 @@ function setupViewToggle() {
                     }, 100);
                 }
             } else if (viewMode === 'list') {
-                if (mapView) mapView.style.display = 'none';
-                if (listView) listView.style.display = 'block';
+        if (listView) {
+            listView.style.display = 'block';
+            console.log('[cambiarVistaZonas] Vista de lista mostrada');
+        }
+        // Renderizar lista si hay datos - forzar modo lista
+        if (zonasData.length > 0) {
+            // Asegurar que se renderice como lista
+            const tbody = document.getElementById('zonasTableBody');
+            if (tbody) {
+                renderZonasList(tbody);
+            } else {
+                renderZonasTable();
             }
-            
-            // Guardar preferencia
+        }
+    } else if (viewMode === 'cards') {
+        if (cardsView) {
+            cardsView.style.display = 'block';
+            console.log('[cambiarVistaZonas] Vista de tarjetas mostrada');
+        }
+        // Renderizar tarjetas si hay datos - forzar modo tarjetas
+        if (zonasData.length > 0) {
+            const cardsContainer = document.getElementById('zonasCardsContainer');
+            if (cardsContainer) {
+                renderZonasCards(cardsContainer);
+            } else {
+                renderZonasTable();
+            }
+        }
+    }
+    
+    // Guardar preferencia (solo si no es móvil)
+    if (window.innerWidth >= 768) {
             localStorage.setItem('zonas-view-mode', viewMode);
-        });
+    }
+}
+
+// ========================================
+// FUNCIONES PARA MÓVILES EN EL MAPA
+// ========================================
+
+// Verificar si un móvil está en línea (reportó en los últimos 15 minutos)
+function isOnlineMovil(movil) {
+    const status = movil.status_info || {};
+    const fechaRecepcion = status.fecha_recepcion || status.ultima_actualizacion;
+    
+    if (!fechaRecepcion) return false;
+
+    const ultimaRecepcion = new Date(fechaRecepcion);
+    const ahora = new Date();
+    const diferenciaMinutos = (ahora - ultimaRecepcion) / (1000 * 60);
+
+    return diferenciaMinutos <= 15;
+}
+
+// Crear popup para marcador de móvil
+function createMovilPopupZonas(movil) {
+    const status = movil.status_info || {};
+    const geocode = movil.geocode_info || {};
+    const online = isOnlineMovil(movil);
+    const estado = online ? 'En línea' : 'Desconectado';
+    const encendido = status.ignicion ? 'Encendido' : 'Apagado';
+
+    // Información de domicilio
+    const domicilio = geocode.direccion_formateada ||
+        (geocode.localidad && geocode.provincia ? `${geocode.localidad}, ${geocode.provincia}` :
+            'Sin geocodificación');
+
+    return `
+        <div style="min-width: 250px;">
+            <h6><strong>${movil.alias || movil.patente || 'Sin identificar'}</strong></h6>
+            <p><strong>Estado:</strong> ${estado}<br>
+            <strong>GPS ID:</strong> ${movil.gps_id || 'Sin ID'}<br>
+            <strong>Domicilio:</strong> ${domicilio}<br>
+            <strong>Velocidad:</strong> ${status.ultima_velocidad_kmh || 0} km/h<br>
+            <strong>Encendido:</strong> ${encendido}<br>
+            <strong>Batería:</strong> ${status.bateria_pct || 'N/A'}%</p>
+            <small><strong>Última actualización:</strong><br>${status.ultima_actualizacion ? new Date(status.ultima_actualizacion).toLocaleString('es-ES') : 'Sin datos'}</small>
+        </div>
+    `;
+}
+
+// Limpiar marcadores de móviles
+function clearMovilesMarkers() {
+    if (movilesLayerGroup) {
+        movilesLayerGroup.clearLayers();
+    }
+    movilesMarkers = [];
+}
+
+// Renderizar móviles en el mapa
+function renderMoviles() {
+    if (!movilesLayerGroup || !map) {
+        console.warn('[Zonas] No se puede renderizar móviles: movilesLayerGroup o map no están disponibles');
+        return;
+    }
+    
+    console.log('[Zonas] Renderizando móviles, total:', movilesData.length);
+    
+    // Limpiar marcadores existentes
+    clearMovilesMarkers();
+    
+    // Asegurar que la capa esté en el mapa antes de agregar marcadores
+    if (!map.hasLayer(movilesLayerGroup)) {
+        movilesLayerGroup.addTo(map);
+        console.log('[Zonas] Capa de móviles agregada al mapa');
+    }
+    
+    // Agregar marcadores para cada móvil
+    let marcadoresAgregados = 0;
+    movilesData.forEach(movil => {
+        const status = movil.status_info || {};
+        if (status.ultimo_lat && status.ultimo_lon) {
+            const online = isOnlineMovil(movil);
+            const iconColor = online ? 'green' : 'red';
+
+            // Convertir coordenadas a números
+            const lat = parseFloat(status.ultimo_lat);
+            const lon = parseFloat(status.ultimo_lon);
+            
+            // Validar coordenadas
+            if (isNaN(lat) || isNaN(lon)) {
+                console.warn('[Zonas] Coordenadas inválidas para móvil:', movil.id, lat, lon);
+                return;
+            }
+
+            // Identificación del móvil
+            const label = movil.patente || movil.alias || movil.codigo || 'N/A';
+
+            // Crear ícono personalizado con etiqueta
+            const icon = L.divIcon({
+                className: 'custom-marker-with-label',
+                html: `
+                    <div style="text-align: center;">
+                        <div style="background-color: ${iconColor}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); margin: 0 auto;"></div>
+                        <div style="
+                            background-color: rgba(255,255,255,0.95);
+                            color: #333;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-size: 11px;
+                            font-weight: bold;
+                            white-space: nowrap;
+                            margin-top: 2px;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                            border: 1px solid ${iconColor};
+                        ">${label}</div>
+                    </div>
+                `,
+                iconSize: [80, 45],
+                iconAnchor: [40, 45]
+            });
+
+            const marker = L.marker([lat, lon], { icon })
+                .addTo(movilesLayerGroup)
+                .bindPopup(createMovilPopupZonas(movil));
+
+            movilesMarkers.push(marker);
+            marcadoresAgregados++;
+        }
     });
     
-    // Cargar preferencia guardada
-    const savedViewMode = localStorage.getItem('zonas-view-mode') || 'map';
-    const savedRadio = document.querySelector(`input[name="view-mode"][value="${savedViewMode}"]`);
-    if (savedRadio) {
-        savedRadio.checked = true;
-        savedRadio.dispatchEvent(new Event('change'));
+    console.log(`[Zonas] Móviles renderizados: ${marcadoresAgregados} de ${movilesData.length}`);
+}
+
+// Cargar móviles desde la API
+async function loadMoviles() {
+    try {
+        console.log('[Zonas] Iniciando carga de móviles...');
+        
+        // Obtener headers de autenticación
+        let headers = { 'Content-Type': 'application/json' };
+        if (typeof auth !== 'undefined' && auth && typeof auth.getHeaders === 'function') {
+            headers = auth.getHeaders();
+        } else if (typeof window.auth !== 'undefined' && window.auth && typeof window.auth.getHeaders === 'function') {
+            headers = window.auth.getHeaders();
+        }
+        
+        // Obtener URL de la API de móviles
+        // La URL correcta es /moviles/api/moviles/ según las rutas de Django
+        let MOVILES_API_URL;
+        if (typeof WAYGPS_CONFIG !== 'undefined' && WAYGPS_CONFIG) {
+            // Usar el endpoint configurado si está disponible
+            if (WAYGPS_CONFIG.MOVILES_ENDPOINT) {
+                MOVILES_API_URL = WAYGPS_CONFIG.MOVILES_ENDPOINT;
+            } else if (WAYGPS_CONFIG.API_BASE_URL) {
+                MOVILES_API_URL = `${WAYGPS_CONFIG.API_BASE_URL}/moviles/api/moviles/`;
+            } else {
+                MOVILES_API_URL = '/moviles/api/moviles/';
+            }
+        } else if (typeof window.WAYGPS_CONFIG !== 'undefined' && window.WAYGPS_CONFIG) {
+            if (window.WAYGPS_CONFIG.MOVILES_ENDPOINT) {
+                MOVILES_API_URL = window.WAYGPS_CONFIG.MOVILES_ENDPOINT;
+            } else if (window.WAYGPS_CONFIG.API_BASE_URL) {
+                MOVILES_API_URL = `${window.WAYGPS_CONFIG.API_BASE_URL}/moviles/api/moviles/`;
+            } else {
+                MOVILES_API_URL = '/moviles/api/moviles/';
+            }
+        } else {
+            // URL por defecto según las rutas de Django
+            MOVILES_API_URL = '/moviles/api/moviles/';
+        }
+        
+        console.log('[Zonas] Cargando móviles desde:', MOVILES_API_URL);
+        
+        const response = await fetch(MOVILES_API_URL, {
+            headers: headers,
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            console.error('[Zonas] Error al cargar móviles. Status:', response.status);
+            const errorText = await response.text();
+            console.error('[Zonas] Error response:', errorText);
+            return;
+        }
+
+        const data = await response.json();
+        movilesData = Array.isArray(data) ? data : (data.results || []);
+        
+        console.log(`[Zonas] Móviles cargados: ${movilesData.length}`);
+        
+        // Renderizar móviles en el mapa
+        renderMoviles();
+        
+    } catch (error) {
+        console.error('[Zonas] Error cargando móviles:', error);
+        console.error('[Zonas] Stack trace:', error.stack);
     }
 }
 

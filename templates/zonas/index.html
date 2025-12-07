@@ -21,7 +21,7 @@
             <div class="topbar">
                 <div class="d-flex align-items-center gap-3">
                     <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
-                        <i class="bi bi-list"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </button>
                     <h1 class="topbar-title mb-0">
                         <i class="bi bi-bounding-box-circles me-2"></i> Administrador de Zonas
@@ -35,7 +35,7 @@
             </div>
 
             <div class="app-content">
-                <!-- Controles de Vista (Toggle Mapa/Lista) -->
+                <!-- Controles de Vista (Toggle Mapa/Lista/Tarjetas) -->
                 <div class="view-controls mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="view-toggle">
@@ -47,8 +47,13 @@
                                 </label>
 
                                 <input type="radio" class="btn-check" name="view-mode" id="view-list" value="list">
-                                <label class="btn btn-outline-primary" for="view-list">
+                                <label class="btn btn-outline-primary d-none d-md-inline-block" for="view-list">
                                     <i class="bi bi-list-ul"></i> Lista
+                                </label>
+
+                                <input type="radio" class="btn-check" name="view-mode" id="view-cards" value="cards">
+                                <label class="btn btn-outline-primary d-md-none" for="view-cards">
+                                    <i class="bi bi-grid-3x3-gap"></i> Tarjetas
                                 </label>
                             </div>
                         </div>
@@ -90,6 +95,13 @@
                             <span class="badge bg-info text-dark mx-2">2</span>Dibujá en el mapa
                             <span class="badge bg-info text-dark ms-2">3</span>Guardá los cambios
                         </div>
+                    </div>
+                </div>
+
+                <!-- Vista de Tarjetas (móviles) -->
+                <div id="zonas-cards-view" class="content-view" style="display: none;">
+                    <div class="row g-3" id="zonasCardsContainer">
+                        <!-- Las tarjetas se generarán dinámicamente -->
                     </div>
                 </div>
 
@@ -213,14 +225,30 @@
             const toggle = document.getElementById('sidebarToggle');
             const storedState = localStorage.getItem('sidebarCollapsed');
 
+            // Función para actualizar el icono según el estado del sidebar
+            function updateSidebarIcon() {
+                const icon = toggle ? toggle.querySelector('i') : null;
+                if (icon) {
+                    if (wrapper && wrapper.classList.contains('collapsed')) {
+                        icon.className = 'bi bi-chevron-right';
+                    } else {
+                        icon.className = 'bi bi-chevron-left';
+                    }
+                }
+            }
+            
             if (storedState === 'true') {
                 wrapper.classList.add('collapsed');
             }
+            
+            // Actualizar icono al cargar
+            updateSidebarIcon();
 
             if (toggle) {
                 toggle.addEventListener('click', function () {
                     wrapper.classList.toggle('collapsed');
                     localStorage.setItem('sidebarCollapsed', wrapper.classList.contains('collapsed') ? 'true' : 'false');
+                    updateSidebarIcon();
                 });
             }
 

@@ -531,7 +531,7 @@
             <div class="topbar">
                 <div class="d-flex align-items-center gap-3">
                     <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Mostrar/ocultar menú">
-                        <i class="bi bi-list"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </button>
                     <h1 class="topbar-title mb-0">
                         {% if default_section == 'dashboard' %}
@@ -579,9 +579,29 @@
                                                 En Línea</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="moviles-online">0
                                             </div>
+                                            <small class="text-muted">Últimos 15 min</small>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-wifi text-success" style="font-size: 2rem;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-danger shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                Desconectados</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="moviles-desconectados">0
+                                            </div>
+                                            <small class="text-muted">Sin reporte 15 min</small>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-wifi-off text-danger" style="font-size: 2rem;"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -615,6 +635,7 @@
                                                 Velocidad Promedio</div>
                                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="velocidad-promedio">
                                                 0 km/h</div>
+                                            <small class="text-muted">Solo en línea</small>
                                         </div>
                                         <div class="col-auto">
                                             <i class="bi bi-speedometer2 text-info" style="font-size: 2rem;"></i>
