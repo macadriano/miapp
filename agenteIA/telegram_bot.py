@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # Configuración del bot
 TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
 TELEGRAM_ALLOWED_GROUP_IDS = config('TELEGRAM_ALLOWED_GROUP_IDS', default='', cast=lambda v: [int(x.strip()) for x in v.split(',') if x.strip()])
+TELEGRAM_ALLOWED_USER_IDS = config('TELEGRAM_ALLOWED_USER_IDS', default='', cast=lambda v: [int(x.strip()) for x in v.split(',') if x.strip()])
 TELEGRAM_BOT_USERNAME = config('TELEGRAM_BOT_USERNAME', default='')
 
 # Factory para crear requests de Django
@@ -66,6 +67,9 @@ class SofiaTelegramBot:
         
         # Comando /status
         self.application.add_handler(CommandHandler("status", self.status_command))
+        
+        # Comando /myid (para obtener el ID del usuario)
+        self.application.add_handler(CommandHandler("myid", self.myid_command))
         
         # Handler para mensajes de texto (solo en grupos permitidos)
         self.application.add_handler(
@@ -123,6 +127,22 @@ class SofiaTelegramBot:
         )
         await update.message.reply_text(status_message, parse_mode='Markdown')
     
+    async def myid_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Maneja el comando /myid - muestra el ID del usuario"""
+        user = update.message.from_user
+        user_id = user.id
+        username = user.username or "Sin username"
+        first_name = user.first_name or "Sin nombre"
+        
+        myid_message = (
+            f"👤 **Tu información de Telegram:**\n\n"
+            f"🆔 **ID de Usuario:** `{user_id}`\n"
+            f"👤 **Nombre:** {first_name}\n"
+            f"📱 **Username:** @{username}\n\n"
+            f"💡 *Comparte tu ID con el administrador para solicitar acceso.*"
+        )
+        await update.message.reply_text(myid_message, parse_mode='Markdown')
+    
     def is_allowed_group(self, chat_id: int) -> bool:
         """Verifica si el grupo está permitido"""
         if not TELEGRAM_ALLOWED_GROUP_IDS:
@@ -130,6 +150,14 @@ class SofiaTelegramBot:
             logger.warning("⚠️ TELEGRAM_ALLOWED_GROUP_IDS no configurado - permitiendo todos los grupos")
             return True
         return chat_id in TELEGRAM_ALLOWED_GROUP_IDS
+    
+    def is_allowed_user(self, user_id: int) -> bool:
+        """Verifica si el usuario está permitido"""
+        if not TELEGRAM_ALLOWED_USER_IDS:
+            # Si no hay usuarios configurados, permitir todos (solo para desarrollo)
+            logger.warning("⚠️ TELEGRAM_ALLOWED_USER_IDS no configurado - permitiendo todos los usuarios")
+            return True
+        return user_id in TELEGRAM_ALLOWED_USER_IDS
     
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja mensajes de texto del grupo"""
@@ -149,6 +177,19 @@ class SofiaTelegramBot:
         
         # Ignorar mensajes del propio bot
         if user and user.is_bot:
+            return
+        
+        # Verificar si el usuario está permitido
+        user_id = user.id if user else None
+        if user_id and not self.is_allowed_user(user_id):
+            logger.info(f"⚠️ Usuario no permitido intentó usar el bot: {user_id} (@{user.username or 'sin username'})")
+            await message.reply_text(
+                "❌ **Acceso denegado**\n\n"
+                "No tienes permiso para usar este bot.\n\n"
+                "Si necesitas acceso, contacta al administrador y proporciona tu ID de usuario.\n"
+                "Usa /myid para obtener tu ID.",
+                parse_mode='Markdown'
+            )
             return
         
         # Verificar si es un grupo permitido
@@ -283,6 +324,7 @@ class SofiaTelegramBot:
         logger.info("🚀 Iniciando bot de Telegram...")
         logger.info(f"📱 Bot username: @{TELEGRAM_BOT_USERNAME or 'N/A'}")
         logger.info(f"👥 Grupos permitidos: {TELEGRAM_ALLOWED_GROUP_IDS or 'Todos (desarrollo)'}")
+        logger.info(f"👤 Usuarios permitidos: {TELEGRAM_ALLOWED_USER_IDS or 'Todos (desarrollo)'}")
         
         # Iniciar polling
         self.application.run_polling(
