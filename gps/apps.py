@@ -17,10 +17,23 @@ class GpsConfig(AppConfig):
             
             logger.info(f"🔵 [APPS] GpsConfig.ready() ejecutado. sys.argv: {sys.argv}")
             
-            # Evitar ejecutar en comandos de gestión que no sean runserver
-            # También evitar en producción con Gunicorn para evitar loops de reinicio
-            if 'runserver' in sys.argv:
-                logger.info("🔵 [APPS] Modo runserver detectado, iniciando receptores activos...")
+            # Comandos de gestión que NO deben iniciar receptores
+            comandos_gestion = ['migrate', 'makemigrations', 'collectstatic', 'createsuperuser', 
+                              'shell', 'test', 'flush', 'dumpdata', 'loaddata', 'check']
+            
+            # Verificar si estamos en un comando de gestión
+            es_comando_gestion = any(cmd in sys.argv for cmd in comandos_gestion)
+            
+            # Iniciar receptores si:
+            # 1. Es runserver (desarrollo)
+            # 2. Es gunicorn/uwsgi (producción) - detectado por presencia de 'gunicorn' o 'uwsgi' en sys.argv
+            # 3. NO es un comando de gestión
+            es_servidor_wsgi = 'gunicorn' in ' '.join(sys.argv) or 'uwsgi' in ' '.join(sys.argv)
+            es_runserver = 'runserver' in sys.argv
+            
+            if (es_runserver or es_servidor_wsgi) and not es_comando_gestion:
+                modo = "runserver" if es_runserver else "gunicorn/uwsgi"
+                logger.info(f"🔵 [APPS] Modo {modo} detectado, iniciando receptores activos desde BD...")
                 from gps.receiver_manager import start_active_receivers
                 import threading
                 
@@ -30,7 +43,10 @@ class GpsConfig(AppConfig):
                 thread.start()
                 logger.info(f"✅ [APPS] Hilo de auto-inicio de receptores iniciado. Thread ID: {thread.ident}")
             else:
-                logger.info(f"ℹ️ [APPS] No es modo runserver, omitiendo auto-inicio de receptores")
+                if es_comando_gestion:
+                    logger.info(f"ℹ️ [APPS] Comando de gestión detectado, omitiendo auto-inicio de receptores")
+                else:
+                    logger.info(f"ℹ️ [APPS] Modo desconocido, omitiendo auto-inicio de receptores")
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
