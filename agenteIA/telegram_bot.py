@@ -26,6 +26,8 @@ django.setup()
 from agenteIA.views import procesar_consulta
 from django.test import RequestFactory
 from django.http import JsonResponse
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.contrib.auth.middleware import AuthenticationMiddleware
 
 # Configurar logging
 logging.basicConfig(
@@ -163,17 +165,27 @@ class SofiaTelegramBot:
             processing_msg = None
         
         try:
-            # Crear request de Django para procesar la consulta
-            request = factory.post(
-                '/agenteIA/api/procesar-consulta/',
-                data=json.dumps({'mensaje': text, 'modo': 'texto'}),
-                content_type='application/json'
-            )
+            # Función wrapper para procesar consulta con sesión inicializada
+            def procesar_consulta_con_sesion(mensaje_texto):
+                """Procesa una consulta inicializando la sesión en el request"""
+                # Crear request de Django
+                req = factory.post(
+                    '/agenteIA/api/procesar-consulta/',
+                    data=json.dumps({'mensaje': mensaje_texto, 'modo': 'texto'}),
+                    content_type='application/json'
+                )
+                
+                # Inicializar sesión en el request (necesario para procesar_consulta)
+                middleware = SessionMiddleware(lambda r: None)
+                middleware.process_request(req)
+                req.session.save()
+                
+                # Procesar consulta
+                return procesar_consulta(req)
             
-            # Procesar consulta usando la función de Sofia (con sync_to_async)
-            # Envolver la función síncrona para ejecutarla en un contexto async
-            procesar_consulta_async = sync_to_async(procesar_consulta, thread_sensitive=False)
-            response = await procesar_consulta_async(request)
+            # Procesar consulta usando la función wrapper (con sync_to_async)
+            procesar_consulta_async = sync_to_async(procesar_consulta_con_sesion, thread_sensitive=False)
+            response = await procesar_consulta_async(text)
             
             # Obtener respuesta
             if isinstance(response, JsonResponse):
