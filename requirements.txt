@@ -40,3 +40,4 @@ typing_extensions==4.15.0
 tzdata==2025.2
 unicorn==2.1.4
 urllib3==2.5.0
+python-telegram-bot==21.9

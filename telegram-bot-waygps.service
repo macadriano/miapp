@@ -1,0 +1,20 @@
+[Unit]
+Description=Telegram Bot de Sofia IA para WayGPS
+After=network.target
+Wants=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/miapp
+EnvironmentFile=/opt/miapp/.env
+Environment="DJANGO_SETTINGS_MODULE=wayproject.settings"
+ExecStart=/opt/miapp/venv/bin/python3.11 /opt/miapp/manage.py run_telegram_bot
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
