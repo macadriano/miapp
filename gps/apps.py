@@ -33,15 +33,52 @@ class GpsConfig(AppConfig):
             
             if (es_runserver or es_servidor_wsgi) and not es_comando_gestion:
                 modo = "runserver" if es_runserver else "gunicorn/uwsgi"
-                logger.info(f"🔵 [APPS] Modo {modo} detectado, iniciando receptores activos desde BD...")
-                from gps.receiver_manager import start_active_receivers
+                logger.info(f"🔵 [APPS] Modo {modo} detectado, programando inicio de receptores activos desde BD...")
+                
+                # Usar una señal de Django para ejecutar después de que todo esté inicializado
+                # Esto evita el error "populate() isn't reentrant"
+                from django.db.models.signals import post_migrate
+                from django.core.management import call_command
                 import threading
+                import time
+                
+                def iniciar_receptores_diferido():
+                    """Iniciar receptores después de que Django termine de inicializar"""
+                    # Esperar a que Django termine de inicializar completamente
+                    # Esto evita el error "populate() isn't reentrant"
+                    max_intentos = 5
+                    intento = 0
+                    
+                    while intento < max_intentos:
+                        time.sleep(2)
+                        intento += 1
+                        try:
+                            # Verificar que podemos acceder a la BD sin errores
+                            from django.db import connection
+                            from django.apps import apps
+                            
+                            # Intentar una consulta simple para verificar que la BD está lista
+                            with connection.cursor() as cursor:
+                                cursor.execute("SELECT 1")
+                            
+                            # Si llegamos aquí, Django está completamente inicializado
+                            logger.info(f"🔵 [APPS] Django completamente inicializado (intento {intento}), iniciando receptores activos...")
+                            from gps.receiver_manager import start_active_receivers
+                            start_active_receivers()
+                            break
+                        except Exception as e:
+                            if intento < max_intentos:
+                                logger.debug(f"⏳ [APPS] Esperando inicialización de Django... (intento {intento}/{max_intentos})")
+                            else:
+                                logger.error(f"❌ [APPS] Error iniciando receptores después de {max_intentos} intentos: {e}")
+                                import traceback
+                                logger.error(traceback.format_exc())
                 
                 # Iniciar en un hilo separado para no bloquear el inicio de Django
-                # Solo una vez, no periódicamente
-                thread = threading.Thread(target=start_active_receivers, daemon=True, name="AutoStartReceivers")
+                # Con un delay para evitar el error "populate() isn't reentrant"
+                thread = threading.Thread(target=iniciar_receptores_diferido, daemon=True, name="AutoStartReceivers")
                 thread.start()
-                logger.info(f"✅ [APPS] Hilo de auto-inicio de receptores iniciado. Thread ID: {thread.ident}")
+                logger.info(f"✅ [APPS] Hilo de auto-inicio de receptores programado. Thread ID: {thread.ident}")
             else:
                 if es_comando_gestion:
                     logger.info(f"ℹ️ [APPS] Comando de gestión detectado, omitiendo auto-inicio de receptores")
