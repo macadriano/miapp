@@ -17,6 +17,7 @@ from telegram.ext import (
 )
 from django.conf import settings
 from decouple import config
+from asgiref.sync import sync_to_async
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'wayproject.settings')
@@ -169,8 +170,10 @@ class SofiaTelegramBot:
                 content_type='application/json'
             )
             
-            # Procesar consulta usando la función de Sofia
-            response = procesar_consulta(request)
+            # Procesar consulta usando la función de Sofia (con sync_to_async)
+            # Envolver la función síncrona para ejecutarla en un contexto async
+            procesar_consulta_async = sync_to_async(procesar_consulta, thread_sensitive=False)
+            response = await procesar_consulta_async(request)
             
             # Obtener respuesta
             if isinstance(response, JsonResponse):
