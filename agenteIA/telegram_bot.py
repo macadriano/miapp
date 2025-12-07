@@ -7,7 +7,7 @@ import django
 import logging
 import json
 from typing import Optional
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -192,9 +192,14 @@ class SofiaTelegramBot:
                 response_data = json.loads(response.content.decode('utf-8'))
                 respuesta = response_data.get('respuesta', 'No se pudo procesar la consulta')
                 success = response_data.get('success', False)
+                google_maps_link = response_data.get('google_maps_link', None)
+                datos_consulta = response_data.get('datos_consulta', {})
+                tipo_consulta = datos_consulta.get('tipo_consulta', '')
             else:
                 respuesta = "Error al procesar la consulta"
                 success = False
+                google_maps_link = None
+                tipo_consulta = ''
             
             # Limpiar mensaje de procesamiento
             if processing_msg:
@@ -208,6 +213,18 @@ class SofiaTelegramBot:
                 # Limpiar respuesta para Telegram (remover emojis problemáticos si es necesario)
                 respuesta_limpia = respuesta
                 
+                # Si hay un link de Google Maps (especialmente para VER_MAPA), crear botón inline
+                reply_markup = None
+                if google_maps_link and tipo_consulta == 'VER_MAPA':
+                    # Reemplazar el texto "Abrir Google Maps..." con texto más descriptivo
+                    respuesta_limpia = respuesta_limpia.replace(
+                        "Abrir Google Maps",
+                        "Ver en Google Maps"
+                    )
+                    # Crear botón inline que abre el enlace directamente
+                    keyboard = [[InlineKeyboardButton("🗺️ Abrir en Google Maps", url=google_maps_link)]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                
                 # Si la respuesta es muy larga, dividirla en partes
                 max_length = 4096  # Límite de Telegram
                 if len(respuesta_limpia) > max_length:
@@ -215,11 +232,23 @@ class SofiaTelegramBot:
                     chunks = [respuesta_limpia[i:i+max_length] for i in range(0, len(respuesta_limpia), max_length)]
                     for i, chunk in enumerate(chunks):
                         if i == 0:
-                            await message.reply_text(chunk)
+                            # Solo agregar el botón al primer mensaje
+                            await message.reply_text(
+                                chunk, 
+                                parse_mode='Markdown', 
+                                disable_web_page_preview=False,
+                                reply_markup=reply_markup
+                            )
+                            reply_markup = None  # No agregar botón a los mensajes siguientes
                         else:
                             await message.reply_text(f"_(continuación)_\n\n{chunk}", parse_mode='Markdown')
                 else:
-                    await message.reply_text(respuesta_limpia)
+                    await message.reply_text(
+                        respuesta_limpia, 
+                        parse_mode='Markdown', 
+                        disable_web_page_preview=False,
+                        reply_markup=reply_markup
+                    )
                 
                 logger.info(f"✅ Consulta procesada exitosamente: {text[:50]}...")
             else:
