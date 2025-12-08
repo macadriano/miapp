@@ -23,7 +23,18 @@ import logging
 import binascii
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
+from django.utils import timezone as django_timezone
+try:
+    from zoneinfo import ZoneInfo
+    ZONEINFO_AVAILABLE = True
+except ImportError:
+    # Fallback para Python < 3.9
+    try:
+        from backports.zoneinfo import ZoneInfo
+        ZONEINFO_AVAILABLE = True
+    except ImportError:
+        ZONEINFO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -254,12 +265,25 @@ class QueclinkProcessor(BaseProcessor):
                     
                     # Ajustar a hora local de Argentina (UTC-3): restar 3 horas
                     fecha_gps_local = fecha_gps_dt - timedelta(hours=3)
+                    
+                    # Marcar explícitamente como timezone de Argentina (UTC-3)
+                    # Esto evita que Django lo interprete como UTC
+                    if ZONEINFO_AVAILABLE:
+                        tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+                        fecha_gps_local = fecha_gps_local.replace(tzinfo=tz_argentina)
+                    else:
+                        # Fallback: usar timezone fijo UTC-3
+                        tz_argentina = dt_timezone(timedelta(hours=-3))
+                        fecha_gps_local = fecha_gps_local.replace(tzinfo=tz_argentina)
+                    
                     timestamp = fecha_gps_local.isoformat()
                     
                     # Log de fecha/hora GPS ajustada (Argentina UTC-3)
                     logger.info(f"🕐 [GPS] Fecha/Hora GPS ajustada (Argentina UTC-3): {fecha_gps_local.strftime('%d/%m/%Y %H:%M:%S')}")
                 except Exception as e:
                     logger.warning(f"⚠️ Error procesando fecha/hora GPS: {e}")
+                    import traceback
+                    logger.warning(traceback.format_exc())
                     pass
             
             # Extraer coordenadas

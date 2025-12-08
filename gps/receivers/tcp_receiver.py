@@ -20,7 +20,17 @@ import socket
 import threading
 import logging
 from typing import Dict, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
+try:
+    from zoneinfo import ZoneInfo
+    ZONEINFO_AVAILABLE = True
+except ImportError:
+    # Fallback para Python < 3.9
+    try:
+        from backports.zoneinfo import ZoneInfo
+        ZONEINFO_AVAILABLE = True
+    except ImportError:
+        ZONEINFO_AVAILABLE = False
 
 from django.utils import timezone
 
@@ -368,17 +378,33 @@ class TCPReceiver:
             
             # Parsear timestamp si es string
             # NOTA: El timestamp ya viene ajustado a hora local de Argentina (UTC-3) desde el procesador
-            # No es necesario volver a ajustar aquí
+            # y viene con timezone explícito. Solo necesitamos parsearlo correctamente.
             if isinstance(timestamp, str):
                 try:
                     fecha_gps = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    # Si no tiene timezone, asumir que es Argentina (UTC-3)
+                    if fecha_gps.tzinfo is None:
+                        if ZONEINFO_AVAILABLE:
+                            tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
+                        else:
+                            tz_argentina = dt_timezone(timedelta(hours=-3))
+                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
                     logger.info(f"🕐 [GUARDAR] Fecha GPS parseada (ya ajustada): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
-                except:
+                except Exception as e:
                     fecha_gps = timezone.now()
-                    logger.warning(f"⚠️ [GUARDAR] Error parseando timestamp, usando hora actual")
+                    logger.warning(f"⚠️ [GUARDAR] Error parseando timestamp, usando hora actual: {e}")
             else:
                 fecha_gps = timestamp or timezone.now()
                 if isinstance(fecha_gps, datetime):
+                    # Si no tiene timezone, asumir que es Argentina (UTC-3)
+                    if fecha_gps.tzinfo is None:
+                        if ZONEINFO_AVAILABLE:
+                            tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
+                        else:
+                            tz_argentina = dt_timezone(timedelta(hours=-3))
+                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
                     logger.info(f"🕐 [GUARDAR] Fecha GPS (ya ajustada): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
             
             # Crear registro en Posicion
