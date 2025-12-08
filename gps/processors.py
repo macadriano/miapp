@@ -249,10 +249,17 @@ class QueclinkProcessor(BaseProcessor):
                     # Crear datetime con la hora GPS (asumimos UTC)
                     fecha_gps_dt = datetime(int('20' + año), int(mes), int(dia), 
                                            int(hora), int(minuto), int(segundo))
+                    # Log de fecha/hora GPS original (UTC)
+                    logger.info(f"🕐 [GPS] Fecha/Hora GPS original (UTC): {fecha_gps} {hora_gps}")
+                    
                     # Ajustar a hora local de Argentina (UTC-3): restar 3 horas
                     fecha_gps_local = fecha_gps_dt - timedelta(hours=3)
                     timestamp = fecha_gps_local.isoformat()
-                except:
+                    
+                    # Log de fecha/hora GPS ajustada (Argentina UTC-3)
+                    logger.info(f"🕐 [GPS] Fecha/Hora GPS ajustada (Argentina UTC-3): {fecha_gps_local.strftime('%d/%m/%Y %H:%M:%S')}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Error procesando fecha/hora GPS: {e}")
                     pass
             
             # Extraer coordenadas

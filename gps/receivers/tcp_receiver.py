@@ -367,18 +367,19 @@ class TCPReceiver:
             empresa_id = 1
             
             # Parsear timestamp si es string
+            # NOTA: El timestamp ya viene ajustado a hora local de Argentina (UTC-3) desde el procesador
+            # No es necesario volver a ajustar aquí
             if isinstance(timestamp, str):
                 try:
                     fecha_gps = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                    # Ajustar a hora local de Argentina (UTC-3): restar 3 horas
-                    fecha_gps = fecha_gps - timedelta(hours=3)
+                    logger.info(f"🕐 [GUARDAR] Fecha GPS parseada (ya ajustada): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
                 except:
                     fecha_gps = timezone.now()
+                    logger.warning(f"⚠️ [GUARDAR] Error parseando timestamp, usando hora actual")
             else:
                 fecha_gps = timestamp or timezone.now()
-                # Si es datetime, ajustar a hora local de Argentina (UTC-3)
                 if isinstance(fecha_gps, datetime):
-                    fecha_gps = fecha_gps - timedelta(hours=3)
+                    logger.info(f"🕐 [GUARDAR] Fecha GPS (ya ajustada): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
             
             # Crear registro en Posicion
             posicion = Posicion.objects.create(

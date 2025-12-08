@@ -84,8 +84,27 @@ class ReceptorLogger:
         lat = parsed_data.get('latitud', 0)
         lon = parsed_data.get('longitud', 0)
         speed = parsed_data.get('velocidad', 0)
+        timestamp = parsed_data.get('timestamp', '')
+        fecha_gps = parsed_data.get('fecha_gps', '')
+        hora_gps = parsed_data.get('hora_gps', '')
         
-        self.logger.info(f"[PARSEADO] IMEI: {imei} - Lat: {lat}, Lon: {lon}, Vel: {speed} km/h")
+        # Formatear timestamp para mostrar
+        timestamp_str = ''
+        if timestamp:
+            try:
+                from datetime import datetime
+                if isinstance(timestamp, str):
+                    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    timestamp_str = dt.strftime('%d/%m/%Y %H:%M:%S')
+                else:
+                    timestamp_str = timestamp.strftime('%d/%m/%Y %H:%M:%S')
+            except:
+                timestamp_str = str(timestamp)
+        
+        if timestamp_str:
+            self.logger.info(f"[PARSEADO] IMEI: {imei} - Lat: {lat}, Lon: {lon}, Vel: {speed} km/h - GPS: {timestamp_str}")
+        else:
+            self.logger.info(f"[PARSEADO] IMEI: {imei} - Lat: {lat}, Lon: {lon}, Vel: {speed} km/h")
     
     def log_error(self, error_msg: str, client_address: str = None):
         """Log de errores"""
