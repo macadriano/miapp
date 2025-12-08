@@ -161,6 +161,84 @@ class SimpleMatcher:
                 r'quienes?\s+est[aá]n?\s+en\s+el\s+dep[oó]sito',
                 r'quienes?\s+est[aá]n?\s+en\s+el\s+almac[eé]n',
             ],
+            'MOVILES_FUERA_DE_ZONA': [
+                r'm[oó]viles?\s+fuera\s+de\s+(?:la\s+)?zona',
+                r'm[oó]viles?\s+afuera\s+de\s+(?:la\s+)?zona',
+                r'veh[ií]culos?\s+fuera\s+de\s+(?:la\s+)?zona',
+                r'veh[ií]culos?\s+afuera\s+de\s+(?:la\s+)?zona',
+                r'que\s+(?:m[oó]viles?|veh[ií]culos?)\s+est[aá]n?\s+fuera\s+de',
+                r'que\s+(?:m[oó]viles?|veh[ií]culos?)\s+est[aá]n?\s+afuera\s+de',
+                r'que\s+veh[ií]culo\s+est[aá]n?\s+fuera\s+de',
+                r'que\s+veh[ií]culo\s+est[aá]n?\s+afuera\s+de',
+                r'quienes?\s+est[aá]n?\s+fuera\s+de\s+(?:la\s+)?zona',
+                r'quienes?\s+est[aá]n?\s+afuera\s+de\s+(?:la\s+)?zona',
+                r'm[oó]viles?\s+que\s+no\s+est[aá]n?\s+en\s+(?:la\s+)?zona',
+                r'veh[ií]culos?\s+que\s+no\s+est[aá]n?\s+en\s+(?:la\s+)?zona',
+                r'que\s+(?:m[oó]viles?|veh[ií]culos?)\s+no\s+est[aá]n?\s+en\s+(?:la\s+)?zona',
+                r'quienes?\s+no\s+est[aá]n?\s+en\s+(?:la\s+)?zona',
+                r'm[oó]viles?\s+fuera\s+del\s+dep[oó]sito',
+                r'm[oó]viles?\s+fuera\s+del\s+almac[eé]n',
+                r'cuales?\s+salieron\s+de',
+                r'quienes?\s+salieron\s+de',
+                r'quien\s+salio\s+de',
+                r'quien\s+sali[oó]\s+de',
+            ],
+            'INGRESO_A_ZONA': [
+                r'ingreso\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'ingreso\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'ingres[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'ingres[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'entr[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'entr[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'entro\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'entro\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'entrada\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'entrada\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+ingres[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+ingreso\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+entr[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+entrada\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'a\s+que\s+hora\s+(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'en\s+que\s+momento\s+(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                # Patrones con orden diferente: "entro el movil X a zona Y"
+                r'(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'a\s+que\s+hora\s+(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+                r'en\s+que\s+momento\s+(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona',
+            ],
+            'SALIO_DE_ZONA': [
+                r'sali[oó]\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'sali[oó]\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'salido\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'salido\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'salida\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'salida\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+sali[oó]\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+salido\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+salida\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+se\s+sali[oó]\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+se\s+salio\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'a\s+que\s+hora\s+(?:sali[oó]|salido|salida|se\s+sali[oó])\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                r'en\s+que\s+momento\s+(?:sali[oó]|salido|salida|se\s+sali[oó])\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona',
+                # Patrones con orden diferente: "salió el movil X de zona Y"
+                r'sali[oó]\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+sali[oó]\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona',
+                r'a\s+que\s+hora\s+(?:sali[oó]|salido)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona',
+                r'en\s+que\s+momento\s+(?:sali[oó]|salido)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona',
+            ],
+            'PASO_POR_ZONA': [
+                r'pas[oó]\s+(?:por|por\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'pas[oó]\s+(?:por|por\s+la)\s+(?:la\s+)?zona',
+                r'paso\s+(?:por|por\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'paso\s+(?:por|por\s+la)\s+(?:la\s+)?zona',
+                r'pas[oó]\s+(?:por|por\s+la)\s+(?:el|la)\s+(?:dep[oó]sito|almac[eé]n|zona)',
+                r'cu[aá]ndo\s+pas[oó]\s+(?:por|por\s+la)\s+(?:la\s+)?zona',
+                r'cu[aá]ndo\s+paso\s+(?:por|por\s+la)\s+(?:la\s+)?zona',
+                r'a\s+que\s+hora\s+pas[oó]\s+(?:por|por\s+la)\s+(?:la\s+)?zona',
+                r'en\s+que\s+momento\s+pas[oó]\s+(?:por|por\s+la)\s+(?:la\s+)?zona',
+                r'estuvo\s+(?:en|en\s+la)\s+(?:la\s+)?zona\s+\w+',
+                r'estuvo\s+(?:en|en\s+la)\s+(?:la\s+)?zona',
+                r'estuvo\s+(?:en|en\s+el)\s+(?:dep[oó]sito|almac[eé]n)',
+            ],
             'AYUDA_GENERAL': [
                 r'ayuda',
                 r'que\s+puedes?\s+hacer',
@@ -191,11 +269,24 @@ class SimpleMatcher:
             c for c in unicodedata.normalize('NFD', texto)
             if unicodedata.category(c) != 'Mn'
         )
+        texto_lower = texto_normalizado.lower()
         for patron in self.patrones[tipo]:
             if re.search(patron, texto, re.IGNORECASE) or re.search(patron, texto_normalizado, re.IGNORECASE):
                 return True
+        # Heurísticas adicionales para MOVILES_FUERA_DE_ZONA
+        if tipo == 'MOVILES_FUERA_DE_ZONA':
+            # Detectar "que vehiculos/moviles" + "fuera/afuera/no estan" sin requerir "zona"
+            tiene_vehiculos = re.search(r'\b(?:veh[ií]culos?|m[oó]viles?)\b', texto_lower, re.IGNORECASE)
+            tiene_fuera = re.search(r'\b(?:fuera|afuera|salieron?|sali[oó])\s+de\b', texto_lower, re.IGNORECASE)
+            tiene_no_estan = re.search(r'\bno\s+est[aá]n?\s+en\b', texto_lower, re.IGNORECASE)
+            tiene_que = re.search(r'\bque\s+(?:veh[ií]culos?|m[oó]viles?)\b', texto_lower, re.IGNORECASE)
+            # Si tiene "que vehiculos/moviles" y "fuera/no estan", es MOVILES_FUERA_DE_ZONA
+            if tiene_vehiculos and (tiene_fuera or tiene_no_estan):
+                return True
+            # Si tiene "que vehiculos/moviles" y "fuera de" o "afuera de"
+            if tiene_que and tiene_fuera:
+                return True
         if tipo == 'CERCANIA':
-            texto_lower = texto_normalizado.lower()
             keywords = ['cerca', 'distancia', 'cuanto esta', 'cuanto tarda', 'cuanto demora', 'tiempo']
             if any(kw in texto_lower for kw in keywords):
                 return True
@@ -264,7 +355,8 @@ class ProcesadorSimple:
         # Detectar tipos posibles
         tipos_detectados = []
         for tipo in ['POSICION', 'RECORRIDO', 'COMANDO_WHATSAPP', 'LLEGADA', 'CERCANIA', 'UBICACION_ZONA', 'SALUDO', 
-                     'LISTADO_ACTIVOS', 'SITUACION_FLOTA', 'MOVILES_EN_ZONA', 'AYUDA_GENERAL', 'VER_MAPA']:
+                     'LISTADO_ACTIVOS', 'SITUACION_FLOTA', 'MOVILES_EN_ZONA', 'MOVILES_FUERA_DE_ZONA', 
+                     'INGRESO_A_ZONA', 'SALIO_DE_ZONA', 'PASO_POR_ZONA', 'AYUDA_GENERAL', 'VER_MAPA']:
             if self.matcher.buscar_patron(texto, tipo):
                 tipos_detectados.append(tipo)
         # Variables auxiliares
@@ -274,6 +366,11 @@ class ProcesadorSimple:
         tiene_palabra_cercania = re.search(r'\b(?:cerca|cercano|distancia|proximo|próximo)\b', texto_lower, re.IGNORECASE)
         print(f"  Tipos detectados: {tipos_detectados}")
         print(f"  tiene_movil={tiene_movil}, tiene_zona={bool(tiene_palabra_zona)}, tiene_whatsapp={bool(tiene_palabra_whatsapp)}, tiene_cercania={bool(tiene_palabra_cercania)}")
+        # Detectar palabras clave de "fuera de zona" sin requerir la palabra "zona" explícita
+        tiene_fuera_afuera = re.search(r'\b(?:fuera|afuera|salieron?|sali[oó])\s+de\b', texto_lower, re.IGNORECASE)
+        tiene_no_estan = re.search(r'\bno\s+est[aá]n?\s+en\b', texto_lower, re.IGNORECASE)
+        tiene_vehiculos_moviles = re.search(r'\b(?:veh[ií]culos?|m[oó]viles?)\b', texto_lower, re.IGNORECASE)
+        
         # Priorizar según reglas
         tipo_seleccionado = None
         # Prioridad alta: comandos específicos y ayuda
@@ -286,6 +383,23 @@ class ProcesadorSimple:
         elif 'SITUACION_FLOTA' in tipos_detectados:
             tipo_seleccionado = 'SITUACION_FLOTA'
             print("  → Seleccionado: SITUACION_FLOTA")
+        elif 'MOVILES_FUERA_DE_ZONA' in tipos_detectados:
+            # Priorizar MOVILES_FUERA_DE_ZONA si está detectado (con o sin palabra "zona" explícita)
+            tipo_seleccionado = 'MOVILES_FUERA_DE_ZONA'
+            print("  → Seleccionado: MOVILES_FUERA_DE_ZONA")
+        elif (tiene_fuera_afuera or tiene_no_estan) and tiene_vehiculos_moviles:
+            # Detectar "fuera de" o "no están en" con "vehículos" o "móviles" aunque no haya patrón exacto
+            tipo_seleccionado = 'MOVILES_FUERA_DE_ZONA'
+            print("  → Seleccionado: MOVILES_FUERA_DE_ZONA (heurística: fuera/no están + vehículos)")
+        elif 'INGRESO_A_ZONA' in tipos_detectados:
+            tipo_seleccionado = 'INGRESO_A_ZONA'
+            print("  → Seleccionado: INGRESO_A_ZONA")
+        elif 'SALIO_DE_ZONA' in tipos_detectados:
+            tipo_seleccionado = 'SALIO_DE_ZONA'
+            print("  → Seleccionado: SALIO_DE_ZONA")
+        elif 'PASO_POR_ZONA' in tipos_detectados:
+            tipo_seleccionado = 'PASO_POR_ZONA'
+            print("  → Seleccionado: PASO_POR_ZONA")
         elif 'MOVILES_EN_ZONA' in tipos_detectados and tiene_palabra_zona:
             tipo_seleccionado = 'MOVILES_EN_ZONA'
             print("  → Seleccionado: MOVILES_EN_ZONA (tiene palabra zona)")
@@ -348,7 +462,8 @@ class ProcesadorSimple:
                 }
             # Si no hay vector en BD pero detectamos el tipo, devolver resultado sin vector
             # (el código en views.py puede manejar esto creando un vector temporal o usando None)
-            elif tipo_seleccionado in ['AYUDA_GENERAL', 'LISTADO_ACTIVOS', 'SITUACION_FLOTA', 'MOVILES_EN_ZONA', 'VER_MAPA']:
+            elif tipo_seleccionado in ['AYUDA_GENERAL', 'LISTADO_ACTIVOS', 'SITUACION_FLOTA', 'MOVILES_EN_ZONA', 'MOVILES_FUERA_DE_ZONA', 
+                                       'INGRESO_A_ZONA', 'SALIO_DE_ZONA', 'PASO_POR_ZONA', 'VER_MAPA']:
                 # Para estos tipos nuevos, podemos devolver resultado sin vector si no existe en BD
                 # El código en views.py deberá manejar el caso de vector_usado = None
                 print(f"  ⚠️ Tipo '{tipo_seleccionado}' detectado pero no hay vector en BD, devolviendo resultado directo")

@@ -206,6 +206,49 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'  # URL de login personalizada
 
 # Configuración de logging para diagnóstico
+import sys
+import platform
+import logging
+
+# Handler personalizado para Windows que maneja UTF-8 correctamente
+class UTF8StreamHandler(logging.StreamHandler):
+    """StreamHandler que maneja UTF-8 correctamente, especialmente en Windows"""
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            # En Windows, manejar errores de codificación
+            if platform.system() == 'Windows':
+                try:
+                    # Intentar escribir directamente
+                    stream.write(msg + self.terminator)
+                    stream.flush()
+                except UnicodeEncodeError:
+                    # Si falla, reemplazar caracteres no codificables
+                    try:
+                        # Intentar con UTF-8 y reemplazo de errores
+                        if hasattr(stream, 'buffer'):
+                            stream.buffer.write((msg + self.terminator).encode('utf-8', errors='replace'))
+                            stream.flush()
+                        else:
+                            # Reemplazar emojis y caracteres especiales
+                            import re
+                            msg_safe = re.sub(r'[^\x00-\x7F]+', '?', msg)
+                            stream.write(msg_safe + self.terminator)
+                            stream.flush()
+                    except Exception:
+                        # Último recurso: escribir mensaje sin caracteres especiales
+                        import re
+                        msg_ascii = re.sub(r'[^\x00-\x7F]+', '', msg)
+                        stream.write(msg_ascii + self.terminator)
+                        stream.flush()
+            else:
+                # En otros sistemas, escribir normalmente
+                stream.write(msg + self.terminator)
+                stream.flush()
+        except Exception:
+            self.handleError(record)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -225,10 +268,11 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': BASE_DIR / 'logs' / 'django.log',
             'formatter': 'verbose',
+            'encoding': 'utf-8',
         },
         'console': {
             'level': 'INFO',
-            'class': 'logging.StreamHandler',
+            '()': UTF8StreamHandler,
             'formatter': 'simple',
         },
     },

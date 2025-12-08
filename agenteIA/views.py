@@ -410,6 +410,74 @@ def procesar_consulta(request):
         resultado = procesador_simple.procesar_consulta(mensaje, vectores)
         print(f"🔍 Matching por patrones: {'✅ Match' if resultado else '❌ No match'}")
         
+        # PRIORIDAD 0.1: Verificación especial para comandos históricos de zona (INGRESO_A_ZONA, SALIO_DE_ZONA, PASO_POR_ZONA)
+        # Estos deben tener prioridad sobre UBICACION_ZONA
+        mensaje_lower_check = mensaje.lower()
+        # Patrones más flexibles que aceptan texto después de "zona" (ej: "zona caba")
+        # También aceptan orden diferente: "salió el movil X de zona Y"
+        # Y aceptan "a que hora" y "en que momento" además de "cuando"
+        tiene_ingreso = re.search(r'\b(?:ingreso|ingres[oó]|entr[oó]|entro|entrada)\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s*\w*', mensaje_lower_check, re.IGNORECASE)
+        tiene_salio = re.search(r'\b(?:sali[oó]|salido|salida|se\s+sali[oó])\s+(?:de|del|de\s+la|el\s+(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de)\s+(?:la\s+)?zona\s*\w*', mensaje_lower_check, re.IGNORECASE)
+        tiene_paso = re.search(r'\b(?:pas[oó]|paso|estuvo)\s+(?:por|por\s+la|en|en\s+la)\s+(?:la\s+)?zona\s*\w*', mensaje_lower_check, re.IGNORECASE)
+        tiene_cuando = re.search(r'\bcu[aá]ndo\b', mensaje_lower_check, re.IGNORECASE)
+        tiene_a_que_hora = re.search(r'\ba\s+que\s+hora\b', mensaje_lower_check, re.IGNORECASE)
+        tiene_en_que_momento = re.search(r'\ben\s+que\s+momento\b', mensaje_lower_check, re.IGNORECASE)
+        
+        # Patrón adicional para "salió el movil X de zona Y" (orden diferente)
+        tiene_salio_orden_diferente = re.search(r'\b(?:sali[oó]|salido)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona', mensaje_lower_check, re.IGNORECASE)
+        # Patrón adicional para "entro el movil X a zona Y" (orden diferente)
+        tiene_ingreso_orden_diferente = re.search(r'\b(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona', mensaje_lower_check, re.IGNORECASE)
+        
+        # Si tiene "cuando"/"a que hora"/"en que momento" + indicadores de ingreso/salida/paso, es un comando histórico
+        # O si tiene indicadores sin estas palabras pero con un móvil mencionado
+        tiene_movil_en_texto = re.search(r'\b(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s*\w*\s*\d+|\b[A-Z]{2,5}\d{2,4}\b', mensaje_lower_check, re.IGNORECASE)
+        tiene_pregunta_tiempo = tiene_cuando or tiene_a_que_hora or tiene_en_que_momento
+        if (tiene_pregunta_tiempo and (tiene_ingreso or tiene_ingreso_orden_diferente or tiene_salio or tiene_salio_orden_diferente or tiene_paso)) or (tiene_movil_en_texto and (tiene_ingreso or tiene_ingreso_orden_diferente or tiene_salio or tiene_salio_orden_diferente or tiene_paso)):
+            tipo_detectado = None
+            if tiene_ingreso or tiene_ingreso_orden_diferente:
+                tipo_detectado = 'INGRESO_A_ZONA'
+            elif tiene_salio or tiene_salio_orden_diferente:
+                tipo_detectado = 'SALIO_DE_ZONA'
+            elif tiene_paso:
+                tipo_detectado = 'PASO_POR_ZONA'
+            
+            if tipo_detectado:
+                print(f"🎯 [DETECCIÓN ESPECIAL] Detectados indicadores de {tipo_detectado}, forzando tipo")
+                # Extraer móvil del mensaje
+                from agenteIA.matching_simple import SimpleMatcher
+                matcher = SimpleMatcher()
+                movil_extraido = matcher.extraer_movil(mensaje)
+                variables = {}
+                if movil_extraido:
+                    variables['movil'] = movil_extraido
+                    print(f"✅ [DETECCIÓN ESPECIAL] Móvil extraído: {movil_extraido}")
+                resultado = {
+                    'tipo': tipo_detectado,
+                    'similitud': 0.9,
+                    'variables': variables,
+                    'vector': None
+                }
+                print(f"✅ [DETECCIÓN ESPECIAL] Tipo forzado a {tipo_detectado}")
+        
+        # Verificación especial para MOVILES_FUERA_DE_ZONA antes de continuar
+        # Si el matching simple no detectó MOVILES_FUERA_DE_ZONA pero el texto tiene indicadores claros
+        if not resultado or (resultado and resultado.get('tipo') not in ['MOVILES_FUERA_DE_ZONA', 'INGRESO_A_ZONA', 'SALIO_DE_ZONA', 'PASO_POR_ZONA']):
+            tiene_vehiculos_moviles = re.search(r'\b(?:veh[ií]culos?|m[oó]viles?)\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_fuera_afuera = re.search(r'\b(?:fuera|afuera|salieron?|sali[oó])\s+de\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_no_estan = re.search(r'\bno\s+est[aá]n?\s+en\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_que_vehiculos = re.search(r'\bque\s+(?:veh[ií]culos?|m[oó]viles?)\b', mensaje_lower_check, re.IGNORECASE)
+            
+            # Si tiene indicadores claros de "móviles fuera de zona"
+            if tiene_vehiculos_moviles and (tiene_fuera_afuera or tiene_no_estan):
+                print(f"🎯 [DETECCIÓN ESPECIAL] Detectados indicadores de MOVILES_FUERA_DE_ZONA, forzando tipo")
+                resultado = {
+                    'tipo': 'MOVILES_FUERA_DE_ZONA',
+                    'similitud': 0.9,
+                    'variables': {},
+                    'vector': None
+                }
+                print(f"✅ [DETECCIÓN ESPECIAL] Tipo forzado a MOVILES_FUERA_DE_ZONA")
+        
         # Si no matchea con patrones, intentar sin saludo inicial
         if not resultado:
             # Detectar y remover saludos comunes del inicio
@@ -793,7 +861,66 @@ def procesar_consulta(request):
         palabras_whatsapp = ['whatsapp', 'wsp', 'enviame', 'mandame', 'compartime', 'pasa', 'comparte', 'envia']
         es_comando_whatsapp = any(palabra in mensaje_lower for palabra in palabras_whatsapp)
         
-        # PRIORIDAD 1: Comandos de WhatsApp
+        # PRIORIDAD 1: Verificar si el resultado es SALUDO, UBICACION_ZONA o CERCANIA pero tiene indicadores de comandos históricos
+        if resultado and resultado.get('tipo') in ['SALUDO', 'UBICACION_ZONA', 'CERCANIA']:
+            mensaje_lower_check = mensaje.lower()
+            
+            # Detectar comandos históricos de zona (patrones flexibles que aceptan texto después de "zona")
+            # También aceptan orden diferente: "salió el movil X de zona Y"
+            # Y aceptan "a que hora" y "en que momento" además de "cuando"
+            tiene_ingreso = re.search(r'\b(?:ingreso|ingres[oó]|entr[oó]|entro|entrada)\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s*\w*', mensaje_lower_check, re.IGNORECASE)
+            tiene_salio = re.search(r'\b(?:sali[oó]|salido|salida|se\s+sali[oó])\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s*\w*', mensaje_lower_check, re.IGNORECASE)
+            tiene_salio_orden_diferente = re.search(r'\b(?:sali[oó]|salido)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona', mensaje_lower_check, re.IGNORECASE)
+            tiene_ingreso_orden_diferente = re.search(r'\b(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona', mensaje_lower_check, re.IGNORECASE)
+            tiene_paso = re.search(r'\b(?:pas[oó]|paso|estuvo)\s+(?:por|por\s+la|en|en\s+la)\s+(?:la\s+)?zona\s*\w*', mensaje_lower_check, re.IGNORECASE)
+            tiene_cuando = re.search(r'\bcu[aá]ndo\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_a_que_hora = re.search(r'\ba\s+que\s+hora\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_en_que_momento = re.search(r'\ben\s+que\s+momento\b', mensaje_lower_check, re.IGNORECASE)
+            
+            # Si tiene "cuando"/"a que hora"/"en que momento" + indicadores de ingreso/salida/paso, es un comando histórico
+            # O si tiene indicadores sin estas palabras pero con un móvil mencionado
+            tiene_movil_en_texto = re.search(r'\b(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s*\w*\s*\d+|\b[A-Z]{2,5}\d{2,4}\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_pregunta_tiempo = tiene_cuando or tiene_a_que_hora or tiene_en_que_momento
+            if (tiene_pregunta_tiempo and (tiene_ingreso or tiene_ingreso_orden_diferente or tiene_salio or tiene_salio_orden_diferente or tiene_paso)) or (tiene_movil_en_texto and (tiene_ingreso or tiene_ingreso_orden_diferente or tiene_salio or tiene_salio_orden_diferente or tiene_paso)):
+                tipo_correcto = None
+                if tiene_ingreso:
+                    tipo_correcto = 'INGRESO_A_ZONA'
+                elif tiene_salio or tiene_salio_orden_diferente:
+                    tipo_correcto = 'SALIO_DE_ZONA'
+                elif tiene_paso:
+                    tipo_correcto = 'PASO_POR_ZONA'
+                
+                if tipo_correcto:
+                    print(f"⚠️ [CORRECCIÓN] Resultado era {resultado.get('tipo')} pero tiene indicadores de {tipo_correcto}, corrigiendo")
+                    resultado['tipo'] = tipo_correcto
+                    resultado['similitud'] = 0.9
+                    resultado['vector'] = None
+                    # Extraer móvil si no está en variables
+                    if 'variables' not in resultado:
+                        resultado['variables'] = {}
+                    if not resultado['variables'].get('movil'):
+                        from agenteIA.matching_simple import SimpleMatcher
+                        matcher = SimpleMatcher()
+                        movil_extraido = matcher.extraer_movil(mensaje)
+                        if movil_extraido:
+                            resultado['variables']['movil'] = movil_extraido
+                            print(f"✅ [CORRECCIÓN] Móvil extraído: {movil_extraido}")
+                    print(f"✅ [CORRECCIÓN] Tipo corregido a {tipo_correcto}")
+            
+            # Verificar MOVILES_FUERA_DE_ZONA
+            tiene_vehiculos_moviles = re.search(r'\b(?:veh[ií]culos?|m[oó]viles?)\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_fuera_afuera = re.search(r'\b(?:fuera|afuera|salieron?|sali[oó])\s+de\b', mensaje_lower_check, re.IGNORECASE)
+            tiene_no_estan = re.search(r'\bno\s+est[aá]n?\s+en\b', mensaje_lower_check, re.IGNORECASE)
+            
+            # Si tiene indicadores claros de "móviles fuera de zona", corregir el tipo
+            if tiene_vehiculos_moviles and (tiene_fuera_afuera or tiene_no_estan):
+                print(f"⚠️ [CORRECCIÓN] Resultado era {resultado.get('tipo')} pero tiene indicadores de MOVILES_FUERA_DE_ZONA, corrigiendo")
+                resultado['tipo'] = 'MOVILES_FUERA_DE_ZONA'
+                resultado['similitud'] = 0.9
+                resultado['vector'] = None
+                print(f"✅ [CORRECCIÓN] Tipo corregido a MOVILES_FUERA_DE_ZONA")
+        
+        # PRIORIDAD 2: Comandos de WhatsApp
         if es_comando_whatsapp and resultado:
             print("Detectado comando de WhatsApp, forzando tipo COMANDO_WHATSAPP")
             resultado['tipo'] = 'COMANDO_WHATSAPP'
@@ -912,6 +1039,10 @@ def procesar_consulta(request):
                 _guardar_zona_en_session(request.session, variables['destino'])
             elif tipo_consulta == 'CERCANIA' and zona_contextual_usada:
                 _guardar_zona_en_session(request.session, zona_contextual_usada)
+            elif tipo_consulta in ['INGRESO_A_ZONA', 'SALIO_DE_ZONA', 'PASO_POR_ZONA', 'MOVILES_EN_ZONA', 'MOVILES_FUERA_DE_ZONA'] and variables.get('zona'):
+                # Guardar la zona consultada para futuras consultas contextuales
+                _guardar_zona_en_session(request.session, variables['zona'])
+                print(f"📍 [CONTEXTO] Guardando zona '{variables['zona']}' en sesión para futuras consultas")
             
             # VERIFICACIÓN ESPECIAL: Si es CERCANIA sin destino en variables pero hay contexto
             # (puede venir del SimpleMatcher sin pasar por PRIORIDAD 0)
@@ -954,6 +1085,32 @@ def procesar_consulta(request):
                 variables['_contexto_movil_disponible'] = contexto['ultimo_movil']
                 variables['movil'] = contexto['ultimo_movil']  # También ponerlo en movil para que _ver_en_mapa lo use
                 print(f"🗺️ [VER_MAPA] Usando móvil del contexto: '{contexto['ultimo_movil']}'")
+            
+            # Para comandos históricos de zona (INGRESO_A_ZONA, SALIO_DE_ZONA, PASO_POR_ZONA)
+            # Usar contexto del móvil y/o zona si no están especificados
+            if tipo_consulta in ['INGRESO_A_ZONA', 'SALIO_DE_ZONA', 'PASO_POR_ZONA']:
+                ultimo_movil = (contexto.get('ultimo_movil') or '').strip()
+                ultimo_destino = (contexto.get('ultimo_destino') or '').strip()
+                
+                # Si no hay móvil especificado, usar el del contexto
+                if not variables.get('movil') and ultimo_movil:
+                    variables['movil'] = ultimo_movil
+                    print(f"📍 [CONTEXTO] {tipo_consulta}: Usando móvil del contexto: '{ultimo_movil}'")
+                
+                # Si no hay zona especificada, usar la del contexto
+                if not variables.get('zona') and ultimo_destino:
+                    variables['zona'] = ultimo_destino
+                    print(f"📍 [CONTEXTO] {tipo_consulta}: Usando zona del contexto: '{ultimo_destino}'")
+                
+                # Si aún no hay móvil ni zona, intentar extraer del texto completo
+                if not variables.get('movil') and not variables.get('zona'):
+                    from agenteIA.matching_simple import SimpleMatcher
+                    matcher = SimpleMatcher()
+                    # Intentar extraer móvil
+                    movil_extraido = matcher.extraer_movil(mensaje)
+                    if movil_extraido:
+                        variables['movil'] = movil_extraido
+                        print(f"📍 [EXTRACCIÓN] {tipo_consulta}: Móvil extraído del texto: '{movil_extraido}'")
             
             # Usuario ya obtenido arriba
             

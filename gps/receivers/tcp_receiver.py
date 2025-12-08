@@ -20,7 +20,7 @@ import socket
 import threading
 import logging
 from typing import Dict, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 
@@ -370,10 +370,15 @@ class TCPReceiver:
             if isinstance(timestamp, str):
                 try:
                     fecha_gps = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    # Ajustar a hora local de Argentina (UTC-3): restar 3 horas
+                    fecha_gps = fecha_gps - timedelta(hours=3)
                 except:
                     fecha_gps = timezone.now()
             else:
                 fecha_gps = timestamp or timezone.now()
+                # Si es datetime, ajustar a hora local de Argentina (UTC-3)
+                if isinstance(fecha_gps, datetime):
+                    fecha_gps = fecha_gps - timedelta(hours=3)
             
             # Crear registro en Posicion
             posicion = Posicion.objects.create(

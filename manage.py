@@ -3,6 +3,17 @@
 import os
 import sys
 
+# Configurar UTF-8 en Windows para evitar errores con emojis en logging
+if sys.platform == 'win32':
+    try:
+        # Configurar la consola para UTF-8
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, errors='replace')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, errors='replace')
+    except Exception:
+        # Si falla, continuar sin cambios
+        pass
+
 
 def main():
     """Run administrative tasks."""

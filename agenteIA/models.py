@@ -28,6 +28,10 @@ class VectorConsulta(models.Model):
         ('LISTADO_ACTIVOS', 'Listado de Móviles Activos'),
         ('SITUACION_FLOTA', 'Situación de Flota'),
         ('MOVILES_EN_ZONA', 'Móviles en Zona'),
+        ('MOVILES_FUERA_DE_ZONA', 'Móviles Fuera de Zona'),
+        ('INGRESO_A_ZONA', 'Ingreso a Zona'),
+        ('SALIO_DE_ZONA', 'Salida de Zona'),
+        ('PASO_POR_ZONA', 'Paso por Zona'),
         ('AYUDA_GENERAL', 'Ayuda General'),
         ('VER_MAPA', 'Ver en Mapa/Google Maps'),
     ]

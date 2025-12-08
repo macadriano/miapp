@@ -263,6 +263,14 @@ class EjecutorAcciones:
                 return self._situacion_flota(variables)
             elif tipo_consulta == 'MOVILES_EN_ZONA':
                 return self._moviles_en_zona(variables)
+            elif tipo_consulta == 'MOVILES_FUERA_DE_ZONA':
+                return self._moviles_fuera_de_zona(variables)
+            elif tipo_consulta == 'INGRESO_A_ZONA':
+                return self._ingreso_a_zona(variables)
+            elif tipo_consulta == 'SALIO_DE_ZONA':
+                return self._salio_de_zona(variables)
+            elif tipo_consulta == 'PASO_POR_ZONA':
+                return self._paso_por_zona(variables)
             elif tipo_consulta == 'AYUDA_GENERAL':
                 return self._responder_ayuda(variables)
             elif tipo_consulta == 'VER_MAPA':
@@ -2366,6 +2374,632 @@ class EjecutorAcciones:
                 'texto': "Ocurrió un error al buscar en la zona.",
                 'audio': "Tuve un problema buscando en esa zona."
             }
+    
+    def _moviles_fuera_de_zona(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Lista móviles que están fuera de una zona específica.
+        """
+        try:
+            # 1. Identificar la zona
+            texto_completo = variables.get('_texto_completo', '')
+            nombre_zona = variables.get('zona', '')
+            
+            # Si no vino la variable 'zona' limpia, intentar extraerla del texto
+            if not nombre_zona:
+                # Intentar extraer con regex primero (más preciso)
+                import re
+                patrones = [
+                    # Patrones con "zona" explícita
+                    r'(?:moviles?|móviles?|vehiculos?|autos?)\s+(?:fuera\s+de|afuera\s+de|no\s+est[aá]n?\s+en)\s+(?:la\s+)?zona\s+(.+)',
+                    r'fuera\s+de\s+(?:la\s+)?zona\s+(.+)',
+                    r'afuera\s+de\s+(?:la\s+)?zona\s+(.+)',
+                    r'(?:moviles?|móviles?|vehiculos?|autos?)\s+que\s+no\s+est[aá]n?\s+en\s+(?:la\s+)?zona\s+(.+)',
+                    # Patrones sin "zona" explícita (solo el nombre de la zona)
+                    r'(?:moviles?|móviles?|vehiculos?|autos?)\s+(?:fuera\s+de|afuera\s+de)\s+(.+)',
+                    r'que\s+(?:moviles?|móviles?|vehiculos?|autos?)\s+est[aá]n?\s+(?:fuera\s+de|afuera\s+de)\s+(.+)',
+                    r'que\s+(?:moviles?|móviles?|vehiculos?|autos?)\s+no\s+est[aá]n?\s+en\s+(?:la\s+)?zona\s+(.+)',
+                    r'que\s+(?:moviles?|móviles?|vehiculos?|autos?)\s+no\s+est[aá]n?\s+en\s+(.+)',
+                    r'cuales?\s+salieron\s+de\s+(.+)',
+                    r'quienes?\s+salieron\s+de\s+(.+)',
+                    r'quien\s+salio\s+de\s+(.+)',
+                    r'quien\s+sali[oó]\s+de\s+(.+)',
+                ]
+                
+                texto_lower = texto_completo.lower()
+                for patron in patrones:
+                    match = re.search(patron, texto_lower, re.IGNORECASE)
+                    if match:
+                        nombre_zona = match.group(1).strip()
+                        # Limpiar puntuación final
+                        nombre_zona = re.sub(r'[?.,!;:]+$', '', nombre_zona).strip()
+                        # Remover "zona" si quedó al inicio
+                        nombre_zona = re.sub(r'^zona\s+', '', nombre_zona, flags=re.IGNORECASE).strip()
+                        if nombre_zona:
+                            break
+                
+                # Si no se extrajo con regex, usar método simple
+                if not nombre_zona:
+                    clean = texto_completo.lower()
+                    # Remover palabras comunes
+                    palabras_remover = ['moviles', 'móviles', 'fuera', 'de', 'zona', 'la', 'vehiculos', 'vehículos', 'autos', 'que', 'no', 'estan', 'están', 'en', 'afuera', 'salieron', 'salio', 'salió', 'cuales', 'quienes', 'quien']
+                    for w in palabras_remover:
+                        clean = re.sub(r'\b' + re.escape(w) + r'\b', '', clean, flags=re.IGNORECASE)
+                    nombre_zona = clean.strip()
+            
+            if not nombre_zona:
+                return {
+                    'texto': "Por favor indicame el nombre de la zona.",
+                    'audio': "¿De qué zona querés ver los móviles que están fuera?"
+                }
+
+            # Obtener usuario si está disponible
+            usuario = variables.get('_usuario')
+            
+            # Buscar la zona
+            resultado_zona = self._buscar_zona_por_nombre(nombre_zona, usuario)
+            if not resultado_zona:
+                return {
+                    'texto': f"No encontré ninguna zona llamada '{nombre_zona}'.",
+                    'audio': f"No encontré la zona {nombre_zona}."
+                }
+            
+            zona_obj, _, _, nombre_real = resultado_zona
+            
+            # 2. Buscar móviles FUERA de la zona (inverso de _moviles_en_zona)
+            # Obtener todos los móviles activos
+            activos = MovilStatus.objects.filter(
+                fecha_gps__gte=timezone.now() - timedelta(hours=24)
+            ).select_related('movil')
+            
+            # Intentar usar Django GIS si está disponible
+            try:
+                from django.contrib.gis.geos import Point
+                usar_gis = True
+            except (ImportError, OSError) as e:
+                usar_gis = False
+                print(f"⚠️ Django GIS no disponible (error: {e}), usando verificación simple")
+            
+            moviles_fuera_de_zona = []
+            
+            for status in activos:
+                if status.ultimo_lat and status.ultimo_lon:
+                    try:
+                        esta_dentro = False
+                        if usar_gis:
+                            try:
+                                # Usar Point con SRID 4326 (WGS84)
+                                p = Point(float(status.ultimo_lon), float(status.ultimo_lat), srid=4326)
+                                if zona_obj.geom and zona_obj.geom.contains(p):
+                                    esta_dentro = True
+                                    continue  # Si está dentro, no agregarlo a la lista
+                            except (OSError, AttributeError) as gis_error:
+                                # GDAL no disponible o error al acceder a geom
+                                print(f"⚠️ Error GIS al verificar posición para {status.movil} (usando fallback): {gis_error}")
+                                esta_dentro = False
+                        
+                        # Fallback: verificación simple por distancia (menos preciso)
+                        # Solo si no se verificó con GIS o GIS no está disponible
+                        if not esta_dentro and not usar_gis:
+                            # Solo si la zona tiene un centro aproximado
+                            if hasattr(zona_obj, 'centro_lat') and hasattr(zona_obj, 'centro_lon'):
+                                # Calcular distancia simple (Haversine aproximado)
+                                lat_zona = float(zona_obj.centro_lat)
+                                lon_zona = float(zona_obj.centro_lon)
+                                lat_movil = float(status.ultimo_lat)
+                                lon_movil = float(status.ultimo_lon)
+                                
+                                # Distancia aproximada en grados (muy simplificado)
+                                dist_lat = abs(lat_movil - lat_zona)
+                                dist_lon = abs(lon_movil - lon_zona)
+                                # Aproximación: 1 grado ≈ 111 km
+                                # Si la zona tiene un radio, usar ese, sino usar 0.01 grados (~1km)
+                                radio_grados = getattr(zona_obj, 'radio_metros', 1000) / 111000.0
+                                
+                                if dist_lat < radio_grados and dist_lon < radio_grados:
+                                    esta_dentro = True
+                        
+                        # Si NO está dentro, agregarlo a la lista de fuera
+                        if not esta_dentro:
+                            moviles_fuera_de_zona.append(status)
+                    except Exception as e:
+                        print(f"Error verificando posición para {status.movil}: {e}")
+                        # En caso de error, considerar que está fuera (más seguro)
+                        moviles_fuera_de_zona.append(status)
+                        continue
+            
+            cantidad = len(moviles_fuera_de_zona)
+            
+            if cantidad == 0:
+                return {
+                    'texto': f"Todos los móviles activos están dentro de *{nombre_real}*.",
+                    'audio': f"Todos los móviles están dentro de la zona {nombre_real}."
+                }
+            
+            texto = f"🚫 *Móviles fuera de {nombre_real}* ({cantidad})\n\n"
+            nombres = []
+            
+            for status in moviles_fuera_de_zona:
+                movil = status.movil
+                nombre = movil.alias or movil.patente
+                
+                # Calcular tiempo de permanencia (complejo, simplificamos a hora reporte)
+                hora = status.fecha_gps.strftime('%H:%M')
+                texto += f"• *{nombre}* (Reporte: {hora})\n"
+                nombres.append(nombre)
+            
+            audio = f"Hay {cantidad} móviles fuera de {nombre_real}. "
+            if cantidad <= 5:
+                audio += "Son: " + ", ".join(nombres) + "."
+            
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+
+        except Exception as e:
+            print(f"Error buscando móviles fuera de zona: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'texto': "Ocurrió un error al buscar móviles fuera de la zona.",
+                'audio': "Tuve un problema buscando móviles fuera de esa zona."
+            }
+
+    def _ingreso_a_zona(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Busca en el histórico (últimos 2 días) cuándo un móvil ingresó a una zona.
+        """
+        try:
+            from gps.models import Posicion
+            from django.contrib.gis.geos import Point
+            
+            texto_completo = variables.get('_texto_completo', '')
+            
+            # Extraer móvil
+            movil_nombre = variables.get('movil', '').strip()
+            if not movil_nombre:
+                # Intentar extraer del texto
+                movil_nombre = self.matcher.extraer_movil(texto_completo) if hasattr(self, 'matcher') else None
+                if not movil_nombre:
+                    # Usar método manual
+                    texto_normalizado = ''.join(
+                        c for c in unicodedata.normalize('NFD', texto_completo)
+                        if unicodedata.category(c) != 'Mn'
+                    )
+                    patron_patente = r'\b([A-Z]{2,5})\s*(\d{2,4})\b'
+                    match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
+                    if match:
+                        movil_nombre = (match.group(1) + match.group(2)).upper()
+            
+            # Si aún no hay móvil, usar el del contexto (último móvil consultado)
+            if not movil_nombre:
+                movil_nombre = variables.get('_ultimo_movil', '').strip()
+                if movil_nombre:
+                    print(f"📍 [CONTEXTO] Usando móvil del contexto: '{movil_nombre}'")
+            
+            if not movil_nombre:
+                return {
+                    'texto': "Por favor indicame qué móvil necesitas consultar.",
+                    'audio': "¿Qué móvil querés consultar?"
+                }
+            
+            # Buscar móvil
+            movil = Movil.objects.filter(
+                Q(patente__icontains=movil_nombre) |
+                Q(alias__icontains=movil_nombre) |
+                Q(codigo__icontains=movil_nombre)
+            ).first()
+            
+            if not movil:
+                return {
+                    'texto': f"No encontré el móvil '{movil_nombre}'.",
+                    'audio': f"No encontré el móvil {movil_nombre}."
+                }
+            
+            # Extraer zona
+            nombre_zona = variables.get('zona', '').strip()
+            if not nombre_zona:
+                # Intentar extraer del texto
+                patrones = [
+                    r'(?:a\s+que\s+hora|en\s+que\s+momento|cu[aá]ndo)\s+(?:ingres[oó]|ingreso|entr[oó]|entro|entrada)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'ingreso\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'ingres[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'entr[oó]\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'entro\s+(?:a|al|a\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'zona\s+(\w+(?:\s+\w+)?)',
+                ]
+                texto_lower = texto_completo.lower()
+                for patron in patrones:
+                    match = re.search(patron, texto_lower, re.IGNORECASE)
+                    if match:
+                        nombre_zona = match.group(1).strip()
+                        nombre_zona = re.sub(r'[?.,!;:]+$', '', nombre_zona).strip()
+                        # Remover "el movil X" si quedó en el nombre
+                        nombre_zona = re.sub(r'^\s*(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+', '', nombre_zona, flags=re.IGNORECASE).strip()
+                        if nombre_zona:
+                            break
+            
+            # Si aún no hay zona, usar la del contexto (última zona consultada)
+            if not nombre_zona:
+                nombre_zona = variables.get('_ultimo_destino', '').strip()
+                if nombre_zona:
+                    print(f"📍 [CONTEXTO] Usando zona del contexto: '{nombre_zona}'")
+            
+            if not nombre_zona:
+                return {
+                    'texto': "Por favor indicame el nombre de la zona.",
+                    'audio': "¿A qué zona querés consultar el ingreso?"
+                }
+            
+            # Buscar zona
+            usuario = variables.get('_usuario')
+            resultado_zona = self._buscar_zona_por_nombre(nombre_zona, usuario)
+            if not resultado_zona:
+                return {
+                    'texto': f"No encontré la zona '{nombre_zona}'.",
+                    'audio': f"No encontré la zona {nombre_zona}."
+                }
+            
+            zona_obj, _, _, nombre_real = resultado_zona
+            
+            # Buscar posiciones del móvil en los últimos 2 días, ordenadas por fecha
+            fecha_limite = timezone.now() - timedelta(days=2)
+            posiciones = Posicion.objects.filter(
+                movil=movil,
+                fec_gps__gte=fecha_limite,
+                lat__isnull=False,
+                lon__isnull=False,
+                is_valid=True
+            ).order_by('fec_gps')
+            
+            # Buscar la primera posición dentro de la zona
+            primera_ingreso = None
+            posicion_anterior_fuera = True  # Asumimos que antes estaba fuera
+            
+            for pos in posiciones:
+                if pos.lat and pos.lon:
+                    try:
+                        p = Point(float(pos.lon), float(pos.lat), srid=4326)
+                        if zona_obj.geom and zona_obj.geom.contains(p):
+                            # Si la posición anterior estaba fuera y esta está dentro, es el ingreso
+                            if posicion_anterior_fuera:
+                                primera_ingreso = pos
+                                break
+                        else:
+                            # Está fuera, marcar para la próxima iteración
+                            posicion_anterior_fuera = True
+                    except Exception as e:
+                        print(f"Error verificando posición {pos.id}: {e}")
+                        continue
+            
+            if not primera_ingreso:
+                return {
+                    'texto': f"*{movil.alias or movil.patente}* no ingresó a *{nombre_real}* en los últimos 2 días.",
+                    'audio': f"{movil.alias or movil.patente} no ingresó a {nombre_real} en los últimos 2 días."
+                }
+            
+            # Formatear respuesta
+            fecha_ingreso = primera_ingreso.fec_gps
+            fecha_str = fecha_ingreso.strftime('%d/%m/%Y %H:%M')
+            
+            texto = f"✅ *{movil.alias or movil.patente}* ingresó a *{nombre_real}* el {fecha_str}."
+            audio = f"{movil.alias or movil.patente} ingresó a {nombre_real} el {fecha_str}."
+            
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+            
+        except Exception as e:
+            print(f"Error buscando ingreso a zona: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'texto': "Ocurrió un error al buscar el ingreso a la zona.",
+                'audio': "Tuve un problema buscando el ingreso."
+            }
+
+    def _salio_de_zona(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Busca en el histórico (últimos 2 días) cuándo un móvil salió de una zona.
+        """
+        try:
+            from gps.models import Posicion
+            from django.contrib.gis.geos import Point
+            
+            texto_completo = variables.get('_texto_completo', '')
+            
+            # Extraer móvil
+            movil_nombre = variables.get('movil', '').strip()
+            if not movil_nombre:
+                texto_normalizado = ''.join(
+                    c for c in unicodedata.normalize('NFD', texto_completo)
+                    if unicodedata.category(c) != 'Mn'
+                )
+                patron_patente = r'\b([A-Z]{2,5})\s*(\d{2,4})\b'
+                match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
+                if match:
+                    movil_nombre = (match.group(1) + match.group(2)).upper()
+            
+            # Si aún no hay móvil, usar el del contexto (último móvil consultado)
+            if not movil_nombre:
+                movil_nombre = variables.get('_ultimo_movil', '').strip()
+                if movil_nombre:
+                    print(f"📍 [CONTEXTO] Usando móvil del contexto: '{movil_nombre}'")
+            
+            if not movil_nombre:
+                return {
+                    'texto': "Por favor indicame qué móvil necesitas consultar.",
+                    'audio': "¿Qué móvil querés consultar?"
+                }
+            
+            # Buscar móvil
+            movil = Movil.objects.filter(
+                Q(patente__icontains=movil_nombre) |
+                Q(alias__icontains=movil_nombre) |
+                Q(codigo__icontains=movil_nombre)
+            ).first()
+            
+            if not movil:
+                return {
+                    'texto': f"No encontré el móvil '{movil_nombre}'.",
+                    'audio': f"No encontré el móvil {movil_nombre}."
+                }
+            
+            # Extraer zona
+            nombre_zona = variables.get('zona', '').strip()
+            if not nombre_zona:
+                patrones = [
+                    r'(?:a\s+que\s+hora|en\s+que\s+momento|cu[aá]ndo)\s+(?:sali[oó]|salido|salida)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'sali[oó]\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+de\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'sali[oó]\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'salido\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'salida\s+(?:de|del|de\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'zona\s+(\w+(?:\s+\w+)?)',
+                ]
+                texto_lower = texto_completo.lower()
+                for patron in patrones:
+                    match = re.search(patron, texto_lower, re.IGNORECASE)
+                    if match:
+                        nombre_zona = match.group(1).strip()
+                        nombre_zona = re.sub(r'[?.,!;:]+$', '', nombre_zona).strip()
+                        # Remover "el movil X" si quedó en el nombre
+                        nombre_zona = re.sub(r'^\s*(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+', '', nombre_zona, flags=re.IGNORECASE).strip()
+                        if nombre_zona:
+                            break
+            
+            # Si aún no hay zona, usar la del contexto (última zona consultada)
+            if not nombre_zona:
+                nombre_zona = variables.get('_ultimo_destino', '').strip()
+                if nombre_zona:
+                    print(f"📍 [CONTEXTO] Usando zona del contexto: '{nombre_zona}'")
+            
+            if not nombre_zona:
+                return {
+                    'texto': "Por favor indicame el nombre de la zona.",
+                    'audio': "¿De qué zona querés consultar la salida?"
+                }
+            
+            # Buscar zona
+            usuario = variables.get('_usuario')
+            resultado_zona = self._buscar_zona_por_nombre(nombre_zona, usuario)
+            if not resultado_zona:
+                return {
+                    'texto': f"No encontré la zona '{nombre_zona}'.",
+                    'audio': f"No encontré la zona {nombre_zona}."
+                }
+            
+            zona_obj, _, _, nombre_real = resultado_zona
+            
+            # Buscar posiciones del móvil en los últimos 2 días, ordenadas por fecha
+            fecha_limite = timezone.now() - timedelta(days=2)
+            posiciones = Posicion.objects.filter(
+                movil=movil,
+                fec_gps__gte=fecha_limite,
+                lat__isnull=False,
+                lon__isnull=False,
+                is_valid=True
+            ).order_by('fec_gps')
+            
+            # Buscar la última posición dentro seguida de una fuera
+            ultima_salida = None
+            posicion_anterior_dentro = False
+            
+            for pos in posiciones:
+                if pos.lat and pos.lon:
+                    try:
+                        p = Point(float(pos.lon), float(pos.lat), srid=4326)
+                        if zona_obj.geom and zona_obj.geom.contains(p):
+                            # Está dentro
+                            posicion_anterior_dentro = True
+                        else:
+                            # Está fuera
+                            # Si la posición anterior estaba dentro, esta es la salida
+                            if posicion_anterior_dentro:
+                                ultima_salida = pos
+                                # Continuar buscando por si hay múltiples salidas
+                            posicion_anterior_dentro = False
+                    except Exception as e:
+                        print(f"Error verificando posición {pos.id}: {e}")
+                        continue
+            
+            if not ultima_salida:
+                return {
+                    'texto': f"*{movil.alias or movil.patente}* no salió de *{nombre_real}* en los últimos 2 días.",
+                    'audio': f"{movil.alias or movil.patente} no salió de {nombre_real} en los últimos 2 días."
+                }
+            
+            # Formatear respuesta
+            fecha_salida = ultima_salida.fec_gps
+            fecha_str = fecha_salida.strftime('%d/%m/%Y %H:%M')
+            
+            texto = f"🚪 *{movil.alias or movil.patente}* salió de *{nombre_real}* el {fecha_str}."
+            audio = f"{movil.alias or movil.patente} salió de {nombre_real} el {fecha_str}."
+            
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+            
+        except Exception as e:
+            print(f"Error buscando salida de zona: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'texto': "Ocurrió un error al buscar la salida de la zona.",
+                'audio': "Tuve un problema buscando la salida."
+            }
+
+    def _paso_por_zona(self, variables: Dict[str, str]) -> Dict[str, str]:
+        """
+        Busca en el histórico (últimos 2 días) cuándo un móvil pasó por una zona.
+        """
+        try:
+            from gps.models import Posicion
+            from django.contrib.gis.geos import Point
+            
+            texto_completo = variables.get('_texto_completo', '')
+            
+            # Extraer móvil
+            movil_nombre = variables.get('movil', '').strip()
+            if not movil_nombre:
+                texto_normalizado = ''.join(
+                    c for c in unicodedata.normalize('NFD', texto_completo)
+                    if unicodedata.category(c) != 'Mn'
+                )
+                patron_patente = r'\b([A-Z]{2,5})\s*(\d{2,4})\b'
+                match = re.search(patron_patente, texto_normalizado, re.IGNORECASE)
+                if match:
+                    movil_nombre = (match.group(1) + match.group(2)).upper()
+            
+            # Si aún no hay móvil, usar el del contexto (último móvil consultado)
+            if not movil_nombre:
+                movil_nombre = variables.get('_ultimo_movil', '').strip()
+                if movil_nombre:
+                    print(f"📍 [CONTEXTO] Usando móvil del contexto: '{movil_nombre}'")
+            
+            if not movil_nombre:
+                return {
+                    'texto': "Por favor indicame qué móvil necesitas consultar.",
+                    'audio': "¿Qué móvil querés consultar?"
+                }
+            
+            # Buscar móvil
+            movil = Movil.objects.filter(
+                Q(patente__icontains=movil_nombre) |
+                Q(alias__icontains=movil_nombre) |
+                Q(codigo__icontains=movil_nombre)
+            ).first()
+            
+            if not movil:
+                return {
+                    'texto': f"No encontré el móvil '{movil_nombre}'.",
+                    'audio': f"No encontré el móvil {movil_nombre}."
+                }
+            
+            # Extraer zona
+            nombre_zona = variables.get('zona', '').strip()
+            if not nombre_zona:
+                patrones = [
+                    r'(?:a\s+que\s+hora|en\s+que\s+momento|cu[aá]ndo)\s+(?:pas[oó]|paso|estuvo)\s+(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+(?:por|por\s+la|en|en\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'pas[oó]\s+(?:por|por\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'paso\s+(?:por|por\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'estuvo\s+(?:en|en\s+la)\s+(?:la\s+)?zona\s+(\w+(?:\s+\w+)?)',
+                    r'zona\s+(\w+(?:\s+\w+)?)',
+                ]
+                texto_lower = texto_completo.lower()
+                for patron in patrones:
+                    match = re.search(patron, texto_lower, re.IGNORECASE)
+                    if match:
+                        nombre_zona = match.group(1).strip()
+                        nombre_zona = re.sub(r'[?.,!;:]+$', '', nombre_zona).strip()
+                        # Remover "el movil X" si quedó en el nombre
+                        nombre_zona = re.sub(r'^\s*(?:el\s+)?(?:movil|móvil|vehiculo|vehículo|camion|camión|auto)\s+\w+\s+', '', nombre_zona, flags=re.IGNORECASE).strip()
+                        if nombre_zona:
+                            break
+            
+            # Si aún no hay zona, usar la del contexto (última zona consultada)
+            if not nombre_zona:
+                nombre_zona = variables.get('_ultimo_destino', '').strip()
+                if nombre_zona:
+                    print(f"📍 [CONTEXTO] Usando zona del contexto: '{nombre_zona}'")
+            
+            if not nombre_zona:
+                return {
+                    'texto': "Por favor indicame el nombre de la zona.",
+                    'audio': "¿Por qué zona querés consultar?"
+                }
+            
+            # Buscar zona
+            usuario = variables.get('_usuario')
+            resultado_zona = self._buscar_zona_por_nombre(nombre_zona, usuario)
+            if not resultado_zona:
+                return {
+                    'texto': f"No encontré la zona '{nombre_zona}'.",
+                    'audio': f"No encontré la zona {nombre_zona}."
+                }
+            
+            zona_obj, _, _, nombre_real = resultado_zona
+            
+            # Buscar posiciones del móvil en los últimos 2 días, ordenadas por fecha
+            fecha_limite = timezone.now() - timedelta(days=2)
+            posiciones = Posicion.objects.filter(
+                movil=movil,
+                fec_gps__gte=fecha_limite,
+                lat__isnull=False,
+                lon__isnull=False,
+                is_valid=True
+            ).order_by('fec_gps')
+            
+            # Buscar todas las posiciones dentro de la zona
+            posiciones_en_zona = []
+            
+            for pos in posiciones:
+                if pos.lat and pos.lon:
+                    try:
+                        p = Point(float(pos.lon), float(pos.lat), srid=4326)
+                        if zona_obj.geom and zona_obj.geom.contains(p):
+                            posiciones_en_zona.append(pos)
+                    except Exception as e:
+                        print(f"Error verificando posición {pos.id}: {e}")
+                        continue
+            
+            if not posiciones_en_zona:
+                return {
+                    'texto': f"*{movil.alias or movil.patente}* no pasó por *{nombre_real}* en los últimos 2 días.",
+                    'audio': f"{movil.alias or movil.patente} no pasó por {nombre_real} en los últimos 2 días."
+                }
+            
+            # Formatear respuesta
+            cantidad = len(posiciones_en_zona)
+            primera = posiciones_en_zona[0]
+            ultima = posiciones_en_zona[-1]
+            
+            fecha_primera = primera.fec_gps.strftime('%d/%m/%Y %H:%M')
+            fecha_ultima = ultima.fec_gps.strftime('%d/%m/%Y %H:%M')
+            
+            if cantidad == 1:
+                texto = f"📍 *{movil.alias or movil.patente}* pasó por *{nombre_real}* el {fecha_primera}."
+                audio = f"{movil.alias or movil.patente} pasó por {nombre_real} el {fecha_primera}."
+            else:
+                texto = f"📍 *{movil.alias or movil.patente}* pasó por *{nombre_real}* {cantidad} veces en los últimos 2 días.\n"
+                texto += f"• Primera vez: {fecha_primera}\n"
+                texto += f"• Última vez: {fecha_ultima}"
+                audio = f"{movil.alias or movil.patente} pasó por {nombre_real} {cantidad} veces. Primera vez el {fecha_primera}, última vez el {fecha_ultima}."
+            
+            return {
+                'texto': texto,
+                'audio': audio
+            }
+            
+        except Exception as e:
+            print(f"Error buscando paso por zona: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'texto': "Ocurrió un error al buscar el paso por la zona.",
+                'audio': "Tuve un problema buscando el paso por la zona."
+            }
 
     def _calcular_distancia_moviles(self, movil1_nombre: str, movil2_nombre: str, variables: Dict[str, str]) -> Dict[str, str]:
         """
@@ -2827,6 +3461,7 @@ class EjecutorAcciones:
         
         texto += "📍 *Zonas*\n"
         texto += "• _'Móviles en zona [Nombre]'_: Ver quiénes están en un lugar específico.\n"
+        texto += "• _'Móviles fuera de zona [Nombre]'_: Ver quiénes NO están en un lugar específico.\n"
         texto += "• _'¿Dónde está el [Móvil]?'_: Ubicación actual.\n\n"
         
         texto += "🚗 *Histórico*\n"

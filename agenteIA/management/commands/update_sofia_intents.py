@@ -193,6 +193,497 @@ class Command(BaseCommand):
                 'variables': {'zona': r'zona\s+(.+)'}
             },
 
+            # --- ZONAS: MÓVILES FUERA DE ZONA ---
+            {
+                'texto': "móviles fuera de zona Palermo",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "vehículos fuera de la zona Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "moviles fuera de zona CABA",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "moviles afuera de zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "quien no esta en zona Norte",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "móviles que no están en la zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "quienes están fuera del depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {}
+            },
+            {
+                'texto': "móviles fuera del almacén",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {}
+            },
+            {
+                'texto': "moviles no estan en la zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "moviles no están en la zona Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "no estan en zona Norte",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "no están en zona Sur",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuales estan fuera de zona Palermo",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuales están fuera de zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "Fuera de zona Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "fuera de zona Almacén",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "No estan en Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "no están en Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "cuales salieron de Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "cuales salieron de zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "móviles que salieron de Almacén",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "vehículos que salieron de zona Norte",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "quienes salieron de Depósito 3",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "quien salio de zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "quien salió de Almacén",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "móviles que no están en Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "vehículos que no están en zona Norte",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "quienes no están en Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "quien no esta en zona Sur",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "listar móviles fuera de Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "listar vehículos fuera de zona Almacén",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "móviles ausentes de zona Centro",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "vehículos ausentes de Depósito",
+                'categoria': 'comando',
+                'tipo': 'MOVILES_FUERA_DE_ZONA',
+                'accion': 'Listar móviles que NO están dentro de una zona específica',
+                'variables': {'zona': r'(.+)'}
+            },
+
+            # --- ZONAS: INGRESO A ZONA ---
+            {
+                'texto': "cuando ingreso ASN773 a zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "ingreso de MHW545 a zona CABA",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando entro el camion2 a zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'movil': r'([a-zA-Z0-9]+)', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando ingresó OVV799 a zona Norte",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "ingreso a zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando entro a zona Almacén",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando ingresó a zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "entrada a zona CABA",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando entro el vehiculo a zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando ingresó el movil a zona Norte",
+                'categoria': 'pasado',
+                'tipo': 'INGRESO_A_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil ingresó a una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+
+            # --- ZONAS: SALIDA DE ZONA ---
+            {
+                'texto': "cuando salio ASN773 de zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "salida de MHW545 de zona CABA",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando salio el camion2 de zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'movil': r'([a-zA-Z0-9]+)', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando salió OVV799 de zona Norte",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "salio de zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando salio de zona Almacén",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando salió de zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "salida de zona CABA",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando salio el vehiculo de zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando salió el movil de zona Norte",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "se salio de zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "se salió de zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'SALIO_DE_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil salió de una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+
+            # --- ZONAS: PASO POR ZONA ---
+            {
+                'texto': "cuando paso ASN773 por zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "paso de MHW545 por zona CABA",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando paso el camion2 por zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'movil': r'([a-zA-Z0-9]+)', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando pasó OVV799 por zona Norte",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'movil': r'([A-Z0-9]{3,10})', 'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "paso por zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando paso por zona Almacén",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando pasó por zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "paso por zona CABA",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando paso el vehiculo por zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "cuando pasó el movil por zona Norte",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "estuvo en zona Depósito",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "estuvo en zona Centro",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'zona\s+(.+)'}
+            },
+            {
+                'texto': "estuvo en el deposito",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'(.+)'}
+            },
+            {
+                'texto': "estuvo en el almacen",
+                'categoria': 'pasado',
+                'tipo': 'PASO_POR_ZONA',
+                'accion': 'Buscar en histórico (últimos 2 días) cuándo un móvil pasó por una zona',
+                'variables': {'zona': r'(.+)'}
+            },
+
             # --- AYUDA ---
             {
                 'texto': "ayuda",

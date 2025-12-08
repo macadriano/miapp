@@ -23,7 +23,7 @@ import logging
 import binascii
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -246,8 +246,12 @@ class QueclinkProcessor(BaseProcessor):
                 try:
                     dia, mes, año = fecha_gps.split('/')
                     hora, minuto, segundo = hora_gps.split(':')
-                    timestamp = datetime(int('20' + año), int(mes), int(dia), 
-                                       int(hora), int(minuto), int(segundo)).isoformat()
+                    # Crear datetime con la hora GPS (asumimos UTC)
+                    fecha_gps_dt = datetime(int('20' + año), int(mes), int(dia), 
+                                           int(hora), int(minuto), int(segundo))
+                    # Ajustar a hora local de Argentina (UTC-3): restar 3 horas
+                    fecha_gps_local = fecha_gps_dt - timedelta(hours=3)
+                    timestamp = fecha_gps_local.isoformat()
                 except:
                     pass
             
