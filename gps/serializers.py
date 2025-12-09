@@ -259,6 +259,7 @@ class PosicionSerializer(serializers.ModelSerializer):
     coordenadas = serializers.ReadOnlyField()
     esta_detenido = serializers.ReadOnlyField()
     calidad_senal = serializers.ReadOnlyField()
+    fec_gps = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Posicion
@@ -285,6 +286,27 @@ class PosicionSerializer(serializers.ModelSerializer):
                 'modelo': obj.movil.modelo
             }
         return None
+    
+    def get_fec_gps(self, obj):
+        """Devolver fec_gps en zona horaria de Argentina (UTC-3)"""
+        if not obj.fec_gps:
+            return None
+        
+        try:
+            from zoneinfo import ZoneInfo
+            tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+        except ImportError:
+            from datetime import timezone, timedelta
+            tz_argentina = timezone(timedelta(hours=-3))
+        
+        # Convertir a zona horaria de Argentina si tiene timezone
+        if obj.fec_gps.tzinfo:
+            fecha_argentina = obj.fec_gps.astimezone(tz_argentina)
+        else:
+            # Si no tiene timezone, asumir que ya está en hora local de Argentina
+            fecha_argentina = obj.fec_gps.replace(tzinfo=tz_argentina)
+        
+        return fecha_argentina.isoformat()
 
 
 class PosicionRecorridoSerializer(serializers.ModelSerializer):
@@ -318,7 +340,25 @@ class PosicionRecorridoSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_timestamp(self, obj):
-        return obj.fec_gps.isoformat() if obj.fec_gps else None
+        """Devolver timestamp en zona horaria de Argentina (UTC-3)"""
+        if not obj.fec_gps:
+            return None
+        
+        try:
+            from zoneinfo import ZoneInfo
+            tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+        except ImportError:
+            from datetime import timezone, timedelta
+            tz_argentina = timezone(timedelta(hours=-3))
+        
+        # Convertir a zona horaria de Argentina si tiene timezone
+        if obj.fec_gps.tzinfo:
+            fecha_argentina = obj.fec_gps.astimezone(tz_argentina)
+        else:
+            # Si no tiene timezone, asumir que ya está en hora local de Argentina
+            fecha_argentina = obj.fec_gps.replace(tzinfo=tz_argentina)
+        
+        return fecha_argentina.isoformat()
 
     def get_satelites(self, obj):
         return obj.sats

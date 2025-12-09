@@ -632,11 +632,28 @@ class RecorridosViewSet(viewsets.ModelViewSet):
         ).order_by('fec_gps')
         
         # Serializar para reproducción
+        try:
+            from zoneinfo import ZoneInfo
+            tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+        except ImportError:
+            from datetime import timezone, timedelta
+            tz_argentina = timezone(timedelta(hours=-3))
+        
         datos_recorrido = []
         for posicion in posiciones:
             if posicion.lat and posicion.lon:
+                # Convertir fec_gps a zona horaria de Argentina
+                if posicion.fec_gps:
+                    if posicion.fec_gps.tzinfo:
+                        fecha_argentina = posicion.fec_gps.astimezone(tz_argentina)
+                    else:
+                        fecha_argentina = posicion.fec_gps.replace(tzinfo=tz_argentina)
+                    timestamp = fecha_argentina.isoformat()
+                else:
+                    timestamp = None
+                
                 datos_recorrido.append({
-                    'timestamp': posicion.fec_gps.isoformat(),
+                    'timestamp': timestamp,
                     'lat': float(posicion.lat),
                     'lon': float(posicion.lon),
                     'velocidad': posicion.velocidad or 0,
