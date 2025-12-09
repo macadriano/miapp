@@ -42,6 +42,22 @@ class MovilSerializer(serializers.ModelSerializer):
         if not status:
             return None
 
+        # Convertir fecha_gps a zona horaria de Argentina
+        fecha_gps_argentina = None
+        if status.fecha_gps:
+            try:
+                from zoneinfo import ZoneInfo
+                tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
+            except ImportError:
+                from datetime import timezone, timedelta
+                tz_argentina = timezone(timedelta(hours=-3))
+            
+            if status.fecha_gps.tzinfo:
+                fecha_gps_argentina = status.fecha_gps.astimezone(tz_argentina)
+            else:
+                fecha_gps_argentina = status.fecha_gps.replace(tzinfo=tz_argentina)
+            fecha_gps_argentina = fecha_gps_argentina.isoformat()
+
         return {
             'ultimo_lat': status.ultimo_lat,
             'ultimo_lon': status.ultimo_lon,
@@ -55,7 +71,7 @@ class MovilSerializer(serializers.ModelSerializer):
             'bateria_pct': status.bateria_pct,
             'odometro_km': status.odometro_km,
             'estado_conexion': status.estado_conexion,
-            'fecha_gps': status.fecha_gps,
+            'fecha_gps': fecha_gps_argentina,
             'fecha_recepcion': status.fecha_recepcion,
             'ultima_actualizacion': status.ultima_actualizacion
         }
