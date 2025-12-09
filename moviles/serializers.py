@@ -43,6 +43,8 @@ class MovilSerializer(serializers.ModelSerializer):
             return None
 
         # Convertir fecha_gps a zona horaria de Argentina
+        # IMPORTANTE: El datetime en la BD está guardado como UTC pero con valor ajustado
+        # (sumamos 3 horas al valor de Argentina antes de guardar)
         fecha_gps_argentina = None
         if status.fecha_gps:
             try:
@@ -53,9 +55,13 @@ class MovilSerializer(serializers.ModelSerializer):
                 tz_argentina = timezone(timedelta(hours=-3))
             
             if status.fecha_gps.tzinfo:
+                # Si tiene timezone (UTC), convertir a Argentina (resta 3 horas automáticamente)
                 fecha_gps_argentina = status.fecha_gps.astimezone(tz_argentina)
             else:
-                fecha_gps_argentina = status.fecha_gps.replace(tzinfo=tz_argentina)
+                # Si es "naive", Django lo interpreta como UTC, restar 3 horas
+                from datetime import timedelta
+                fecha_gps_argentina = status.fecha_gps - timedelta(hours=3)
+                fecha_gps_argentina = fecha_gps_argentina.replace(tzinfo=tz_argentina)
             fecha_gps_argentina = fecha_gps_argentina.isoformat()
 
         return {

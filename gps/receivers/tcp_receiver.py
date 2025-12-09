@@ -33,6 +33,7 @@ except ImportError:
         ZONEINFO_AVAILABLE = False
 
 from django.utils import timezone
+from django.db import connection
 
 from gps.processors import ProcessorFactory
 from gps.models import Posicion, Empresa, ConfiguracionReceptor, EstadisticasRecepcion
@@ -378,41 +379,74 @@ class TCPReceiver:
             
             # Parsear timestamp si es string
             # NOTA: El timestamp ya viene ajustado a hora local de Argentina (UTC-3) desde el procesador
-            # y viene con timezone explícito. Solo necesitamos parsearlo correctamente.
+            # IMPORTANTE: Guardamos como datetime "naive" (sin timezone) para evitar que Django lo convierta a UTC
+            # Django con USE_TZ=True convierte automáticamente datetimes con timezone a UTC al guardar
             if isinstance(timestamp, str):
                 try:
                     fecha_gps = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                    # Si no tiene timezone, asumir que es Argentina (UTC-3)
-                    if fecha_gps.tzinfo is None:
+                    # Remover timezone para guardar como "naive" (hora local de Argentina)
+                    if fecha_gps.tzinfo:
+                        # Convertir a Argentina y luego remover timezone
                         if ZONEINFO_AVAILABLE:
                             tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
-                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
                         else:
                             tz_argentina = dt_timezone(timedelta(hours=-3))
-                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
-                    logger.info(f"🕐 [GUARDAR] Fecha GPS parseada (ya ajustada): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
+                        fecha_gps = fecha_gps.astimezone(tz_argentina)
+                    # Remover timezone para guardar como "naive"
+                    fecha_gps = fecha_gps.replace(tzinfo=None)
+                    logger.info(f"🕐 [GUARDAR] Fecha GPS (naive, hora Argentina): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
                 except Exception as e:
-                    fecha_gps = timezone.now()
+                    fecha_gps = timezone.now().replace(tzinfo=None)
                     logger.warning(f"⚠️ [GUARDAR] Error parseando timestamp, usando hora actual: {e}")
             else:
                 fecha_gps = timestamp or timezone.now()
                 if isinstance(fecha_gps, datetime):
-                    # Si no tiene timezone, asumir que es Argentina (UTC-3)
-                    if fecha_gps.tzinfo is None:
+                    # Remover timezone para guardar como "naive" (hora local de Argentina)
+                    if fecha_gps.tzinfo:
+                        # Convertir a Argentina y luego remover timezone
                         if ZONEINFO_AVAILABLE:
                             tz_argentina = ZoneInfo('America/Argentina/Buenos_Aires')
-                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
                         else:
                             tz_argentina = dt_timezone(timedelta(hours=-3))
-                            fecha_gps = fecha_gps.replace(tzinfo=tz_argentina)
-                    logger.info(f"🕐 [GUARDAR] Fecha GPS (ya ajustada): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
+                        fecha_gps = fecha_gps.astimezone(tz_argentina)
+                    # Remover timezone para guardar como "naive"
+                    fecha_gps = fecha_gps.replace(tzinfo=None)
+                    logger.info(f"🕐 [GUARDAR] Fecha GPS (naive, hora Argentina): {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')}")
+                else:
+                    fecha_gps = timezone.now().replace(tzinfo=None)
+            
+            # IMPORTANTE: PostgreSQL con "timestamp with time zone" siempre convierte a UTC
+            # Para guardar la hora local de Argentina directamente, usamos SQL con AT TIME ZONE
+            # Esto fuerza a PostgreSQL a interpretar el datetime como hora local de Argentina
+            
+            # fecha_gps ya está en hora Argentina (naive)
+            # fecha_recepcion también en hora local del servidor (naive)
+            fecha_recepcion_naive = timezone.now().replace(tzinfo=None)
+            
+            # ESTRATEGIA: Como PostgreSQL siempre convierte a UTC con "timestamp with time zone",
+            # guardamos el datetime como UTC pero con el valor ajustado.
+            # Si queremos guardar 21:21:05 hora Argentina, guardamos 00:21:05 UTC (21:21:05 + 3 horas)
+            # Esto hace que cuando lo leamos como UTC y lo convirtamos a Argentina, obtengamos 21:21:05
+            
+            # fecha_gps está en hora Argentina (ej: 21:21:05)
+            # Para guardarlo correctamente, lo convertimos a UTC sumando 3 horas
+            fecha_gps_utc_value = fecha_gps + timedelta(hours=3)  # Sumar 3 horas para compensar
+            if ZONEINFO_AVAILABLE:
+                tz_utc = ZoneInfo('UTC')
+            else:
+                tz_utc = dt_timezone.utc
+            fecha_gps_utc = fecha_gps_utc_value.replace(tzinfo=tz_utc)
+            
+            # fecha_recepcion también en hora local, aplicar mismo ajuste
+            fecha_recepcion_utc_value = fecha_recepcion_naive + timedelta(hours=3)
+            fecha_recepcion_utc = fecha_recepcion_utc_value.replace(tzinfo=tz_utc)
             
             # Crear registro en Posicion
             posicion = Posicion.objects.create(
                 empresa_id=empresa_id,
                 movil=movil,
                 device_id=device_id,
-                fec_gps=fecha_gps,
+                fec_gps=fecha_gps_utc,  # UTC con valor ajustado
                 fec_report=timezone.now(),
                 lat=latitud,
                 lon=longitud,
@@ -437,12 +471,14 @@ class TCPReceiver:
                     'ultimo_rumbo': rumbo,
                     'satelites': parsed_data.get('satelites', 0),
                     'ignicion': parsed_data.get('ignicion', False),
-                                        'fecha_gps': fecha_gps,
-                    'fecha_recepcion': timezone.now(),
+                    'fecha_gps': fecha_gps_utc,  # UTC con valor ajustado
+                    'fecha_recepcion': fecha_recepcion_utc,  # UTC con valor ajustado
                     'id_ultima_posicion': posicion.id,
                     'estado_conexion': 'conectado'
                 }
             )
+            
+            logger.info(f"✅ [GUARDAR] Guardado: fecha_gps UTC ajustado={fecha_gps_utc.strftime('%d/%m/%Y %H:%M:%S')} (equivale a {fecha_gps.strftime('%d/%m/%Y %H:%M:%S')} Argentina)")
             
             # Geocodificar la posición
             try:
